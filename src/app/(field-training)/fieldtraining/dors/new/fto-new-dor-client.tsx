@@ -25,7 +25,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ArrowLeft, ExternalLink } from "lucide-react";
+import { ArrowLeft, ExternalLink, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { createDailyObservationReport, getTraineeDorHistory } from "@/actions/field-training";
 
@@ -35,6 +35,7 @@ type Props = {
   phases: { id: string; name: string }[];
   dorCategories: { id: string; name: string; description: string | null }[];
   traineePhaseMap: Record<string, string>;
+  unackDorMap: Record<string, number>;
 };
 
 const RATING_LABELS: Record<number, string> = {
@@ -119,7 +120,7 @@ type DorHistoryItem = {
   recommendAction: string;
 };
 
-export function FtoNewDorClient({ fto, trainees, phases, dorCategories, traineePhaseMap }: Props) {
+export function FtoNewDorClient({ fto, trainees, phases, dorCategories, traineePhaseMap, unackDorMap }: Props) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [overallRating, setOverallRating] = useState(4);
@@ -138,6 +139,10 @@ export function FtoNewDorClient({ fto, trainees, phases, dorCategories, traineeP
   // Derived auto-phase
   const autoPhaseId = selectedTraineeId ? traineePhaseMap[selectedTraineeId] || null : null;
   const autoPhaseName = autoPhaseId ? phases.find((p) => p.id === autoPhaseId)?.name || null : null;
+
+  // DOR acknowledgment gate — block if trainee has unacknowledged DORs
+  const unackCount = selectedTraineeId ? unackDorMap[selectedTraineeId] || 0 : 0;
+  const isBlocked = unackCount > 0;
 
   async function handleTraineeChange(traineeId: string) {
     setSelectedTraineeId(traineeId);
@@ -278,6 +283,39 @@ export function FtoNewDorClient({ fto, trainees, phases, dorCategories, traineeP
             </div>
           </CardContent>
         </Card>
+
+        {/* DOR Acknowledgment Gate */}
+        {isBlocked && selectedTraineeId && (
+          <Card className="mt-4 border-red-300 bg-red-50">
+            <CardContent className="pt-6">
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="h-5 w-5 text-red-600 shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-medium text-red-800">
+                    Cannot Create New DOR
+                  </p>
+                  <p className="text-sm text-red-700 mt-1">
+                    This trainee has{" "}
+                    <strong>
+                      {unackCount} unacknowledged DOR{unackCount > 1 ? "s" : ""}
+                    </strong>{" "}
+                    that must be reviewed first. Please direct the trainee to log
+                    in and acknowledge their previous DOR{unackCount > 1 ? "s" : ""}{" "}
+                    before submitting a new one.
+                  </p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="mt-3 text-red-700 border-red-300 hover:bg-red-100"
+                    asChild
+                  >
+                    <Link href="/fieldtraining/dors">View DORs</Link>
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* DOR History */}
         {selectedTraineeId && (
@@ -502,7 +540,7 @@ export function FtoNewDorClient({ fto, trainees, phases, dorCategories, traineeP
           <Button
             type="button"
             variant="secondary"
-            disabled={submitting}
+            disabled={submitting || isBlocked}
             onClick={(e) => {
               const form = (e.target as HTMLElement).closest("form");
               if (form) {
@@ -516,7 +554,7 @@ export function FtoNewDorClient({ fto, trainees, phases, dorCategories, traineeP
           >
             {submitting ? "Saving..." : "Save Draft"}
           </Button>
-          <Button type="submit" disabled={submitting}>
+          <Button type="submit" disabled={submitting || isBlocked}>
             {submitting ? "Submitting..." : "Submit DOR"}
           </Button>
         </div>

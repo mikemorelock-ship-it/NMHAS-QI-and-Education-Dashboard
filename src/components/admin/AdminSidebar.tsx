@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -30,11 +30,13 @@ import {
   Target,
   ListChecks,
   Wand2,
+  Camera,
   ChevronDown,
   type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { CHANGELOG_STORAGE_KEY, getUnseenCount } from "@/lib/changelog";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -80,6 +82,7 @@ const navEntries: NavEntry[] = [
     ],
   },
   { href: "/admin/field-training", label: "Field Training", icon: GraduationCap, permission: "manage_ftos_trainees" },
+  { href: "/admin/field-training/snapshots", label: "Trainee Snapshots", icon: Camera, permission: "manage_ftos_trainees" },
   { href: "/admin/data-entry", label: "Data Entry", icon: PenLine, permission: "enter_metric_data" },
   { href: "/admin/upload", label: "Upload Data", icon: FileUp, permission: "upload_batch_data" },
   { href: "/admin/resources", label: "Resources", icon: Users, permission: "manage_departments" },
@@ -103,6 +106,13 @@ export function AdminSidebar({
   pendingApprovals = 0,
 }: AdminSidebarProps) {
   const pathname = usePathname();
+  const [newUpdates, setNewUpdates] = useState(0);
+
+  // Check for unseen changelog entries
+  useEffect(() => {
+    const lastSeen = localStorage.getItem(CHANGELOG_STORAGE_KEY);
+    setNewUpdates(getUnseenCount(lastSeen));
+  }, [pathname]); // Re-check on navigation (clears after visiting help)
 
   // Auto-expand groups that contain the active route
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(() => {
@@ -153,6 +163,11 @@ export function AdminSidebar({
         {item.href === "/admin/users" && pendingApprovals > 0 && (
           <Badge className="ml-auto bg-nmh-orange text-white text-xs px-1.5 py-0.5 min-w-[20px] text-center">
             {pendingApprovals}
+          </Badge>
+        )}
+        {item.href === "/admin/help" && newUpdates > 0 && (
+          <Badge className="ml-auto bg-nmh-teal text-white text-xs px-1.5 py-0.5 min-w-[20px] text-center">
+            {newUpdates}
           </Badge>
         )}
       </Link>

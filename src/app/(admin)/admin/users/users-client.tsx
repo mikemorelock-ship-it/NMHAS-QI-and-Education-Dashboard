@@ -7,6 +7,7 @@ import {
   createAdminUserAction,
   updateAdminUserAction,
   deleteAdminUserAction,
+  adminResetPassword,
 } from "@/actions/auth";
 import { ADMIN_ROLE_LABELS, ADMIN_ROLES, type AdminRole } from "@/lib/permissions";
 import { Button } from "@/components/ui/button";
@@ -45,6 +46,9 @@ import {
   UserX,
   UserCheck,
   Search,
+  KeyRound,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 
 interface UserRow {
@@ -74,6 +78,9 @@ export function UsersClient({ users, currentUserId }: UsersClientProps) {
   const [editTarget, setEditTarget] = useState<UserRow | null>(null);
   const [approveTarget, setApproveTarget] = useState<UserRow | null>(null);
   const [approveRole, setApproveRole] = useState<AdminRole>("data_entry");
+  const [passwordTarget, setPasswordTarget] = useState<UserRow | null>(null);
+  const [newPassword, setNewPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -151,6 +158,27 @@ export function UsersClient({ users, currentUserId }: UsersClientProps) {
       const result = await deleteAdminUserAction(userId);
       if (!result.success) {
         setError(result.error || "Failed to delete");
+      }
+    });
+  }
+
+  function openPasswordReset(user: UserRow) {
+    setPasswordTarget(user);
+    setNewPassword("");
+    setShowPassword(false);
+    setError(null);
+  }
+
+  function submitPasswordReset() {
+    if (!passwordTarget || !newPassword) return;
+    startTransition(async () => {
+      const result = await adminResetPassword(passwordTarget.id, newPassword);
+      if (result.success) {
+        setPasswordTarget(null);
+        setNewPassword("");
+        setError(null);
+      } else {
+        setError(result.error || "Failed to reset password");
       }
     });
   }
@@ -365,6 +393,15 @@ export function UsersClient({ users, currentUserId }: UsersClientProps) {
                             <Button
                               variant="ghost"
                               size="sm"
+                              title="Reset password"
+                              onClick={() => openPasswordReset(user)}
+                              disabled={isPending}
+                            >
+                              <KeyRound className="h-4 w-4 text-muted-foreground" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
                               title="Disable account"
                               onClick={() => handleToggleStatus(user)}
                               disabled={isPending}
@@ -394,6 +431,15 @@ export function UsersClient({ users, currentUserId }: UsersClientProps) {
                             >
                               <UserCheck className="h-3.5 w-3.5 mr-1" />
                               Re-enable
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              title="Reset password"
+                              onClick={() => openPasswordReset(user)}
+                              disabled={isPending}
+                            >
+                              <KeyRound className="h-4 w-4 text-muted-foreground" />
                             </Button>
                             <Button
                               variant="ghost"
@@ -456,6 +502,66 @@ export function UsersClient({ users, currentUserId }: UsersClientProps) {
               disabled={isPending}
             >
               {isPending ? "Approving..." : "Approve"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Reset Password Dialog */}
+      <Dialog open={passwordTarget !== null} onOpenChange={(open) => !open && setPasswordTarget(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <KeyRound className="h-5 w-5 text-nmh-teal" />
+              Reset Password
+            </DialogTitle>
+          </DialogHeader>
+          {passwordTarget && (
+            <div className="space-y-4 py-2">
+              <p className="text-sm text-muted-foreground">
+                Set a new password for <strong>{passwordTarget.firstName} {passwordTarget.lastName}</strong> ({passwordTarget.email}).
+                This will immediately log them out of all active sessions.
+              </p>
+              <div className="space-y-2">
+                <Label htmlFor="reset-password">New Password</Label>
+                <div className="relative">
+                  <Input
+                    id="reset-password"
+                    type={showPassword ? "text" : "password"}
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="At least 8 characters"
+                    minLength={8}
+                    className="pr-10"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
+                    onClick={() => setShowPassword(!showPassword)}
+                    tabIndex={-1}
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Must be at least 8 characters with uppercase, lowercase, and a number.
+                </p>
+              </div>
+              {error && <p className="text-sm text-destructive">{error}</p>}
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPasswordTarget(null)}>
+              Cancel
+            </Button>
+            <Button
+              className="bg-nmh-teal hover:bg-nmh-dark-teal"
+              onClick={submitPasswordReset}
+              disabled={isPending || newPassword.length < 8}
+            >
+              {isPending ? "Resetting..." : "Reset Password"}
             </Button>
           </DialogFooter>
         </DialogContent>

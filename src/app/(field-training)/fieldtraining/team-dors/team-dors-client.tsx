@@ -20,8 +20,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { ClipboardCheck, Search, MessageSquare } from "lucide-react";
-import { updateSupervisorNotes } from "@/actions/field-training";
+import { ClipboardCheck, Search, MessageSquare, Trash2, Send } from "lucide-react";
+import { addSupervisorNote, deleteSupervisorNote } from "@/actions/field-training";
+
+interface NoteEntry {
+  id: string;
+  text: string;
+  authorName: string;
+  authorId: string;
+  createdAt: string;
+}
 
 interface DorRow {
   id: string;
@@ -35,11 +43,12 @@ interface DorRow {
   traineeAcknowledged: boolean;
   recommendAction: string;
   supervisorNotes: string | null;
+  noteEntries: NoteEntry[];
 }
 
 interface TeamDorsClientProps {
   dors: DorRow[];
-  currentFtoId: string;
+  currentUserId: string;
 }
 
 const STATUS_COLORS: Record<string, string> = {
@@ -58,11 +67,23 @@ const RECOMMEND_LABELS: Record<string, string> = {
   terminate: "Terminate",
 };
 
-export function TeamDorsClient({ dors, currentFtoId }: TeamDorsClientProps) {
+function formatTimestamp(iso: string) {
+  const d = new Date(iso);
+  return d.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  }) + " at " + d.toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
+export function TeamDorsClient({ dors, currentUserId }: TeamDorsClientProps) {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [notesDialog, setNotesDialog] = useState<DorRow | null>(null);
-  const [notesText, setNotesText] = useState("");
+  const [newNoteText, setNewNoteText] = useState("");
   const [isPending, startTransition] = useTransition();
 
   const filtered = dors.filter((d) => {
@@ -77,13 +98,21 @@ export function TeamDorsClient({ dors, currentFtoId }: TeamDorsClientProps) {
 
   function openNotes(dor: DorRow) {
     setNotesDialog(dor);
-    setNotesText(dor.supervisorNotes || "");
+    setNewNoteText("");
   }
 
-  function saveNotes() {
-    if (!notesDialog) return;
+  function handleAddNote() {
+    if (!notesDialog || !newNoteText.trim()) return;
     startTransition(async () => {
-      await updateSupervisorNotes(notesDialog.id, notesText);
+      await addSupervisorNote(notesDialog.id, newNoteText.trim());
+      setNewNoteText("");
+      setNotesDialog(null);
+    });
+  }
+
+  function handleDeleteNote(noteId: string) {
+    startTransition(async () => {
+      await deleteSupervisorNote(noteId);
       setNotesDialog(null);
     });
   }
@@ -187,12 +216,15 @@ export function TeamDorsClient({ dors, currentFtoId }: TeamDorsClientProps) {
                           size="sm"
                           onClick={() => openNotes(dor)}
                           className={
-                            dor.supervisorNotes
+                            dor.noteEntries.length > 0
                               ? "text-nmh-teal"
                               : "text-muted-foreground"
                           }
                         >
                           <MessageSquare className="h-4 w-4" />
+                          {dor.noteEntries.length > 0 && (
+                            <span className="ml-1 text-xs">{dor.noteEntries.length}</span>
+                          )}
                         </Button>
                       </TableCell>
                     </TableRow>
@@ -209,34 +241,85 @@ export function TeamDorsClient({ dors, currentFtoId }: TeamDorsClientProps) {
         open={!!notesDialog}
         onOpenChange={(open) => !open && setNotesDialog(null)}
       >
-        <DialogContent>
+        <DialogContent className="max-w-lg max-h-[80vh] flex flex-col">
           <DialogHeader>
             <DialogTitle>Supervisor Notes</DialogTitle>
           </DialogHeader>
           {notesDialog && (
-            <div className="space-y-4">
+            <div className="flex flex-col gap-4 min-h-0">
               <div className="text-sm text-muted-foreground">
                 DOR for <strong>{notesDialog.traineeName}</strong> on{" "}
                 {new Date(notesDialog.date).toLocaleDateString()} by{" "}
                 {notesDialog.ftoName}
               </div>
-              <Textarea
-                placeholder="Add supervisor notes..."
-                value={notesText}
-                onChange={(e) => setNotesText(e.target.value)}
-                rows={5}
-              />
-              <div className="flex justify-end gap-2">
-                <Button
-                  variant="outline"
-                  onClick={() => setNotesDialog(null)}
-                  disabled={isPending}
-                >
-                  Cancel
-                </Button>
-                <Button onClick={saveNotes} disabled={isPending}>
-                  {isPending ? "Saving..." : "Save Notes"}
-                </Button>
+
+              {/* Notes thread */}
+              <div className="flex-1 overflow-y-auto min-h-0 space-y-3 max-h-[40vh]">
+                {notesDialog.noteEntries.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-6">
+                    No notes yet. Add the first note below.
+                  </p>
+                ) : (
+                  notesDialog.noteEntries.map((note) => (
+                    <div
+                      key={note.id}
+                      className="rounded-lg border p-3 space-y-1"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <span className="text-sm font-medium">
+                            {note.authorName}
+                          </span>
+                          <span className="text-xs text-muted-foreground ml-2">
+                            {formatTimestamp(note.createdAt)}
+                          </span>
+                        </div>
+                        {(note.authorId === currentUserId) && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                            onClick={() => handleDeleteNote(note.id)}
+                            disabled={isPending}
+                            title="Delete note"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        )}
+                      </div>
+                      <p className="text-sm whitespace-pre-wrap">{note.text}</p>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {/* Add new note */}
+              <div className="border-t pt-3 space-y-2">
+                <Textarea
+                  placeholder="Add a note..."
+                  value={newNoteText}
+                  onChange={(e) => setNewNoteText(e.target.value)}
+                  rows={3}
+                  className="text-sm"
+                />
+                <div className="flex justify-end gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setNotesDialog(null)}
+                    disabled={isPending}
+                  >
+                    Close
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={handleAddNote}
+                    disabled={isPending || !newNoteText.trim()}
+                  >
+                    <Send className="h-3 w-3 mr-1" />
+                    {isPending ? "Adding..." : "Add Note"}
+                  </Button>
+                </div>
               </div>
             </div>
           )}

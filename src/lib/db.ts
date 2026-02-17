@@ -1,4 +1,3 @@
-import { PrismaLibSql } from "@prisma/adapter-libsql";
 import { PrismaClient } from "@/generated/prisma/client";
 
 const globalForPrisma = globalThis as unknown as {
@@ -13,10 +12,24 @@ function createPrismaClient() {
         "Set it in your .env file (see .env.example)."
     );
   }
-  const adapter = new PrismaLibSql({
-    url: dbUrl,
-    authToken: process.env.TURSO_AUTH_TOKEN,
-  });
+
+  let adapter;
+
+  // Use Turso (libsql) for remote URLs, better-sqlite3 for local file: URLs
+  if (dbUrl.startsWith("libsql://") || dbUrl.startsWith("https://")) {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { PrismaLibSql } = require("@prisma/adapter-libsql");
+    adapter = new PrismaLibSql({
+      url: dbUrl,
+      authToken: process.env.TURSO_AUTH_TOKEN,
+    });
+  } else {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { PrismaBetterSqlite3 } = require("@prisma/adapter-better-sqlite3");
+    const filePath = dbUrl.startsWith("file:") ? dbUrl.slice(5) : dbUrl;
+    adapter = new PrismaBetterSqlite3({ url: `file:${filePath}` });
+  }
+
   return new PrismaClient({ adapter });
 }
 

@@ -328,6 +328,21 @@ export const HELP_FEATURES: HelpFeature[] = [
     ],
   },
   {
+    id: "admin-snapshots",
+    portals: ["admin"],
+    title: "Trainee Snapshots",
+    icon: "Camera",
+    description:
+      "Generate shareable, point-in-time progress reports for trainees. Snapshots capture DOR performance, phase progress, skill completion, coaching activity status, and strengths/weaknesses into a printable report accessible via a unique link — no login required.",
+    path: "/admin/field-training/snapshots",
+    tips: [
+      "Multi-select trainees to generate several snapshot reports at once.",
+      "Each snapshot gets a unique shareable link — send it to directors, medical directors, or educators.",
+      "Snapshots are frozen at creation time and won't change if the trainee's data updates later.",
+      "Deactivate a snapshot to revoke access to the shared link.",
+    ],
+  },
+  {
     id: "admin-data-entry",
     portals: ["admin"],
     title: "Data Entry",
@@ -503,6 +518,35 @@ export const HELP_FEATURES: HelpFeature[] = [
     ],
   },
   {
+    id: "trainee-coaching",
+    portals: ["fieldtraining"],
+    title: "Coaching Activities",
+    icon: "BookOpen",
+    description:
+      "When a DOR includes ratings of 3 or below in any evaluation category, the system automatically assigns targeted coaching activities to help you improve. Activities include readings, reflection prompts, and scenario-based exercises covering the specific areas where you need improvement.",
+    path: "/fieldtraining/coaching",
+    tips: [
+      "Activities are auto-assigned based on your DOR scores — check this page after receiving a new evaluation.",
+      "Complete reading activities by reviewing the material and clicking 'Mark Complete.'",
+      "Reflection activities ask you to write a thoughtful response — take your time.",
+      "Scenario and quiz activities are interactive modules that will be expanded over time.",
+      "Your coaching progress is tracked and included in your trainee snapshot reports.",
+    ],
+  },
+  {
+    id: "fto-dor-gate",
+    portals: ["fieldtraining"],
+    title: "DOR Acknowledgment Requirement",
+    icon: "ShieldAlert",
+    description:
+      "Trainees must acknowledge their previous DORs before a new DOR can be created for them. If you select a trainee who has unacknowledged DORs, you'll see a warning and the submit button will be disabled. Direct the trainee to review and acknowledge their pending DORs first.",
+    tips: [
+      "The acknowledgment gate ensures trainees review feedback before receiving new evaluations.",
+      "The warning shows exactly how many DORs are pending acknowledgment.",
+      "This requirement helps maintain the feedback loop that's critical to the training process.",
+    ],
+  },
+  {
     id: "trainee-phases",
     portals: ["fieldtraining"],
     title: "Phase Progress",
@@ -674,6 +718,27 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
       "A monthly summary view showing how multiple metrics are performing against their targets. Scorecards can be filtered by division, department, and year.",
     portals: ["public", "admin"],
     relatedTerms: ["Metric", "KPI"],
+  },
+  {
+    term: "Coaching Activity",
+    definition:
+      "An educational activity automatically assigned to trainees who receive poor DOR scores (3 or below) in specific evaluation categories. Types include readings, reflections, scenarios, and quizzes designed to reinforce learning in weak areas.",
+    portals: ["admin", "fieldtraining"],
+    relatedTerms: ["DOR", "Rating Scale", "Trainee Snapshot"],
+  },
+  {
+    term: "Trainee Snapshot",
+    definition:
+      "A point-in-time progress report generated for a trainee that captures DOR performance, phase progress, skill completion, coaching activity status, and strengths/weaknesses. Accessible via a shareable link without authentication.",
+    portals: ["admin", "fieldtraining"],
+    relatedTerms: ["DOR", "Training Phase", "Coaching Activity"],
+  },
+  {
+    term: "DOR Acknowledgment Gate",
+    definition:
+      "A system rule preventing FTOs from creating new DORs for a trainee who has unacknowledged submitted DORs. Ensures trainees review their feedback before receiving new evaluations, maintaining the training feedback loop.",
+    portals: ["fieldtraining"],
+    relatedTerms: ["DOR", "FTO", "FTEP"],
   },
   {
     term: "Skill Signoff",

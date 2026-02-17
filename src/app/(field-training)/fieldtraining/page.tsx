@@ -18,6 +18,7 @@ import {
   ArrowRight,
   Bell,
   UserPlus,
+  BookOpen,
 } from "lucide-react";
 import { RequestTraineeButton } from "@/components/field-training/RequestTraineeButton";
 import { PendingRequestsCard } from "@/components/field-training/PendingRequestsCard";
@@ -294,7 +295,7 @@ async function TraineeDashboard({ userId }: { userId: string }) {
   });
   if (!user) redirect("/login");
 
-  const [dorCount, pendingAckCount, phases, skillStats, totalSkills] = await Promise.all([
+  const [dorCount, pendingAckCount, phases, skillStats, totalSkills, coachingStats] = await Promise.all([
     prisma.dailyEvaluation.count({
       where: { traineeId: userId, status: "submitted" },
     }),
@@ -316,7 +317,17 @@ async function TraineeDashboard({ userId }: { userId: string }) {
     prisma.skill.count({
       where: { isActive: true },
     }),
+    prisma.traineeCoachingAssignment.groupBy({
+      by: ["status"],
+      where: { traineeId: userId },
+      _count: true,
+    }),
   ]);
+
+  const coachingCounts = Object.fromEntries(coachingStats.map((s) => [s.status, s._count]));
+  const coachingActive = (coachingCounts["assigned"] || 0) + (coachingCounts["in_progress"] || 0);
+  const coachingCompleted = coachingCounts["completed"] || 0;
+  const coachingTotal = coachingActive + coachingCompleted;
 
   const totalPhases = phases.length;
   const completedPhases = phases.filter((p) => p.status === "completed").length;
@@ -357,7 +368,7 @@ async function TraineeDashboard({ userId }: { userId: string }) {
       )}
 
       {/* Stats row */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
@@ -407,6 +418,31 @@ async function TraineeDashboard({ userId }: { userId: string }) {
             </div>
           </CardContent>
         </Card>
+        {coachingTotal > 0 && (
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-blue-100">
+                  <BookOpen className="h-5 w-5 text-blue-700" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm text-muted-foreground">Coaching</p>
+                  <p className="text-2xl font-bold">
+                    {coachingActive > 0 ? coachingActive : coachingCompleted}
+                    <span className="text-base font-normal text-muted-foreground ml-1">
+                      {coachingActive > 0 ? "to do" : "done"}
+                    </span>
+                  </p>
+                </div>
+                <Button asChild variant="ghost" size="icon">
+                  <Link href="/fieldtraining/coaching">
+                    <ArrowRight className="h-4 w-4" />
+                  </Link>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       {/* Phase Progress */}

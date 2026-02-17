@@ -658,3 +658,53 @@ export async function logoutOtherDevicesAction(): Promise<ActionResult> {
     return { success: false, error: "Failed to log out other devices" };
   }
 }
+
+// ---------------------------------------------------------------------------
+// Admin Password Reset (manage_users — admin only)
+// ---------------------------------------------------------------------------
+
+export async function adminResetPassword(
+  userId: string,
+  newPassword: string
+): Promise<ActionResult> {
+  const session = await verifySession();
+  if (!session || session.role !== "admin") {
+    return { success: false, error: "Not authorized." };
+  }
+
+  if (!newPassword || newPassword.length < 8) {
+    return { success: false, error: "Password must be at least 8 characters." };
+  }
+
+  const strength = validatePasswordStrength(newPassword);
+  if (!strength.valid) {
+    return { success: false, error: strength.errors.join(". ") };
+  }
+
+  try {
+    const passwordHash = await hashPassword(newPassword);
+    const user = await prisma.user.update({
+      where: { id: userId },
+      data: { passwordHash, sessionVersion: { increment: 1 } },
+      select: { firstName: true, lastName: true, email: true },
+    });
+
+    await prisma.auditLog.create({
+      data: {
+        action: "SECURITY",
+        entity: "User",
+        entityId: userId,
+        details: `Admin reset password for "${user.firstName} ${user.lastName}" (${user.email}). All active sessions invalidated.`,
+        actorId: session.userId,
+        actorType: "user",
+      },
+    });
+
+    revalidatePath("/admin/users");
+    return { success: true };
+  } catch (err) {
+    console.error("adminResetPassword error:", err);
+    const msg = err instanceof Error ? err.message : String(err);
+    return { success: false, error: `Failed to reset password: ${msg.slice(0, 200)}` };
+  }
+}

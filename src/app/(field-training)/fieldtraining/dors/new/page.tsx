@@ -44,6 +44,23 @@ export default async function FieldTrainingNewDorPage() {
     }
   }
 
+  // Check for unacknowledged DORs per trainee
+  const unackGroups = traineeIds.length > 0
+    ? await prisma.dailyEvaluation.groupBy({
+        by: ["traineeId"],
+        where: {
+          traineeId: { in: traineeIds },
+          status: "submitted",
+          traineeAcknowledged: false,
+        },
+        _count: true,
+      })
+    : [];
+  const unackDorMap: Record<string, number> = {};
+  for (const g of unackGroups) {
+    unackDorMap[g.traineeId] = g._count;
+  }
+
   const [phases, dorCategories] = await Promise.all([
     prisma.trainingPhase.findMany({
       where: { isActive: true },
@@ -64,6 +81,7 @@ export default async function FieldTrainingNewDorPage() {
       phases={phases}
       dorCategories={dorCategories}
       traineePhaseMap={traineePhaseMap}
+      unackDorMap={unackDorMap}
     />
   );
 }

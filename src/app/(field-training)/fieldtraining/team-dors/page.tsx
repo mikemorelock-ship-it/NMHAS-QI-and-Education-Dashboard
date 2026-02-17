@@ -20,6 +20,12 @@ export default async function FieldTrainingTeamDorsPage() {
       trainee: { select: { firstName: true, lastName: true, employeeId: true } },
       fto: { select: { firstName: true, lastName: true } },
       phase: { select: { name: true } },
+      supervisorNoteEntries: {
+        orderBy: { createdAt: "asc" },
+        include: {
+          author: { select: { firstName: true, lastName: true } },
+        },
+      },
     },
   });
 
@@ -37,8 +43,15 @@ export default async function FieldTrainingTeamDorsPage() {
         traineeAcknowledged: d.traineeAcknowledged,
         recommendAction: d.recommendAction,
         supervisorNotes: d.supervisorNotes,
+        noteEntries: d.supervisorNoteEntries.map((n) => ({
+          id: n.id,
+          text: n.text,
+          authorName: `${n.author.firstName} ${n.author.lastName}`,
+          authorId: n.authorId,
+          createdAt: n.createdAt.toISOString(),
+        })),
       }))}
-      currentFtoId={session.userId}
+      currentUserId={session.userId}
     />
   );
 }

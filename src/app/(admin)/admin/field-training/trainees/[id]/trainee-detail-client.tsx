@@ -42,9 +42,11 @@ import {
   ChevronDown,
   ChevronRight,
   KeyRound,
+  Trash2,
+  Send,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { updateTraineePhase, signoffSkill, removeSkillSignoff, updateTrainee, setTraineePin, updateSupervisorNotes } from "@/actions/field-training";
+import { updateTraineePhase, signoffSkill, removeSkillSignoff, updateTrainee, setTraineePin, addSupervisorNote, deleteSupervisorNote } from "@/actions/field-training";
 import { FTO_ROLE_LABELS, PHASE_SIGNOFF_ROLES } from "@/lib/constants";
 
 type Trainee = {
@@ -83,6 +85,14 @@ type Phase = {
   notes: string | null;
 };
 
+type NoteEntry = {
+  id: string;
+  text: string;
+  authorName: string;
+  authorId: string;
+  createdAt: string;
+};
+
 type Dor = {
   id: string;
   date: string;
@@ -100,6 +110,7 @@ type Dor = {
   supervisorNotes: string | null;
   status: string;
   ratings: { categoryName: string; rating: number; comments: string | null }[];
+  noteEntries: NoteEntry[];
 };
 
 type SkillStep = {
@@ -169,6 +180,7 @@ export function TraineeDetailClient({
   dors,
   skillCategories,
   ftos,
+  currentUserId,
 }: {
   trainee: Trainee;
   assignments: Assignment[];
@@ -176,6 +188,7 @@ export function TraineeDetailClient({
   dors: Dor[];
   skillCategories: SkillCat[];
   ftos: { id: string; firstName: string; lastName: string; role: string }[];
+  currentUserId: string;
 }) {
   const [expandedDor, setExpandedDor] = useState<string | null>(null);
   const [expandedSkill, setExpandedSkill] = useState<string | null>(null);
@@ -250,8 +263,22 @@ export function TraineeDetailClient({
     setPinConfirm("");
   }
 
-  async function handleSupervisorNotes(dorId: string, notes: string) {
-    await updateSupervisorNotes(dorId, notes);
+  const [noteText, setNoteText] = useState<Record<string, string>>({});
+  const [savingNote, setSavingNote] = useState(false);
+
+  async function handleAddNote(dorId: string) {
+    const text = noteText[dorId]?.trim();
+    if (!text) return;
+    setSavingNote(true);
+    await addSupervisorNote(dorId, text);
+    setNoteText((prev) => ({ ...prev, [dorId]: "" }));
+    setSavingNote(false);
+  }
+
+  async function handleDeleteNote(noteId: string) {
+    setSavingNote(true);
+    await deleteSupervisorNote(noteId);
+    setSavingNote(false);
   }
 
   async function handleStatusChange(newStatus: string) {
@@ -510,36 +537,83 @@ export function TraineeDetailClient({
                               ))}
                             </TableBody>
                           </Table>
-                          {/* Acknowledgment + Supervisor Notes */}
-                          <div className="grid grid-cols-2 gap-4 mt-3">
-                            <div className="p-3 rounded-lg border">
-                              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Acknowledgment</p>
-                              {dor.traineeAcknowledged ? (
-                                <div className="flex items-center gap-2">
-                                  <CheckCircle2 className="h-4 w-4 text-green-600" />
-                                  <span className="text-sm text-green-800">
-                                    Acknowledged{dor.acknowledgedAt ? ` on ${formatDate(dor.acknowledgedAt)}` : ""}
-                                  </span>
-                                </div>
-                              ) : (
-                                <span className="text-sm text-muted-foreground">
-                                  {dor.status === "draft" ? "Draft — not yet submitted" : "Pending"}
+                          {/* Acknowledgment */}
+                          <div className="p-3 rounded-lg border mt-3">
+                            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Acknowledgment</p>
+                            {dor.traineeAcknowledged ? (
+                              <div className="flex items-center gap-2">
+                                <CheckCircle2 className="h-4 w-4 text-green-600" />
+                                <span className="text-sm text-green-800">
+                                  Acknowledged{dor.acknowledgedAt ? ` on ${formatDate(dor.acknowledgedAt)}` : ""}
                                 </span>
+                              </div>
+                            ) : (
+                              <span className="text-sm text-muted-foreground">
+                                {dor.status === "draft" ? "Draft — not yet submitted" : "Pending"}
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Supervisor Notes — Timestamped Thread */}
+                          <div className="p-3 rounded-lg border mt-3">
+                            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
+                              Supervisor Notes
+                              {dor.noteEntries.length > 0 && (
+                                <span className="ml-1 text-nmh-teal">({dor.noteEntries.length})</span>
                               )}
-                            </div>
-                            <div className="p-3 rounded-lg border">
-                              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Supervisor Notes</p>
+                            </p>
+
+                            {/* Existing notes */}
+                            {dor.noteEntries.length > 0 && (
+                              <div className="space-y-2 mb-3 max-h-48 overflow-y-auto">
+                                {dor.noteEntries.map((note) => (
+                                  <div key={note.id} className="rounded border bg-muted/30 p-2 space-y-0.5">
+                                    <div className="flex items-start justify-between gap-2">
+                                      <div className="text-xs">
+                                        <span className="font-medium">{note.authorName}</span>
+                                        <span className="text-muted-foreground ml-1.5">
+                                          {new Date(note.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                                          {" at "}
+                                          {new Date(note.createdAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
+                                        </span>
+                                      </div>
+                                      {note.authorId === currentUserId && (
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          className="h-5 w-5 text-muted-foreground hover:text-destructive"
+                                          onClick={() => handleDeleteNote(note.id)}
+                                          disabled={savingNote}
+                                          title="Delete note"
+                                        >
+                                          <Trash2 className="h-3 w-3" />
+                                        </Button>
+                                      )}
+                                    </div>
+                                    <p className="text-sm whitespace-pre-wrap">{note.text}</p>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+
+                            {/* Add note input */}
+                            <div className="flex gap-2">
                               <Textarea
-                                defaultValue={dor.supervisorNotes ?? ""}
-                                placeholder="Private supervisor notes..."
+                                value={noteText[dor.id] ?? ""}
+                                onChange={(e) => setNoteText((prev) => ({ ...prev, [dor.id]: e.target.value }))}
+                                placeholder="Add a note..."
                                 rows={2}
-                                className="text-sm"
-                                onBlur={(e) => {
-                                  if (e.target.value !== (dor.supervisorNotes ?? "")) {
-                                    handleSupervisorNotes(dor.id, e.target.value);
-                                  }
-                                }}
+                                className="text-sm flex-1"
                               />
+                              <Button
+                                size="sm"
+                                className="self-end"
+                                onClick={() => handleAddNote(dor.id)}
+                                disabled={savingNote || !(noteText[dor.id]?.trim())}
+                              >
+                                <Send className="h-3 w-3 mr-1" />
+                                Add
+                              </Button>
                             </div>
                           </div>
                         </div>

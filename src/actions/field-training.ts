@@ -7,6 +7,9 @@ import { hashPassword } from "@/lib/auth";
 import { requirePermission, requireAuth } from "@/lib/require-auth";
 import { hasPermission } from "@/lib/permissions";
 import { z } from "zod";
+import { sendEmail, isEmailConfigured } from "@/lib/email";
+import { buildDorNotificationEmail } from "@/lib/email-templates";
+import { assignCoachingForDor } from "@/lib/coaching-engine";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -27,6 +30,82 @@ function formDataToObject(formData: FormData): Record<string, string> {
 
 function revalidateFieldTraining() {
   revalidatePath("/admin/field-training", "layout");
+}
+
+// ---------------------------------------------------------------------------
+// DOR Email Notification Helper
+// ---------------------------------------------------------------------------
+
+async function notifyDorSubmission(dorId: string): Promise<void> {
+  if (!isEmailConfigured()) return;
+
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+
+  // Fetch full DOR with trainee, FTO, ratings
+  const dor = await prisma.dailyEvaluation.findUnique({
+    where: { id: dorId },
+    include: {
+      trainee: { select: { firstName: true, lastName: true } },
+      fto: { select: { firstName: true, lastName: true } },
+      phase: { select: { name: true } },
+      ratings: {
+        include: { category: { select: { name: true, sortOrder: true } } },
+        orderBy: { category: { sortOrder: "asc" } },
+      },
+    },
+  });
+
+  if (!dor) return;
+
+  // Fetch all active supervisors and managers with email addresses
+  const recipients = await prisma.user.findMany({
+    where: {
+      role: { in: ["supervisor", "manager"] },
+      status: "active",
+      email: { not: "" },
+    },
+    select: { email: true },
+  });
+
+  if (recipients.length === 0) return;
+
+  const emailData = {
+    dorId: dor.id,
+    traineeName: `${dor.trainee.firstName} ${dor.trainee.lastName}`,
+    ftoName: `${dor.fto.firstName} ${dor.fto.lastName}`,
+    date: dor.date.toISOString(),
+    phaseName: dor.phase?.name ?? null,
+    overallRating: dor.overallRating,
+    narrative: dor.narrative,
+    recommendAction: dor.recommendAction,
+    nrtFlag: dor.nrtFlag,
+    remFlag: dor.remFlag,
+    mostSatisfactory: dor.mostSatisfactory,
+    leastSatisfactory: dor.leastSatisfactory,
+    ratings: dor.ratings.map((r) => ({
+      categoryName: r.category.name,
+      rating: r.rating,
+      comments: r.comments,
+    })),
+    portalUrl: siteUrl,
+  };
+
+  const { subject, html } = buildDorNotificationEmail(emailData);
+  const emails = recipients.map((r) => r.email);
+
+  await sendEmail({ to: emails, subject, html });
+
+  // Audit log the notification
+  await prisma.auditLog.create({
+    data: {
+      action: "NOTIFY",
+      entity: "DailyObservationReport",
+      entityId: dorId,
+      details: `DOR notification sent to ${emails.length} supervisor(s)/manager(s)`,
+      actorId: dor.ftoId,
+      actorType: "system",
+    },
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -1114,6 +1193,16 @@ export async function createDailyObservationReport(
         actorType: "user",
       },
     });
+
+    // Fire-and-forget: email notification + coaching assignment (only for submitted DORs)
+    if (status === "submitted") {
+      notifyDorSubmission(dor.id).catch((err) => {
+        console.error("[email] DOR notification failed (non-blocking):", err);
+      });
+      assignCoachingForDor(dor.id).catch((err) => {
+        console.error("[coaching] Auto-assignment failed (non-blocking):", err);
+      });
+    }
   } catch (err) {
     console.error("createDailyObservationReport error:", err);
     return { success: false, error: "Failed to create Daily Observation Report." };
@@ -1550,34 +1639,100 @@ export async function acknowledgeDor(dorId: string, traineeId: string): Promise<
 }
 
 // ---------------------------------------------------------------------------
-// Supervisor Notes Actions
+// Supervisor Notes Actions (timestamped, multi-author)
 // ---------------------------------------------------------------------------
 
-export async function updateSupervisorNotes(dorId: string, notes: string): Promise<ActionResult> {
+/** Add a new timestamped supervisor note to a DOR */
+export async function addSupervisorNote(
+  dorId: string,
+  text: string
+): Promise<ActionResult> {
   const session = await requirePermission("review_approve_dors");
+  if (!text.trim()) {
+    return { success: false, error: "Note text cannot be empty." };
+  }
   try {
+    await prisma.supervisorNote.create({
+      data: {
+        evaluationId: dorId,
+        authorId: session.userId,
+        text: text.trim(),
+      },
+    });
+
+    // Also update legacy supervisorNotes field for backward compat
     await prisma.dailyEvaluation.update({
       where: { id: dorId },
-      data: { supervisorNotes: notes || null },
+      data: {
+        supervisorNotes: text.trim(),
+        supervisorReviewedBy: `${session.firstName} ${session.lastName}`,
+      },
     });
 
     await prisma.auditLog.create({
       data: {
-        action: "UPDATE",
-        entity: "DailyObservationReport",
+        action: "CREATE",
+        entity: "SupervisorNote",
         entityId: dorId,
-        details: `Updated supervisor notes`,
+        details: `Supervisor note added by ${session.firstName} ${session.lastName}`,
         actorId: session.userId,
         actorType: "user",
       },
     });
   } catch (err) {
-    console.error("updateSupervisorNotes error:", err);
-    return { success: false, error: "Failed to update supervisor notes." };
+    console.error("addSupervisorNote error:", err);
+    const msg = err instanceof Error ? err.message : String(err);
+    return { success: false, error: `Failed to add supervisor note: ${msg.slice(0, 200)}` };
   }
 
   revalidateFieldTraining();
   return { success: true };
+}
+
+/** Delete a supervisor note (only author or admin/manager can delete) */
+export async function deleteSupervisorNote(noteId: string): Promise<ActionResult> {
+  const session = await requirePermission("review_approve_dors");
+  try {
+    const note = await prisma.supervisorNote.findUnique({
+      where: { id: noteId },
+    });
+    if (!note) {
+      return { success: false, error: "Note not found." };
+    }
+
+    // Only author or admin/manager can delete
+    const isAuthor = note.authorId === session.userId;
+    const isAdmin = ["admin", "manager"].includes(session.role);
+    if (!isAuthor && !isAdmin) {
+      return { success: false, error: "You can only delete your own notes." };
+    }
+
+    await prisma.supervisorNote.delete({
+      where: { id: noteId },
+    });
+
+    await prisma.auditLog.create({
+      data: {
+        action: "DELETE",
+        entity: "SupervisorNote",
+        entityId: noteId,
+        details: `Supervisor note deleted by ${session.firstName} ${session.lastName} from DOR ${note.evaluationId}`,
+        actorId: session.userId,
+        actorType: "user",
+      },
+    });
+  } catch (err) {
+    console.error("deleteSupervisorNote error:", err);
+    return { success: false, error: "Failed to delete supervisor note." };
+  }
+
+  revalidateFieldTraining();
+  return { success: true };
+}
+
+/** @deprecated Use addSupervisorNote instead */
+export async function updateSupervisorNotes(dorId: string, notes: string): Promise<ActionResult> {
+  return addSupervisorNote(dorId, notes);
 }
 
 export async function removeSkillSignoff(traineeId: string, skillId: string): Promise<ActionResult> {

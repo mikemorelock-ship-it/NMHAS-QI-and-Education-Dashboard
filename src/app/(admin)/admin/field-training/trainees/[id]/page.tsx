@@ -38,6 +38,12 @@ export default async function TraineeDetailPage({ params }: { params: Promise<{ 
             include: { category: { select: { name: true, sortOrder: true } } },
             orderBy: { category: { sortOrder: "asc" } },
           },
+          supervisorNoteEntries: {
+            orderBy: { createdAt: "asc" },
+            include: {
+              author: { select: { firstName: true, lastName: true } },
+            },
+          },
         },
       },
       traineeSkillSignoffs: {
@@ -142,6 +148,13 @@ export default async function TraineeDetailPage({ params }: { params: Promise<{ 
           rating: r.rating,
           comments: r.comments,
         })),
+        noteEntries: d.supervisorNoteEntries.map((n) => ({
+          id: n.id,
+          text: n.text,
+          authorName: `${n.author.firstName} ${n.author.lastName}`,
+          authorId: n.authorId,
+          createdAt: n.createdAt.toISOString(),
+        })),
       }))}
       skillCategories={skillCategories.map((sc) => ({
         id: sc.id,
@@ -162,6 +175,7 @@ export default async function TraineeDetailPage({ params }: { params: Promise<{ 
         })),
       }))}
       ftos={ftos}
+      currentUserId={session.userId}
     />
   );
 }

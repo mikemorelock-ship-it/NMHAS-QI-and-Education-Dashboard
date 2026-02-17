@@ -12,6 +12,8 @@ import {
   eachDayOfInterval,
   eachWeekOfInterval,
   eachMonthOfInterval,
+  eachQuarterOfInterval,
+  eachYearOfInterval,
   isToday,
 } from "date-fns";
 
@@ -19,7 +21,23 @@ import {
 // Types
 // ---------------------------------------------------------------------------
 
-type ZoomLevel = "day" | "week" | "month";
+type ZoomLevel = "day" | "week" | "month" | "year" | "3year";
+
+const ZOOM_LEVELS: { value: ZoomLevel; label: string }[] = [
+  { value: "day", label: "Day" },
+  { value: "week", label: "Week" },
+  { value: "month", label: "Month" },
+  { value: "year", label: "Year" },
+  { value: "3year", label: "3 Year" },
+];
+
+const COL_WIDTHS: Record<ZoomLevel, number> = {
+  day: 30,
+  week: 80,
+  month: 120,
+  year: 100,
+  "3year": 120,
+};
 
 export interface CampaignGanttItem {
   id: string;
@@ -43,7 +61,7 @@ interface Props {
 // ---------------------------------------------------------------------------
 
 export function CampaignGanttChart({ campaigns, linkPrefix }: Props) {
-  const [zoom, setZoom] = useState<ZoomLevel>("week");
+  const [zoom, setZoom] = useState<ZoomLevel>("month");
 
   // Calculate timeline bounds from all campaign dates + today
   const { timelineStart, timelineEnd, columns } = useMemo(() => {
@@ -65,9 +83,10 @@ export function CampaignGanttChart({ campaigns, linkPrefix }: Props) {
     const minDate = new Date(Math.min(...dates.map((d) => d.getTime())));
     const maxDate = new Date(Math.max(...dates.map((d) => d.getTime())));
 
-    // Add padding
-    const start = addDays(minDate, -7);
-    const end = addDays(maxDate, 14);
+    // Wider padding for broader zoom levels
+    const isWide = zoom === "year" || zoom === "3year";
+    const start = addDays(minDate, isWide ? -30 : -7);
+    const end = addDays(maxDate, isWide ? 60 : 14);
 
     let cols: { date: Date; label: string }[] = [];
 
@@ -81,10 +100,21 @@ export function CampaignGanttChart({ campaigns, linkPrefix }: Props) {
         date: d,
         label: format(d, "MMM d"),
       }));
-    } else {
+    } else if (zoom === "month") {
       cols = eachMonthOfInterval({ start, end }).map((d) => ({
         date: d,
         label: format(d, "MMM yyyy"),
+      }));
+    } else if (zoom === "year") {
+      cols = eachQuarterOfInterval({ start, end }).map((d) => ({
+        date: d,
+        label: format(d, "QQQ yyyy"),
+      }));
+    } else {
+      // 3year
+      cols = eachYearOfInterval({ start, end }).map((d) => ({
+        date: d,
+        label: format(d, "yyyy"),
       }));
     }
 
@@ -92,11 +122,14 @@ export function CampaignGanttChart({ campaigns, linkPrefix }: Props) {
   }, [campaigns, zoom]);
 
   const totalDays = differenceInDays(timelineEnd, timelineStart) || 1;
+  const colWidth = COL_WIDTHS[zoom];
 
   const getBarStyle = (start: string | null, end: string | null) => {
     if (!start) return null;
     const startDate = new Date(start);
-    const endDate = end ? new Date(end) : addDays(startDate, 14);
+    // Wider fallback for broad zoom levels so bars remain visible
+    const fallbackDays = zoom === "year" || zoom === "3year" ? 30 : 14;
+    const endDate = end ? new Date(end) : addDays(startDate, fallbackDays);
 
     const leftPct =
       (differenceInDays(startDate, timelineStart) / totalDays) * 100;
@@ -113,8 +146,6 @@ export function CampaignGanttChart({ campaigns, linkPrefix }: Props) {
   const todayPct =
     (differenceInDays(new Date(), timelineStart) / totalDays) * 100;
 
-  const colWidth = zoom === "day" ? 30 : zoom === "week" ? 80 : 120;
-
   if (campaigns.length === 0) {
     return (
       <div className="border rounded-lg py-8 text-center text-muted-foreground text-sm">
@@ -128,15 +159,15 @@ export function CampaignGanttChart({ campaigns, linkPrefix }: Props) {
       {/* Zoom Controls */}
       <div className="flex items-center gap-2">
         <span className="text-sm text-muted-foreground">Zoom:</span>
-        {(["day", "week", "month"] as ZoomLevel[]).map((level) => (
+        {ZOOM_LEVELS.map(({ value, label }) => (
           <Button
-            key={level}
-            variant={zoom === level ? "default" : "outline"}
+            key={value}
+            variant={zoom === value ? "default" : "outline"}
             size="sm"
-            onClick={() => setZoom(level)}
-            className="capitalize text-xs h-7"
+            onClick={() => setZoom(value)}
+            className="text-xs h-7"
           >
-            {level}
+            {label}
           </Button>
         ))}
       </div>

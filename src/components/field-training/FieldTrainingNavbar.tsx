@@ -9,6 +9,7 @@ import {
   HelpCircle,
   Users,
   ClipboardCheck,
+  BookOpen,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { NMH_COLORS } from "@/lib/constants";
@@ -80,6 +81,22 @@ export function FieldTrainingNavbar({ session, userName }: FieldTrainingNavbarPr
           >
             <ClipboardCheck className="size-4" />
             <span className="hidden sm:inline">My Skills</span>
+          </Link>
+        )}
+
+        {/* Trainee only: Coaching Activities */}
+        {isTrainee && (
+          <Link
+            href="/fieldtraining/coaching"
+            className={
+              "inline-flex items-center gap-1.5 min-h-9 px-3 rounded-lg text-sm font-medium transition-colors " +
+              (pathname.startsWith("/fieldtraining/coaching")
+                ? "text-white bg-white/20"
+                : "text-white/80 hover:text-white hover:bg-white/15")
+            }
+          >
+            <BookOpen className="size-4" />
+            <span className="hidden sm:inline">Coaching</span>
           </Link>
         )}
 

@@ -482,9 +482,19 @@ model User {
   assignmentRequestsFor   AssignmentRequest[] @relation("AssignmentRequestTrainee")
   reviewedAssignmentReqs  AssignmentRequest[] @relation("AssignmentRequestReviewer")
 
+  // Supervisor notes authored by this user
+  supervisorNotes       SupervisorNote[]     @relation("SupervisorNoteAuthor")
+
   // QI Campaign relations
   ownedCampaigns        Campaign[]           @relation("CampaignOwner")
   assignedActions       ActionItem[]         @relation("ActionItemAssignee")
+
+  // Coaching / remedial activity relations
+  coachingAssignments   TraineeCoachingAssignment[] @relation("TraineeCoachingAssignments")
+
+  // Trainee snapshot relations
+  traineeSnapshots      TraineeSnapshot[]    @relation("TraineeSnapshots")
+  createdSnapshots      TraineeSnapshot[]    @relation("SnapshotCreator")
 
   @@index([divisionId])
   @@index([status])
@@ -581,7 +591,8 @@ model EvaluationCategory {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  evaluationRatings EvaluationRating[]
+  evaluationRatings  EvaluationRating[]
+  coachingActivities CoachingActivity[]
 }
 
 model DailyEvaluation {
@@ -605,15 +616,32 @@ model DailyEvaluation {
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
 
-  trainee User           @relation("TraineeDailyEvals", fields: [traineeId], references: [id], onDelete: Cascade)
-  fto     User           @relation("FtoDailyEvals", fields: [ftoId], references: [id], onDelete: Cascade)
-  phase   TrainingPhase? @relation(fields: [phaseId], references: [id], onDelete: SetNull)
-  ratings EvaluationRating[]
+  trainee         User              @relation("TraineeDailyEvals", fields: [traineeId], references: [id], onDelete: Cascade)
+  fto             User              @relation("FtoDailyEvals", fields: [ftoId], references: [id], onDelete: Cascade)
+  phase           TrainingPhase?    @relation(fields: [phaseId], references: [id], onDelete: SetNull)
+  ratings                EvaluationRating[]
+  supervisorNoteEntries  SupervisorNote[] @relation("SupervisorNoteDOR")
+  coachingAssignments    TraineeCoachingAssignment[]
 
   @@index([traineeId, date])
   @@index([ftoId])
   @@index([phaseId])
   @@index([status])
+}
+
+model SupervisorNote {
+  id             String   @id @default(cuid())
+  evaluationId   String
+  authorId       String
+  text           String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  evaluation DailyEvaluation @relation("SupervisorNoteDOR", fields: [evaluationId], references: [id], onDelete: Cascade)
+  author     User            @relation("SupervisorNoteAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([evaluationId])
+  @@index([authorId])
 }
 
 model EvaluationRating {
@@ -732,4 +760,73 @@ model LoginAttempt {
 
   @@index([identifier, createdAt])
   @@index([success, createdAt])
+}
+
+// ---------------------------------------------------------------------------
+// Coaching Activities — remedial/educational content triggered by poor DOR scores
+// ---------------------------------------------------------------------------
+
+model CoachingActivity {
+  id            String   @id @default(cuid())
+  title         String
+  description   String?
+  categoryId    String                              // links to EvaluationCategory
+  type          String   @default("reading")        // "reading" | "quiz" | "scenario" | "reflection"
+  content       String?                             // markdown content or JSON for quizzes
+  difficulty    String   @default("basic")           // "basic" | "intermediate" | "advanced"
+  estimatedMins Int      @default(10)
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  category    EvaluationCategory          @relation(fields: [categoryId], references: [id])
+  assignments TraineeCoachingAssignment[]
+
+  @@index([categoryId])
+  @@index([type])
+}
+
+model TraineeCoachingAssignment {
+  id          String    @id @default(cuid())
+  traineeId   String
+  activityId  String
+  dorId       String?                               // the DOR that triggered this assignment
+  status      String    @default("assigned")         // "assigned" | "in_progress" | "completed"
+  progress    Int       @default(0)                  // 0-100 percentage
+  startedAt   DateTime?
+  completedAt DateTime?
+  score       Int?                                   // quiz/scenario score if applicable
+  response    String?                                // trainee response for reflections
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  trainee  User              @relation("TraineeCoachingAssignments", fields: [traineeId], references: [id], onDelete: Cascade)
+  activity CoachingActivity  @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  dor      DailyEvaluation?  @relation(fields: [dorId], references: [id], onDelete: SetNull)
+
+  @@unique([traineeId, activityId, dorId])
+  @@index([traineeId])
+  @@index([status])
+}
+
+// ---------------------------------------------------------------------------
+// Trainee Snapshots — shareable point-in-time progress reports
+// ---------------------------------------------------------------------------
+
+model TraineeSnapshot {
+  id           String    @id @default(cuid())
+  token        String    @unique @default(cuid())   // public access token
+  traineeId    String
+  createdById  String
+  title        String?
+  expiresAt    DateTime?                             // optional expiry
+  isActive     Boolean   @default(true)
+  snapshotData String                                // JSON blob of snapshot at creation time
+  createdAt    DateTime  @default(now())
+
+  trainee   User @relation("TraineeSnapshots", fields: [traineeId], references: [id], onDelete: Cascade)
+  createdBy User @relation("SnapshotCreator", fields: [createdById], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([traineeId])
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import {
   LayoutDashboard,
@@ -28,6 +28,7 @@ import {
   BookOpen,
   Lightbulb,
   ArrowRight,
+  Sparkles,
   type LucideIcon,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -49,6 +50,13 @@ import {
   getFeaturesForPortal,
   getGlossaryForPortal,
 } from "@/lib/help-registry";
+import {
+  CHANGELOG,
+  LATEST_CHANGELOG_DATE,
+  CHANGELOG_STORAGE_KEY,
+  CATEGORY_LABELS,
+  CATEGORY_COLORS,
+} from "@/lib/changelog";
 
 // ---------------------------------------------------------------------------
 // Icon resolver — maps string names from registry to lucide components
@@ -173,10 +181,22 @@ function GlossaryCard({ term }: { term: GlossaryTerm }) {
 export function HelpPageContent({ portal }: { portal: PortalId }) {
   const [featureSearch, setFeatureSearch] = useState("");
   const [glossarySearch, setGlossarySearch] = useState("");
+  const [lastSeenDate, setLastSeenDate] = useState<string | null>(null);
 
   const meta = PORTAL_META[portal];
   const allFeatures = useMemo(() => getFeaturesForPortal(portal), [portal]);
   const allGlossary = useMemo(() => getGlossaryForPortal(portal), [portal]);
+
+  // On mount: read last-seen date, then mark all updates as seen
+  useEffect(() => {
+    const stored = localStorage.getItem(CHANGELOG_STORAGE_KEY);
+    setLastSeenDate(stored);
+    // Mark as seen after a brief delay so "New" badges render first
+    const timer = setTimeout(() => {
+      localStorage.setItem(CHANGELOG_STORAGE_KEY, LATEST_CHANGELOG_DATE);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, []);
 
   const filteredFeatures = useMemo(() => {
     if (!featureSearch.trim()) return allFeatures;
@@ -207,6 +227,57 @@ export function HelpPageContent({ portal }: { portal: PortalId }) {
         <h1 className="text-2xl font-bold text-nmh-gray">{meta.title}</h1>
         <p className="text-muted-foreground mt-1">{meta.description}</p>
       </div>
+
+      {/* Recent Updates section */}
+      {CHANGELOG.length > 0 && (
+        <section className="space-y-4">
+          <div className="flex items-center gap-2">
+            <Sparkles className="size-5 text-nmh-teal" />
+            <h2 className="text-lg font-semibold">Recent Updates</h2>
+          </div>
+
+          <Card>
+            <CardContent className="pt-4 pb-2 divide-y">
+              {CHANGELOG.map((entry, i) => {
+                const isNew = !lastSeenDate || entry.date > lastSeenDate;
+                const catColor = CATEGORY_COLORS[entry.category];
+                return (
+                  <div key={i} className="py-3 first:pt-0 last:pb-0">
+                    <div className="flex items-center gap-2 flex-wrap mb-1">
+                      <Badge
+                        variant="outline"
+                        className="text-[10px] font-mono px-1.5 py-0"
+                      >
+                        {entry.date}
+                      </Badge>
+                      <Badge
+                        variant="secondary"
+                        className="text-[10px] px-1.5 py-0"
+                        style={{ backgroundColor: `${catColor}20`, color: catColor }}
+                      >
+                        {CATEGORY_LABELS[entry.category]}
+                      </Badge>
+                      {isNew && (
+                        <Badge className="bg-nmh-teal text-white text-[10px] px-1.5 py-0 animate-pulse">
+                          New
+                        </Badge>
+                      )}
+                    </div>
+                    <p className="text-sm font-semibold text-foreground">
+                      {entry.title}
+                    </p>
+                    <p className="text-sm text-muted-foreground leading-relaxed mt-0.5">
+                      {entry.description}
+                    </p>
+                  </div>
+                );
+              })}
+            </CardContent>
+          </Card>
+        </section>
+      )}
+
+      <Separator />
 
       {/* Features section */}
       <section className="space-y-4">
