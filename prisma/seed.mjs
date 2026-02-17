@@ -1,4 +1,4 @@
-// seed.mjs - ESM seed script for Prisma v7 with better-sqlite3 adapter
+// seed.mjs - ESM seed script for Prisma v7 with libsql adapter
 // Unified User model — all users share email+password auth (password: Admin123!)
 
 import { fileURLToPath } from "node:url";
@@ -7,22 +7,28 @@ import path from "node:path";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(__dirname, "..");
 
-const { PrismaBetterSqlite3 } = await import("@prisma/adapter-better-sqlite3");
+const { PrismaLibSql } = await import("@prisma/adapter-libsql");
 const { PrismaClient } = await import("../src/generated/prisma/client.ts");
 const bcrypt = await import("bcryptjs");
 
 import { readFileSync } from "node:fs";
 let dbUrl;
+let authToken;
 try {
   const envContent = readFileSync(path.join(projectRoot, ".env"), "utf-8");
-  const match = envContent.match(/^DATABASE_URL="?([^"\r\n]+)"?/m);
-  dbUrl = match ? match[1] : `file:${path.join(projectRoot, "dev.db")}`;
+  const urlMatch = envContent.match(/^DATABASE_URL="?([^"\r\n]+)"?/m);
+  dbUrl = urlMatch ? urlMatch[1] : `file:${path.join(projectRoot, "dev.db")}`;
+  const tokenMatch = envContent.match(/^TURSO_AUTH_TOKEN="?([^"\r\n]+)"?/m);
+  authToken = tokenMatch ? tokenMatch[1] : undefined;
 } catch {
   dbUrl = `file:${path.join(projectRoot, "dev.db")}`;
 }
+// Allow env vars to override .env file (for CI/scripts)
+dbUrl = process.env.DATABASE_URL || dbUrl;
+authToken = process.env.TURSO_AUTH_TOKEN || authToken;
 console.log("Using database:", dbUrl);
 
-const adapter = new PrismaBetterSqlite3({ url: dbUrl });
+const adapter = new PrismaLibSql({ url: dbUrl, authToken });
 const prisma = new PrismaClient({ adapter });
 
 // Generic password for all seed users (meets requirements: 8+ chars, upper, lower, number, special)
