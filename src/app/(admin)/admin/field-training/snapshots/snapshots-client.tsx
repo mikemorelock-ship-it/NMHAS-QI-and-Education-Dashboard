@@ -345,7 +345,7 @@ export function SnapshotsClient({ trainees, recentSnapshots }: SnapshotsClientPr
 
       {/* Results Dialog */}
       <Dialog open={resultsOpen} onOpenChange={setResultsOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <CheckCircle2 className="h-5 w-5 text-green-600" />
@@ -360,15 +360,18 @@ export function SnapshotsClient({ trainees, recentSnapshots }: SnapshotsClientPr
             {results?.map((r, i) => (
               <div
                 key={i}
-                className="flex items-center justify-between p-3 rounded-lg border"
+                className="flex items-center gap-3 p-3 rounded-lg border overflow-hidden"
               >
-                <div className="flex-1 min-w-0">
+                <div className="flex-1 min-w-0 overflow-hidden">
                   <p className="font-medium text-sm">{r.traineeName}</p>
-                  <p className="text-xs text-muted-foreground truncate">
-                    {siteUrl}/snapshot/{r.token}
-                  </p>
+                  <div className="flex items-center gap-1.5 mt-1 min-w-0">
+                    <Link2 className="h-3 w-3 text-muted-foreground shrink-0" />
+                    <p className="text-xs text-muted-foreground truncate">
+                      {siteUrl}/snapshot/{r.token}
+                    </p>
+                  </div>
                 </div>
-                <div className="flex items-center gap-1 shrink-0 ml-2">
+                <div className="flex items-center gap-1 shrink-0">
                   <Button
                     variant="outline"
                     size="sm"
