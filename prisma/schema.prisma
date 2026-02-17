@@ -1,0 +1,735 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+// "Organization" in the DB — hidden from UI, kept for FK constraints
+// In the UI: not shown (old top-level departments, deactivated)
+model Department {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  slug        String   @unique
+  type        String   // "quality" | "clinical" | "education" | "operations"
+  description String?
+  sortOrder   Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  divisions         Division[]
+  metricDefinitions MetricDefinition[]
+  metricEntries     MetricEntry[]
+}
+
+// Division — top-level organizational unit
+// In the UI: "Division" (Air Care Clinical, Ground Ambulance, etc.)
+model Division {
+  id           String   @id @default(cuid())
+  departmentId String
+  name         String
+  slug         String
+  sortOrder    Int      @default(0)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  department         Department          @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  metricEntries      MetricEntry[]
+  regions            Region[]
+  scorecardDivisions ScorecardDivision[]
+  metricAssociations MetricAssociation[]
+  users              User[]
+
+  @@unique([departmentId, slug])
+}
+
+// Region (DB table: "Individual") — granular unit under Division
+// In the UI: "Department" (AC 1, Brainerd, Quality, etc.)
+model Region {
+  id         String   @id @default(cuid())
+  divisionId String
+  name       String
+  role       String?
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  division           Division            @relation(fields: [divisionId], references: [id], onDelete: Cascade)
+  metricEntries      MetricEntry[]
+  scorecardRegions   ScorecardRegion[]
+  metricAssociations MetricAssociation[]
+
+  @@map("Individual")
+}
+
+model MetricDefinition {
+  id             String   @id @default(cuid())
+  departmentId   String
+  parentId       String?
+  name           String
+  slug           String
+  description    String?
+  dataDefinition String?
+  methodology    String?
+  unit           String
+  format         String?
+  chartType      String   @default("line")
+  periodType     String   @default("monthly")
+  categoryLegacy String?  @map("category") // old free-text, kept for migration
+  categoryId     String?                  // FK to managed Category
+  sortOrder      Int      @default(0)
+  isKpi          Boolean  @default(false)
+  target          Float?
+  aggregationType String   @default("average") // "sum" | "average" | "min" | "max" | "latest"
+  dataType        String   @default("continuous") // "proportion" | "rate" | "continuous"
+  spcSigmaLevel   Int      @default(3)            // 1, 2, or 3
+  baselineStart      DateTime?                       // frozen baseline start (null = auto)
+  baselineEnd        DateTime?                       // frozen baseline end (null = auto)
+  numeratorLabel     String?                         // custom label for numerator (e.g. "Compliant", "Events")
+  denominatorLabel   String?                         // custom label for denominator (e.g. "Total", "Exposure")
+  rateMultiplier     Int?                            // e.g. 1000, 10000 — display multiplier for rate unit
+  rateSuffix         String?                         // e.g. "per 1,000 transports"
+  isActive        Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  department         Department              @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  category           Category?               @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  parent             MetricDefinition?       @relation("MetricHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
+  children           MetricDefinition[]      @relation("MetricHierarchy")
+  metricEntries      MetricEntry[]
+  annotations        MetricAnnotation[]
+  resources          MetricResource[]
+  responsibleParties MetricResponsibleParty[]
+  scorecardMetrics   ScorecardMetric[]
+  metricAssociations MetricAssociation[]
+  driverDiagrams     DriverDiagram[]
+  pdsaCycles         PdsaCycle[]
+
+  @@unique([departmentId, slug])
+  @@index([parentId])
+  @@index([categoryId])
+}
+
+model MetricAnnotation {
+  id                 String   @id @default(cuid())
+  metricDefinitionId String
+  date               DateTime
+  title              String
+  description        String?
+  type               String   @default("intervention")
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  metricDefinition MetricDefinition @relation(fields: [metricDefinitionId], references: [id], onDelete: Cascade)
+
+  @@index([metricDefinitionId, date])
+}
+
+model MetricResource {
+  id                 String   @id @default(cuid())
+  metricDefinitionId String
+  title              String
+  url                String
+  type               String   @default("link")
+  sortOrder          Int      @default(0)
+  createdAt          DateTime @default(now())
+
+  metricDefinition MetricDefinition @relation(fields: [metricDefinitionId], references: [id], onDelete: Cascade)
+
+  @@index([metricDefinitionId])
+}
+
+model MetricResponsibleParty {
+  id                 String   @id @default(cuid())
+  metricDefinitionId String
+  name               String
+  role               String
+  email              String?
+  sortOrder          Int      @default(0)
+  createdAt          DateTime @default(now())
+
+  metricDefinition MetricDefinition @relation(fields: [metricDefinitionId], references: [id], onDelete: Cascade)
+
+  @@index([metricDefinitionId])
+}
+
+model MetricEntry {
+  id                 String   @id @default(cuid())
+  metricDefinitionId String
+  departmentId       String
+  divisionId         String?
+  regionId           String?  @map("individualId")
+  periodType         String   @default("monthly")
+  periodStart        DateTime
+  value              Float
+  numerator          Float?
+  denominator        Float?
+  notes              String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  metricDefinition MetricDefinition @relation(fields: [metricDefinitionId], references: [id], onDelete: Cascade)
+  department       Department       @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  division         Division?        @relation(fields: [divisionId], references: [id], onDelete: SetNull)
+  region           Region?          @relation(fields: [regionId], references: [id], onDelete: SetNull)
+
+  @@unique([metricDefinitionId, departmentId, divisionId, regionId, periodType, periodStart])
+  @@index([departmentId, periodStart])
+  @@index([metricDefinitionId, periodStart])
+  @@index([divisionId, periodStart])
+}
+
+model Scorecard {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  description String?
+  sortOrder   Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  scorecardDivisions ScorecardDivision[]
+  scorecardRegions   ScorecardRegion[]
+  scorecardMetrics   ScorecardMetric[]
+}
+
+model ScorecardDivision {
+  id          String   @id @default(cuid())
+  scorecardId String
+  divisionId  String
+  createdAt   DateTime @default(now())
+
+  scorecard Scorecard @relation(fields: [scorecardId], references: [id], onDelete: Cascade)
+  division  Division  @relation(fields: [divisionId], references: [id], onDelete: Cascade)
+
+  @@unique([scorecardId, divisionId])
+  @@index([scorecardId])
+  @@index([divisionId])
+}
+
+model ScorecardRegion {
+  id          String   @id @default(cuid())
+  scorecardId String
+  regionId    String
+  createdAt   DateTime @default(now())
+
+  scorecard Scorecard @relation(fields: [scorecardId], references: [id], onDelete: Cascade)
+  region    Region    @relation(fields: [regionId], references: [id], onDelete: Cascade)
+
+  @@unique([scorecardId, regionId])
+  @@index([scorecardId])
+  @@index([regionId])
+}
+
+model ScorecardMetric {
+  id                 String   @id @default(cuid())
+  scorecardId        String
+  metricDefinitionId String
+  sortOrder          Int      @default(0)
+  groupName          String?  // admin-defined section header (e.g., "Quality Metrics", "Volume")
+  createdAt          DateTime @default(now())
+
+  scorecard        Scorecard        @relation(fields: [scorecardId], references: [id], onDelete: Cascade)
+  metricDefinition MetricDefinition @relation(fields: [metricDefinitionId], references: [id], onDelete: Cascade)
+
+  @@unique([scorecardId, metricDefinitionId])
+  @@index([scorecardId])
+  @@index([metricDefinitionId])
+}
+
+// Category — managed lookup table for metric grouping
+model Category {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  slug        String   @unique
+  sortOrder   Int      @default(0)
+  color       String?  // optional hex color for UI grouping headers (e.g., "#00b0ad")
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  metricDefinitions MetricDefinition[]
+}
+
+// Many-to-many: which metrics are associated with which divisions and/or departments (UI term)
+// divisionId = Division (top-level: Air Care Clinical, etc.)
+// regionId = Region (DB) = "Department" in UI (AC 1, Brainerd, etc.)
+model MetricAssociation {
+  id                 String   @id @default(cuid())
+  metricDefinitionId String
+  divisionId         String?
+  regionId           String?
+  createdAt          DateTime @default(now())
+
+  metricDefinition MetricDefinition @relation(fields: [metricDefinitionId], references: [id], onDelete: Cascade)
+  division         Division?        @relation(fields: [divisionId], references: [id], onDelete: Cascade)
+  region           Region?          @relation(fields: [regionId], references: [id], onDelete: Cascade)
+
+  @@unique([metricDefinitionId, divisionId, regionId])
+  @@index([metricDefinitionId])
+  @@index([divisionId])
+  @@index([regionId])
+}
+
+// ---------------------------------------------------------------------------
+// QI Campaigns — top-level improvement initiatives grouping diagrams & cycles
+// ---------------------------------------------------------------------------
+
+model Campaign {
+  id          String    @id @default(cuid())
+  name        String
+  slug        String    @unique
+  description String?
+  goals       String?
+  status      String    @default("planning") // "planning" | "active" | "completed" | "archived"
+  ownerId     String?
+  startDate   DateTime?
+  endDate     DateTime?
+  sortOrder   Int       @default(0)
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  owner          User?           @relation("CampaignOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  driverDiagrams DriverDiagram[]
+  actionItems    ActionItem[]
+
+  @@index([ownerId])
+  @@index([status])
+}
+
+// ---------------------------------------------------------------------------
+// Action Items — corrective actions tracker tied to campaigns & cycles
+// ---------------------------------------------------------------------------
+
+model ActionItem {
+  id          String    @id @default(cuid())
+  title       String
+  description String?
+  status      String    @default("open") // "open" | "in_progress" | "completed" | "overdue"
+  priority    String    @default("medium") // "low" | "medium" | "high" | "critical"
+  dueDate     DateTime?
+  completedAt DateTime?
+
+  campaignId  String?
+  pdsaCycleId String?
+  assigneeId  String?
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  campaign  Campaign?  @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+  pdsaCycle PdsaCycle? @relation(fields: [pdsaCycleId], references: [id], onDelete: SetNull)
+  assignee  User?      @relation("ActionItemAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+
+  @@index([campaignId])
+  @@index([pdsaCycleId])
+  @@index([assigneeId])
+  @@index([status])
+}
+
+// ---------------------------------------------------------------------------
+// Driver Diagrams — quality improvement visual tool
+// ---------------------------------------------------------------------------
+
+model DriverDiagram {
+  id                 String   @id @default(cuid())
+  name               String
+  slug               String   @unique
+  description        String?
+  metricDefinitionId String?
+  campaignId         String?
+  status             String   @default("draft") // "draft" | "active" | "archived"
+  isActive           Boolean  @default(true)
+  sortOrder          Int      @default(0)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  metricDefinition MetricDefinition? @relation(fields: [metricDefinitionId], references: [id], onDelete: SetNull)
+  campaign         Campaign?         @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+  nodes            DriverNode[]
+  pdsaCycles       PdsaCycle[]
+
+  @@index([metricDefinitionId])
+  @@index([campaignId])
+}
+
+model DriverNode {
+  id              String   @id @default(cuid())
+  driverDiagramId String
+  parentId        String?
+  type            String   // "aim" | "primary" | "secondary" | "changeIdea"
+  text            String
+  description     String?
+  sortOrder       Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  driverDiagram DriverDiagram @relation(fields: [driverDiagramId], references: [id], onDelete: Cascade)
+  parent        DriverNode?   @relation("DriverNodeHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
+  children      DriverNode[]  @relation("DriverNodeHierarchy")
+  pdsaCycles    PdsaCycle[]
+
+  @@index([driverDiagramId])
+  @@index([parentId])
+}
+
+// ---------------------------------------------------------------------------
+// PDSA Cycles — Plan-Do-Study-Act iterative improvement tests
+// ---------------------------------------------------------------------------
+
+model PdsaCycle {
+  id                 String   @id @default(cuid())
+  title              String
+  cycleNumber        Int      @default(1)
+  status             String   @default("planning") // "planning" | "doing" | "studying" | "acting" | "completed" | "abandoned"
+  outcome            String?  // "adopt" | "adapt" | "abandon"
+
+  // Relationships
+  driverDiagramId    String?
+  metricDefinitionId String?
+  changeIdeaNodeId   String?
+
+  // Plan phase
+  planDescription    String?
+  planPrediction     String?
+  planDataCollection String?
+  planStartDate      DateTime?
+
+  // Do phase
+  doObservations     String?
+  doStartDate        DateTime?
+  doEndDate          DateTime?
+
+  // Study phase
+  studyResults       String?
+  studyLearnings     String?
+  studyDate          DateTime?
+
+  // Act phase
+  actDecision        String?
+  actNextSteps       String?
+  actDate            DateTime?
+
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  driverDiagram    DriverDiagram?    @relation(fields: [driverDiagramId], references: [id], onDelete: SetNull)
+  metricDefinition MetricDefinition? @relation(fields: [metricDefinitionId], references: [id], onDelete: SetNull)
+  changeIdeaNode   DriverNode?       @relation(fields: [changeIdeaNodeId], references: [id], onDelete: SetNull)
+  actionItems      ActionItem[]
+
+  @@index([driverDiagramId])
+  @@index([metricDefinitionId])
+  @@index([changeIdeaNodeId])
+  @@index([status])
+}
+
+// ---------------------------------------------------------------------------
+// Unified User model — replaces AdminUser, Fto, and Trainee
+// ---------------------------------------------------------------------------
+
+model User {
+  id             String    @id @default(cuid())
+  email          String    @unique
+  passwordHash   String
+  firstName      String
+  lastName       String
+  role           String    @default("data_entry") // "admin" | "manager" | "data_entry" | "supervisor" | "fto" | "trainee"
+  status         String    @default("pending")    // "pending" | "active" | "disabled"
+  sessionVersion Int       @default(0)            // incremented on password change / disable to invalidate sessions
+  isActive       Boolean   @default(true)
+  lastLoginAt    DateTime?                        // timestamp of most recent login
+  lastLoginIp    String?                          // IP address of most recent login
+
+  // Optional fields for FTO/trainee users
+  employeeId     String?   @unique               // e.g., "FTO-1001", "TR-2001"
+  badgeNumber    String?
+  divisionId     String?
+
+  // Trainee-specific fields (nullable for non-trainees)
+  hireDate       DateTime?
+  startDate      DateTime?
+  completionDate DateTime?
+  traineeStatus  String?                          // "active" | "completed" | "separated" | "remediation"
+  notes          String?
+
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  division              Division?            @relation(fields: [divisionId], references: [id], onDelete: SetNull)
+
+  // FTO-side relations (when this user acts as FTO/supervisor)
+  ftoAssignments        TrainingAssignment[] @relation("FtoAssignments")
+  ftoDailyEvals         DailyEvaluation[]    @relation("FtoDailyEvals")
+  ftoSkillSignoffs      SkillSignoff[]       @relation("FtoSkillSignoffs")
+  ftoPhaseSignoffs      TraineePhase[]       @relation("FtoPhaseSignoffs")
+
+  // Trainee-side relations (when this user is a trainee)
+  traineeAssignments    TrainingAssignment[] @relation("TraineeAssignments")
+  traineeDailyEvals     DailyEvaluation[]    @relation("TraineeDailyEvals")
+  traineeSkillSignoffs  SkillSignoff[]       @relation("TraineeSkillSignoffs")
+  traineePhases         TraineePhase[]       @relation("TraineePhases")
+
+  // Assignment request relations
+  requestedAssignments    AssignmentRequest[] @relation("AssignmentRequester")
+  assignmentRequestsFor   AssignmentRequest[] @relation("AssignmentRequestTrainee")
+  reviewedAssignmentReqs  AssignmentRequest[] @relation("AssignmentRequestReviewer")
+
+  // QI Campaign relations
+  ownedCampaigns        Campaign[]           @relation("CampaignOwner")
+  assignedActions       ActionItem[]         @relation("ActionItemAssignee")
+
+  @@index([divisionId])
+  @@index([status])
+  @@index([role])
+}
+
+// ---------------------------------------------------------------------------
+// Field Training — FTO program tracking & skills checklists
+// ---------------------------------------------------------------------------
+
+model TrainingAssignment {
+  id        String    @id @default(cuid())
+  traineeId String
+  ftoId     String
+  startDate DateTime
+  endDate   DateTime?
+  status    String    @default("active") // "active" | "completed" | "reassigned"
+  notes     String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  trainee User @relation("TraineeAssignments", fields: [traineeId], references: [id], onDelete: Cascade)
+  fto     User @relation("FtoAssignments", fields: [ftoId], references: [id], onDelete: Cascade)
+
+  @@unique([traineeId, ftoId, startDate])
+  @@index([traineeId])
+  @@index([ftoId])
+}
+
+model AssignmentRequest {
+  id          String    @id @default(cuid())
+  requesterId String                          // User who submitted the request (FTO)
+  traineeId   String                          // Trainee being requested
+  reason      String?                         // Optional reason / notes
+  status      String    @default("pending")   // "pending" | "approved" | "denied"
+  reviewedById String?                        // Supervisor/manager who reviewed
+  reviewedAt  DateTime?
+  reviewNotes String?                         // Optional notes from reviewer
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  requester  User  @relation("AssignmentRequester", fields: [requesterId], references: [id], onDelete: Cascade)
+  trainee    User  @relation("AssignmentRequestTrainee", fields: [traineeId], references: [id], onDelete: Cascade)
+  reviewedBy User? @relation("AssignmentRequestReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+
+  @@index([requesterId])
+  @@index([traineeId])
+  @@index([status])
+}
+
+model TrainingPhase {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  description String?
+  sortOrder   Int      @default(0)
+  minDays     Int?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  traineePhases    TraineePhase[]
+  dailyEvaluations DailyEvaluation[]
+}
+
+model TraineePhase {
+  id           String    @id @default(cuid())
+  traineeId    String
+  phaseId      String
+  ftoSignoffId String?
+  startDate    DateTime?
+  endDate      DateTime?
+  status       String    @default("not_started") // "not_started" | "in_progress" | "completed"
+  notes        String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  trainee    User          @relation("TraineePhases", fields: [traineeId], references: [id], onDelete: Cascade)
+  phase      TrainingPhase @relation(fields: [phaseId], references: [id], onDelete: Cascade)
+  ftoSignoff User?         @relation("FtoPhaseSignoffs", fields: [ftoSignoffId], references: [id], onDelete: SetNull)
+
+  @@unique([traineeId, phaseId])
+  @@index([traineeId])
+  @@index([phaseId])
+}
+
+model EvaluationCategory {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  description String?
+  sortOrder   Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  evaluationRatings EvaluationRating[]
+}
+
+model DailyEvaluation {
+  id                   String   @id @default(cuid())
+  traineeId            String
+  ftoId                String
+  phaseId              String?
+  date                 DateTime
+  overallRating        Int      // 1-7 (1=Not Acceptable, 4=Acceptable, 7=Superior)
+  narrative            String?
+  mostSatisfactory     String?  // FTEP: best performance area this shift
+  leastSatisfactory    String?  // FTEP: area needing most improvement
+  recommendAction      String   @default("continue") // "continue" | "advance" | "extend" | "remediate" | "nrt" | "release" | "terminate"
+  nrtFlag              Boolean  @default(false) // Not Responding to Training
+  remFlag              Boolean  @default(false) // Remedial Training assigned
+  traineeAcknowledged  Boolean  @default(false) // Trainee has reviewed & signed
+  acknowledgedAt       DateTime?               // When trainee acknowledged
+  supervisorReviewedBy String?  // Supervisor who reviewed this DOR
+  supervisorNotes      String?  // Private notes (visible to supervisors/admins only)
+  status               String   @default("submitted") // "draft" | "submitted"
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  trainee User           @relation("TraineeDailyEvals", fields: [traineeId], references: [id], onDelete: Cascade)
+  fto     User           @relation("FtoDailyEvals", fields: [ftoId], references: [id], onDelete: Cascade)
+  phase   TrainingPhase? @relation(fields: [phaseId], references: [id], onDelete: SetNull)
+  ratings EvaluationRating[]
+
+  @@index([traineeId, date])
+  @@index([ftoId])
+  @@index([phaseId])
+  @@index([status])
+}
+
+model EvaluationRating {
+  id           String   @id @default(cuid())
+  evaluationId String
+  categoryId   String
+  rating       Int      // 1-7 (1=Not Acceptable, 4=Acceptable, 7=Superior)
+  comments     String?
+  createdAt    DateTime @default(now())
+
+  evaluation DailyEvaluation    @relation(fields: [evaluationId], references: [id], onDelete: Cascade)
+  category   EvaluationCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@unique([evaluationId, categoryId])
+  @@index([evaluationId])
+  @@index([categoryId])
+}
+
+model SkillCategory {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  description String?
+  sortOrder   Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  skills Skill[]
+}
+
+model Skill {
+  id          String   @id @default(cuid())
+  categoryId  String
+  name        String
+  slug        String
+  description String?
+  isCritical  Boolean  @default(false)
+  sortOrder   Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  category      SkillCategory  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  skillSignoffs SkillSignoff[]
+  steps         SkillStep[]
+
+  @@unique([categoryId, slug])
+  @@index([categoryId])
+}
+
+model SkillStep {
+  id          String   @id @default(cuid())
+  skillId     String
+  stepNumber  Int
+  description String
+  isRequired  Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  skill Skill @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@unique([skillId, stepNumber])
+  @@index([skillId])
+}
+
+model SkillSignoff {
+  id        String   @id @default(cuid())
+  traineeId String
+  skillId   String
+  ftoId     String
+  date      DateTime
+  notes     String?
+  createdAt DateTime @default(now())
+
+  trainee User  @relation("TraineeSkillSignoffs", fields: [traineeId], references: [id], onDelete: Cascade)
+  skill   Skill @relation(fields: [skillId], references: [id], onDelete: Cascade)
+  fto     User  @relation("FtoSkillSignoffs", fields: [ftoId], references: [id], onDelete: Cascade)
+
+  @@unique([traineeId, skillId])
+  @@index([traineeId])
+  @@index([skillId])
+  @@index([ftoId])
+}
+
+// AdminUser model removed — replaced by unified User model above
+
+// ---------------------------------------------------------------------------
+// Audit Log
+// ---------------------------------------------------------------------------
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  action    String
+  entity    String
+  entityId  String
+  details   String?
+  actorId   String?  // User.id
+  actorType String?  // "user" | "system"
+  createdAt DateTime @default(now())
+}
+
+// ---------------------------------------------------------------------------
+// Login Attempts — security audit trail for authentication events
+// ---------------------------------------------------------------------------
+
+model LoginAttempt {
+  id         String   @id @default(cuid())
+  identifier String   // email used in the attempt
+  success    Boolean
+  reason     String?  // null on success; "invalid_credentials" | "account_disabled" | "account_pending" | "rate_limited"
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  @@index([identifier, createdAt])
+  @@index([success, createdAt])
+}
