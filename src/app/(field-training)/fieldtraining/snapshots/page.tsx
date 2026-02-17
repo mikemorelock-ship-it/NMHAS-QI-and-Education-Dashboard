@@ -12,7 +12,7 @@ export default async function FieldTrainingSnapshotsPage() {
     notFound();
   }
 
-  // Fetch all active trainees
+  // Fetch all active trainees with enriched data
   const trainees = await prisma.user.findMany({
     where: { role: "trainee", status: "active" },
     select: {
@@ -21,8 +21,31 @@ export default async function FieldTrainingSnapshotsPage() {
       lastName: true,
       employeeId: true,
       division: { select: { name: true } },
+      traineePhases: {
+        where: { status: "in_progress" },
+        select: { phase: { select: { name: true } } },
+        take: 1,
+      },
+      traineeDailyEvals: {
+        where: { status: "submitted" },
+        select: { overallRating: true },
+      },
     },
     orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
+  });
+
+  // Get all active phases for the filter dropdown
+  const phases = await prisma.trainingPhase.findMany({
+    where: { isActive: true },
+    orderBy: { sortOrder: "asc" },
+    select: { id: true, name: true },
+  });
+
+  // Get all divisions for the filter dropdown
+  const divisions = await prisma.division.findMany({
+    where: { isActive: true },
+    orderBy: { name: "asc" },
+    select: { id: true, name: true },
   });
 
   // Fetch recent snapshots created by this user
@@ -44,12 +67,29 @@ export default async function FieldTrainingSnapshotsPage() {
 
   return (
     <SnapshotsClient
-      trainees={trainees.map((t) => ({
-        id: t.id,
-        name: `${t.firstName} ${t.lastName}`,
-        employeeId: t.employeeId,
-        division: t.division?.name ?? null,
-      }))}
+      trainees={trainees.map((t) => {
+        const evals = t.traineeDailyEvals;
+        const avgRating =
+          evals.length > 0
+            ? Number(
+                (
+                  evals.reduce((sum, e) => sum + e.overallRating, 0) /
+                  evals.length
+                ).toFixed(1)
+              )
+            : null;
+        return {
+          id: t.id,
+          name: `${t.firstName} ${t.lastName}`,
+          employeeId: t.employeeId,
+          division: t.division?.name ?? null,
+          currentPhase: t.traineePhases[0]?.phase.name ?? null,
+          dorCount: evals.length,
+          avgRating,
+        };
+      })}
+      phases={phases.map((p) => p.name)}
+      divisions={divisions.map((d) => d.name)}
       recentSnapshots={recentSnapshots.map((s) => ({
         id: s.id,
         token: s.token,

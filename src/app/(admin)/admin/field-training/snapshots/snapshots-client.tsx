@@ -7,6 +7,13 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Table,
   TableBody,
   TableCell,
@@ -28,6 +35,9 @@ import {
   Ban,
   CheckCircle2,
   Link2,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
 } from "lucide-react";
 import {
   createTraineeSnapshot,
@@ -44,6 +54,9 @@ interface TraineeOption {
   name: string;
   employeeId: string | null;
   division: string | null;
+  currentPhase: string | null;
+  dorCount: number;
+  avgRating: number | null;
 }
 
 interface SnapshotRecord {
@@ -56,18 +69,44 @@ interface SnapshotRecord {
   traineeEmployeeId: string | null;
 }
 
+type SortField = "name" | "division" | "phase" | "dorCount" | "avgRating";
+type SortDir = "asc" | "desc";
+
 interface SnapshotsClientProps {
   trainees: TraineeOption[];
+  phases: string[];
+  divisions: string[];
   recentSnapshots: SnapshotRecord[];
+}
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function ratingColor(rating: number | null): string {
+  if (rating === null) return "text-muted-foreground";
+  if (rating < 3) return "text-red-600 font-semibold";
+  if (rating < 4) return "text-orange-500 font-semibold";
+  if (rating >= 5) return "text-green-600 font-semibold";
+  return "text-muted-foreground";
 }
 
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 
-export function SnapshotsClient({ trainees, recentSnapshots }: SnapshotsClientProps) {
+export function SnapshotsClient({
+  trainees,
+  phases,
+  divisions,
+  recentSnapshots,
+}: SnapshotsClientProps) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState("");
+  const [phaseFilter, setPhaseFilter] = useState<string>("all");
+  const [divisionFilter, setDivisionFilter] = useState<string>("all");
+  const [sortField, setSortField] = useState<SortField>("name");
+  const [sortDir, setSortDir] = useState<SortDir>("asc");
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [results, setResults] = useState<
@@ -78,16 +117,83 @@ export function SnapshotsClient({ trainees, recentSnapshots }: SnapshotsClientPr
   const siteUrl =
     typeof window !== "undefined" ? window.location.origin : "";
 
+  // Filter + sort trainees
   const filteredTrainees = useMemo(() => {
+    let list = trainees;
+
+    // Text search
     const q = searchQuery.toLowerCase().trim();
-    if (!q) return trainees;
-    return trainees.filter(
-      (t) =>
-        t.name.toLowerCase().includes(q) ||
-        (t.employeeId && t.employeeId.toLowerCase().includes(q)) ||
-        (t.division && t.division.toLowerCase().includes(q))
+    if (q) {
+      list = list.filter(
+        (t) =>
+          t.name.toLowerCase().includes(q) ||
+          (t.employeeId && t.employeeId.toLowerCase().includes(q)) ||
+          (t.division && t.division.toLowerCase().includes(q))
+      );
+    }
+
+    // Phase filter
+    if (phaseFilter !== "all") {
+      if (phaseFilter === "none") {
+        list = list.filter((t) => !t.currentPhase);
+      } else {
+        list = list.filter((t) => t.currentPhase === phaseFilter);
+      }
+    }
+
+    // Division filter
+    if (divisionFilter !== "all") {
+      if (divisionFilter === "none") {
+        list = list.filter((t) => !t.division);
+      } else {
+        list = list.filter((t) => t.division === divisionFilter);
+      }
+    }
+
+    // Sort
+    const sorted = [...list].sort((a, b) => {
+      let cmp = 0;
+      switch (sortField) {
+        case "name":
+          cmp = a.name.localeCompare(b.name);
+          break;
+        case "division":
+          cmp = (a.division ?? "").localeCompare(b.division ?? "");
+          break;
+        case "phase":
+          cmp = (a.currentPhase ?? "").localeCompare(b.currentPhase ?? "");
+          break;
+        case "dorCount":
+          cmp = a.dorCount - b.dorCount;
+          break;
+        case "avgRating":
+          cmp = (a.avgRating ?? 0) - (b.avgRating ?? 0);
+          break;
+      }
+      return sortDir === "asc" ? cmp : -cmp;
+    });
+
+    return sorted;
+  }, [trainees, searchQuery, phaseFilter, divisionFilter, sortField, sortDir]);
+
+  function handleSort(field: SortField) {
+    if (sortField === field) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortField(field);
+      setSortDir("asc");
+    }
+  }
+
+  function SortIcon({ field }: { field: SortField }) {
+    if (sortField !== field)
+      return <ArrowUpDown className="h-3 w-3 ml-1 opacity-40" />;
+    return sortDir === "asc" ? (
+      <ArrowUp className="h-3 w-3 ml-1" />
+    ) : (
+      <ArrowDown className="h-3 w-3 ml-1" />
     );
-  }, [trainees, searchQuery]);
+  }
 
   function toggleSelect(id: string) {
     setSelected((prev) => {
@@ -154,6 +260,9 @@ export function SnapshotsClient({ trainees, recentSnapshots }: SnapshotsClientPr
     navigator.clipboard.writeText(`${siteUrl}/snapshot/${token}`);
   }
 
+  const activeFilters =
+    (phaseFilter !== "all" ? 1 : 0) + (divisionFilter !== "all" ? 1 : 0);
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -188,16 +297,77 @@ export function SnapshotsClient({ trainees, recentSnapshots }: SnapshotsClientPr
       {/* Trainee Selection */}
       <Card>
         <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-base">Select Trainees</CardTitle>
-            <div className="relative w-64">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search trainees..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9 h-8 text-sm"
-              />
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base">
+                Select Trainees
+                {activeFilters > 0 && (
+                  <Badge variant="secondary" className="ml-2 text-xs">
+                    {activeFilters} filter{activeFilters > 1 ? "s" : ""}
+                  </Badge>
+                )}
+              </CardTitle>
+              <span className="text-xs text-muted-foreground">
+                {filteredTrainees.length} of {trainees.length} trainees
+                {selected.size > 0 && ` · ${selected.size} selected`}
+              </span>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="relative flex-1 min-w-[200px]">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search by name, ID, or division..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-9 h-8 text-sm"
+                />
+              </div>
+              {divisions.length > 0 && (
+                <Select value={divisionFilter} onValueChange={setDivisionFilter}>
+                  <SelectTrigger className="h-8 w-[160px] text-sm">
+                    <SelectValue placeholder="Division" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Divisions</SelectItem>
+                    {divisions.map((d) => (
+                      <SelectItem key={d} value={d}>
+                        {d}
+                      </SelectItem>
+                    ))}
+                    <SelectItem value="none">No Division</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
+              {phases.length > 0 && (
+                <Select value={phaseFilter} onValueChange={setPhaseFilter}>
+                  <SelectTrigger className="h-8 w-[160px] text-sm">
+                    <SelectValue placeholder="Phase" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Phases</SelectItem>
+                    {phases.map((p) => (
+                      <SelectItem key={p} value={p}>
+                        {p}
+                      </SelectItem>
+                    ))}
+                    <SelectItem value="none">No Phase</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
+              {activeFilters > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 text-xs text-muted-foreground"
+                  onClick={() => {
+                    setPhaseFilter("all");
+                    setDivisionFilter("all");
+                    setSearchQuery("");
+                  }}
+                >
+                  Clear filters
+                </Button>
+              )}
             </div>
           </div>
         </CardHeader>
@@ -214,16 +384,63 @@ export function SnapshotsClient({ trainees, recentSnapshots }: SnapshotsClientPr
                     onCheckedChange={toggleAll}
                   />
                 </TableHead>
-                <TableHead>Name</TableHead>
-                <TableHead>Employee ID</TableHead>
-                <TableHead>Division</TableHead>
+                <TableHead>
+                  <button
+                    className="inline-flex items-center text-xs font-medium hover:text-foreground transition-colors"
+                    onClick={() => handleSort("name")}
+                  >
+                    Name
+                    <SortIcon field="name" />
+                  </button>
+                </TableHead>
+                <TableHead>
+                  <button
+                    className="inline-flex items-center text-xs font-medium hover:text-foreground transition-colors"
+                    onClick={() => handleSort("division")}
+                  >
+                    Division
+                    <SortIcon field="division" />
+                  </button>
+                </TableHead>
+                <TableHead>
+                  <button
+                    className="inline-flex items-center text-xs font-medium hover:text-foreground transition-colors"
+                    onClick={() => handleSort("phase")}
+                  >
+                    Phase
+                    <SortIcon field="phase" />
+                  </button>
+                </TableHead>
+                <TableHead className="text-center">
+                  <button
+                    className="inline-flex items-center text-xs font-medium hover:text-foreground transition-colors"
+                    onClick={() => handleSort("dorCount")}
+                  >
+                    DORs
+                    <SortIcon field="dorCount" />
+                  </button>
+                </TableHead>
+                <TableHead className="text-center">
+                  <button
+                    className="inline-flex items-center text-xs font-medium hover:text-foreground transition-colors"
+                    onClick={() => handleSort("avgRating")}
+                  >
+                    Avg Rating
+                    <SortIcon field="avgRating" />
+                  </button>
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredTrainees.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
-                    {searchQuery ? "No trainees match your search." : "No active trainees."}
+                  <TableCell
+                    colSpan={6}
+                    className="text-center text-muted-foreground py-8"
+                  >
+                    {searchQuery || phaseFilter !== "all" || divisionFilter !== "all"
+                      ? "No trainees match your filters."
+                      : "No active trainees."}
                   </TableCell>
                 </TableRow>
               ) : (
@@ -238,12 +455,36 @@ export function SnapshotsClient({ trainees, recentSnapshots }: SnapshotsClientPr
                         onCheckedChange={() => toggleSelect(t.id)}
                       />
                     </TableCell>
-                    <TableCell className="font-medium">{t.name}</TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {t.employeeId || "—"}
+                    <TableCell className="font-medium">
+                      {t.name}
+                      {t.employeeId && (
+                        <span className="text-xs text-muted-foreground ml-1.5">
+                          ({t.employeeId})
+                        </span>
+                      )}
                     </TableCell>
-                    <TableCell className="text-muted-foreground">
+                    <TableCell className="text-muted-foreground text-sm">
                       {t.division || "—"}
+                    </TableCell>
+                    <TableCell>
+                      {t.currentPhase ? (
+                        <Badge
+                          variant="outline"
+                          className="text-xs font-normal"
+                        >
+                          {t.currentPhase}
+                        </Badge>
+                      ) : (
+                        <span className="text-muted-foreground text-sm">—</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-center text-sm text-muted-foreground">
+                      {t.dorCount}
+                    </TableCell>
+                    <TableCell
+                      className={`text-center text-sm ${ratingColor(t.avgRating)}`}
+                    >
+                      {t.avgRating !== null ? t.avgRating.toFixed(1) : "—"}
                     </TableCell>
                   </TableRow>
                 ))
@@ -345,53 +586,60 @@ export function SnapshotsClient({ trainees, recentSnapshots }: SnapshotsClientPr
 
       {/* Results Dialog */}
       <Dialog open={resultsOpen} onOpenChange={setResultsOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
+        <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col">
+          <DialogHeader className="shrink-0">
             <DialogTitle className="flex items-center gap-2">
               <CheckCircle2 className="h-5 w-5 text-green-600" />
               Snapshots Generated
+              {results && results.length > 1 && (
+                <Badge variant="secondary" className="text-xs ml-1">
+                  {results.length}
+                </Badge>
+              )}
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-3 py-2">
-            <p className="text-sm text-muted-foreground">
+          <div className="flex flex-col gap-3 py-2 min-h-0">
+            <p className="text-sm text-muted-foreground shrink-0">
               Share these links with directors, medical directors, or educators.
               Anyone with the link can view the report.
             </p>
-            {results?.map((r, i) => (
-              <div
-                key={i}
-                className="flex items-center gap-3 p-3 rounded-lg border overflow-hidden"
-              >
-                <div className="flex-1 min-w-0 overflow-hidden">
-                  <p className="font-medium text-sm">{r.traineeName}</p>
-                  <div className="flex items-center gap-1.5 mt-1 min-w-0">
-                    <Link2 className="h-3 w-3 text-muted-foreground shrink-0" />
-                    <p className="text-xs text-muted-foreground truncate">
-                      {siteUrl}/snapshot/{r.token}
-                    </p>
+            <div className="overflow-y-auto space-y-2 min-h-0">
+              {results?.map((r, i) => (
+                <div
+                  key={i}
+                  className="flex items-center gap-3 p-3 rounded-lg border overflow-hidden"
+                >
+                  <div className="flex-1 min-w-0 overflow-hidden">
+                    <p className="font-medium text-sm">{r.traineeName}</p>
+                    <div className="flex items-center gap-1.5 mt-1 min-w-0">
+                      <Link2 className="h-3 w-3 text-muted-foreground shrink-0" />
+                      <p className="text-xs text-muted-foreground truncate">
+                        {siteUrl}/snapshot/{r.token}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => copyLink(r.token)}
+                    >
+                      <Copy className="h-3.5 w-3.5 mr-1" />
+                      Copy
+                    </Button>
+                    <Button variant="outline" size="sm" asChild>
+                      <a
+                        href={`/snapshot/${r.token}`}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        <ExternalLink className="h-3.5 w-3.5" />
+                      </a>
+                    </Button>
                   </div>
                 </div>
-                <div className="flex items-center gap-1 shrink-0">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => copyLink(r.token)}
-                  >
-                    <Copy className="h-3.5 w-3.5 mr-1" />
-                    Copy
-                  </Button>
-                  <Button variant="outline" size="sm" asChild>
-                    <a
-                      href={`/snapshot/${r.token}`}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      <ExternalLink className="h-3.5 w-3.5" />
-                    </a>
-                  </Button>
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </DialogContent>
       </Dialog>
