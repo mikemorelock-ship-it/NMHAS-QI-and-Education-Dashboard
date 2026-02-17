@@ -10,6 +10,7 @@ import {
   Users,
   ClipboardCheck,
   BookOpen,
+  Camera,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { NMH_COLORS } from "@/lib/constants";
@@ -129,6 +130,22 @@ export function FieldTrainingNavbar({ session, userName }: FieldTrainingNavbarPr
           >
             <Users className="size-4" />
             <span className="hidden sm:inline">All Trainees</span>
+          </Link>
+        )}
+
+        {/* Supervisor/Manager: Trainee Snapshots */}
+        {canViewAllTrainees && (
+          <Link
+            href="/fieldtraining/snapshots"
+            className={
+              "inline-flex items-center gap-1.5 min-h-9 px-3 rounded-lg text-sm font-medium transition-colors " +
+              (pathname.startsWith("/fieldtraining/snapshots")
+                ? "text-white bg-white/20"
+                : "text-white/80 hover:text-white hover:bg-white/15")
+            }
+          >
+            <Camera className="size-4" />
+            <span className="hidden sm:inline">Snapshots</span>
           </Link>
         )}
 
