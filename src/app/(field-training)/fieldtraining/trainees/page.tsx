@@ -12,32 +12,59 @@ export default async function FieldTrainingAllTraineesPage() {
   if (session.role === "trainee") notFound();
   if (!hasPermission(session.role, "view_all_trainees")) notFound();
 
+  const canManageAssignments = hasPermission(
+    session.role,
+    "manage_training_assignments"
+  );
+
   // Fetch all trainee users with their current assignments and phase progress
-  const trainees = await prisma.user.findMany({
-    where: { role: "trainee" },
-    orderBy: [{ traineeStatus: "asc" }, { lastName: "asc" }],
-    include: {
-      traineeAssignments: {
-        where: { status: "active" },
-        include: {
-          fto: { select: { firstName: true, lastName: true } },
+  const [trainees, ftos] = await Promise.all([
+    prisma.user.findMany({
+      where: { role: "trainee" },
+      orderBy: [{ traineeStatus: "asc" }, { lastName: "asc" }],
+      include: {
+        traineeAssignments: {
+          where: { status: "active" },
+          include: {
+            fto: { select: { firstName: true, lastName: true } },
+          },
+          take: 1,
         },
-        take: 1,
-      },
-      traineePhases: {
-        include: {
-          phase: { select: { name: true, sortOrder: true } },
+        traineePhases: {
+          include: {
+            phase: { select: { name: true, sortOrder: true } },
+          },
+          orderBy: { phase: { sortOrder: "asc" } },
         },
-        orderBy: { phase: { sortOrder: "asc" } },
+        _count: {
+          select: { traineeDailyEvals: true },
+        },
       },
-      _count: {
-        select: { traineeDailyEvals: true },
-      },
-    },
-  });
+    }),
+    canManageAssignments
+      ? prisma.user.findMany({
+          where: { role: { in: ["fto", "supervisor"] }, isActive: true },
+          orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            employeeId: true,
+            role: true,
+          },
+        })
+      : Promise.resolve([]),
+  ]);
 
   return (
     <AllTraineesClient
+      canManageAssignments={canManageAssignments}
+      ftos={ftos.map((f) => ({
+        id: f.id,
+        name: `${f.lastName}, ${f.firstName}`,
+        employeeId: f.employeeId || "",
+        role: f.role,
+      }))}
       trainees={trainees.map((t) => {
         const currentAssignment = t.traineeAssignments[0];
         const currentPhase = t.traineePhases.find(

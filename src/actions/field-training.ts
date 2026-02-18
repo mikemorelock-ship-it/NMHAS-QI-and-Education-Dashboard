@@ -560,7 +560,7 @@ export async function createAssignment(
   ftoId: string,
   startDate: string
 ): Promise<ActionResult> {
-  const session = await requirePermission("manage_ftos_trainees");
+  const session = await requirePermission("manage_training_assignments");
   try {
     // Mark any current active assignment as reassigned
     await prisma.trainingAssignment.updateMany({
@@ -585,6 +585,45 @@ export async function createAssignment(
   } catch (err) {
     console.error("createAssignment error:", err);
     return { success: false, error: "Failed to create assignment." };
+  }
+
+  revalidateFieldTraining();
+  return { success: true };
+}
+
+export async function endAssignment(
+  assignmentId: string,
+  status: "completed" | "reassigned"
+): Promise<ActionResult> {
+  const session = await requirePermission("manage_training_assignments");
+  try {
+    const assignment = await prisma.trainingAssignment.findUnique({
+      where: { id: assignmentId },
+      select: { id: true, status: true, traineeId: true, ftoId: true },
+    });
+    if (!assignment) return { success: false, error: "Assignment not found." };
+    if (assignment.status !== "active") {
+      return { success: false, error: "Only active assignments can be ended." };
+    }
+
+    await prisma.trainingAssignment.update({
+      where: { id: assignmentId },
+      data: { status, endDate: new Date() },
+    });
+
+    await prisma.auditLog.create({
+      data: {
+        action: "UPDATE",
+        entity: "TrainingAssignment",
+        entityId: assignmentId,
+        details: `Ended assignment (${status}) for trainee ${assignment.traineeId}`,
+        actorId: session.userId,
+        actorType: "user",
+      },
+    });
+  } catch (err) {
+    console.error("endAssignment error:", err);
+    return { success: false, error: "Failed to end assignment." };
   }
 
   revalidateFieldTraining();
@@ -1932,4 +1971,236 @@ export async function reviewAssignmentRequest(
 
   revalidateFieldTraining();
   return { success: true };
+}
+
+// ---------------------------------------------------------------------------
+// Division Change Request Actions
+// ---------------------------------------------------------------------------
+
+const DivisionChangeRequestSchema = z.object({
+  requestedDivisionId: z.string().min(1, "Division is required"),
+  reason: z.string().max(1000).optional().nullable(),
+});
+
+const ReviewDivisionChangeSchema = z.object({
+  requestId: z.string().min(1, "Request ID is required"),
+  status: z.enum(["approved", "denied"]),
+  reviewNotes: z.string().max(1000).optional().nullable(),
+});
+
+export async function requestDivisionChange(
+  requestedDivisionId: string,
+  reason?: string
+): Promise<ActionResult> {
+  const session = await requireAuth();
+
+  // Only fto/supervisor/manager can request
+  if (!hasPermission(session.role as Parameters<typeof hasPermission>[0], "create_edit_own_dors")) {
+    return { success: false, error: "Insufficient permissions." };
+  }
+
+  const parsed = DivisionChangeRequestSchema.safeParse({
+    requestedDivisionId,
+    reason: reason || null,
+  });
+
+  if (!parsed.success) {
+    return { success: false, error: parsed.error.issues.map((i) => i.message).join(", ") };
+  }
+
+  try {
+    // Check for existing pending request
+    const existing = await prisma.divisionChangeRequest.findFirst({
+      where: { userId: session.userId, status: "pending" },
+    });
+    if (existing) {
+      return { success: false, error: "You already have a pending division change request." };
+    }
+
+    // Verify the requested division exists
+    const division = await prisma.division.findUnique({
+      where: { id: parsed.data.requestedDivisionId },
+      select: { name: true },
+    });
+    if (!division) {
+      return { success: false, error: "Selected division not found." };
+    }
+
+    // Get current user's divisionId
+    const user = await prisma.user.findUnique({
+      where: { id: session.userId },
+      select: { divisionId: true },
+    });
+
+    // Don't allow requesting the same division
+    if (user?.divisionId === parsed.data.requestedDivisionId) {
+      return { success: false, error: "You are already in this division." };
+    }
+
+    await prisma.divisionChangeRequest.create({
+      data: {
+        userId: session.userId,
+        currentDivisionId: user?.divisionId ?? null,
+        requestedDivisionId: parsed.data.requestedDivisionId,
+        reason: parsed.data.reason ?? null,
+        status: "pending",
+      },
+    });
+
+    await prisma.auditLog.create({
+      data: {
+        action: "CREATE",
+        entity: "DivisionChangeRequest",
+        entityId: session.userId,
+        details: `Requested division change to "${division.name}"`,
+        actorId: session.userId,
+        actorType: "user",
+      },
+    });
+  } catch (err) {
+    console.error("requestDivisionChange error:", err);
+    return { success: false, error: "Failed to create division change request." };
+  }
+
+  revalidateFieldTraining();
+  return { success: true };
+}
+
+export async function reviewDivisionChange(
+  requestId: string,
+  status: "approved" | "denied",
+  reviewNotes?: string
+): Promise<ActionResult> {
+  const session = await requirePermission("manage_ftos_trainees");
+
+  const parsed = ReviewDivisionChangeSchema.safeParse({
+    requestId,
+    status,
+    reviewNotes: reviewNotes || null,
+  });
+
+  if (!parsed.success) {
+    return { success: false, error: parsed.error.issues.map((i) => i.message).join(", ") };
+  }
+
+  try {
+    const request = await prisma.divisionChangeRequest.findUnique({
+      where: { id: parsed.data.requestId },
+      include: {
+        user: { select: { firstName: true, lastName: true } },
+        requestedDivision: { select: { name: true } },
+      },
+    });
+
+    if (!request) {
+      return { success: false, error: "Request not found." };
+    }
+    if (request.status !== "pending") {
+      return { success: false, error: "This request has already been reviewed." };
+    }
+
+    await prisma.divisionChangeRequest.update({
+      where: { id: parsed.data.requestId },
+      data: {
+        status: parsed.data.status,
+        reviewedById: session.userId,
+        reviewedAt: new Date(),
+        reviewNotes: parsed.data.reviewNotes ?? null,
+      },
+    });
+
+    // If approved, update the user's divisionId
+    if (parsed.data.status === "approved") {
+      await prisma.user.update({
+        where: { id: request.userId },
+        data: { divisionId: request.requestedDivisionId },
+      });
+    }
+
+    await prisma.auditLog.create({
+      data: {
+        action: "UPDATE",
+        entity: "DivisionChangeRequest",
+        entityId: parsed.data.requestId,
+        details: `${parsed.data.status === "approved" ? "Approved" : "Denied"} division change request for "${request.user.firstName} ${request.user.lastName}" to "${request.requestedDivision.name}"`,
+        actorId: session.userId,
+        actorType: "user",
+      },
+    });
+  } catch (err) {
+    console.error("reviewDivisionChange error:", err);
+    return { success: false, error: "Failed to review division change request." };
+  }
+
+  revalidateFieldTraining();
+  return { success: true };
+}
+
+export async function getPendingDivisionChangeRequests() {
+  const session = await requirePermission("manage_ftos_trainees");
+
+  try {
+    const requests = await prisma.divisionChangeRequest.findMany({
+      where: { status: "pending" },
+      orderBy: { createdAt: "desc" },
+      include: {
+        user: { select: { firstName: true, lastName: true, email: true, role: true } },
+        requestedDivision: { select: { name: true } },
+      },
+    });
+
+    return {
+      success: true as const,
+      requests: requests.map((r) => ({
+        id: r.id,
+        userId: r.userId,
+        userName: `${r.user.firstName} ${r.user.lastName}`,
+        userEmail: r.user.email,
+        userRole: r.user.role,
+        currentDivisionId: r.currentDivisionId,
+        requestedDivisionId: r.requestedDivisionId,
+        requestedDivisionName: r.requestedDivision.name,
+        reason: r.reason,
+        createdAt: r.createdAt.toISOString(),
+      })),
+    };
+  } catch (err) {
+    console.error("getPendingDivisionChangeRequests error:", err);
+    return { success: false as const, error: "Failed to load pending requests." };
+  }
+}
+
+export async function getDivisionsForSelect() {
+  try {
+    const divisions = await prisma.division.findMany({
+      where: { isActive: true },
+      orderBy: { sortOrder: "asc" },
+      select: { id: true, name: true },
+    });
+    return { success: true as const, divisions };
+  } catch (err) {
+    console.error("getDivisionsForSelect error:", err);
+    return { success: false as const, error: "Failed to load divisions." };
+  }
+}
+
+export async function getCurrentUserDivision() {
+  const session = await requireAuth();
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: session.userId },
+      select: {
+        divisionId: true,
+        division: { select: { id: true, name: true } },
+      },
+    });
+    return {
+      success: true as const,
+      divisionId: user?.divisionId ?? null,
+      divisionName: user?.division?.name ?? null,
+    };
+  } catch (err) {
+    console.error("getCurrentUserDivision error:", err);
+    return { success: false as const, error: "Failed to load user division." };
+  }
 }

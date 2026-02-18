@@ -11,12 +11,14 @@ import {
   ClipboardCheck,
   BookOpen,
   Camera,
+  ArrowLeftRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { NMH_COLORS } from "@/lib/constants";
 import { logoutAction } from "@/actions/auth";
 import { hasPermission } from "@/lib/permissions";
 import type { Session } from "@/lib/auth";
+import { DivisionChangeDialog } from "./DivisionChangeDialog";
 
 interface FieldTrainingNavbarProps {
   session: Session;
@@ -30,6 +32,8 @@ export function FieldTrainingNavbar({ session, userName }: FieldTrainingNavbarPr
   const isTrainee = session.role === "trainee";
   const canReviewDors = isFto && hasPermission(session.role, "review_approve_dors");
   const canViewAllTrainees = isFto && hasPermission(session.role, "view_all_trainees");
+  const canManageAssignments = isFto && hasPermission(session.role, "manage_training_assignments");
+  const canRequestDivisionChange = hasPermission(session.role, "create_edit_own_dors");
 
   return (
     <header
@@ -133,6 +137,22 @@ export function FieldTrainingNavbar({ session, userName }: FieldTrainingNavbarPr
           </Link>
         )}
 
+        {/* Supervisor/Manager/Admin: Assignments */}
+        {canManageAssignments && (
+          <Link
+            href="/fieldtraining/assignments"
+            className={
+              "inline-flex items-center gap-1.5 min-h-9 px-3 rounded-lg text-sm font-medium transition-colors " +
+              (pathname.startsWith("/fieldtraining/assignments")
+                ? "text-white bg-white/20"
+                : "text-white/80 hover:text-white hover:bg-white/15")
+            }
+          >
+            <ArrowLeftRight className="size-4" />
+            <span className="hidden sm:inline">Assignments</span>
+          </Link>
+        )}
+
         {/* Supervisor/Manager: Trainee Snapshots */}
         {canViewAllTrainees && (
           <Link
@@ -161,6 +181,9 @@ export function FieldTrainingNavbar({ session, userName }: FieldTrainingNavbarPr
           <HelpCircle className="size-4" />
           <span className="hidden sm:inline">Help</span>
         </Link>
+        {/* FTO/Supervisor/Manager: Request Division Change */}
+        {canRequestDivisionChange && <DivisionChangeDialog />}
+
         <div className="w-px h-5 bg-white/20 mx-1" />
         <form action={logoutAction}>
           <Button

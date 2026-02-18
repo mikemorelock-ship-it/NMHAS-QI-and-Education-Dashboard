@@ -1,10 +1,27 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -13,7 +30,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Users, Search } from "lucide-react";
+import { Users, Search, UserCog } from "lucide-react";
+import { createAssignment } from "@/actions/field-training";
 
 interface TraineeRow {
   id: string;
@@ -29,8 +47,17 @@ interface TraineeRow {
   dorCount: number;
 }
 
+interface FtoOption {
+  id: string;
+  name: string;
+  employeeId: string;
+  role: string;
+}
+
 interface AllTraineesClientProps {
   trainees: TraineeRow[];
+  canManageAssignments: boolean;
+  ftos: FtoOption[];
 }
 
 const STATUS_COLORS: Record<string, string> = {
@@ -40,9 +67,22 @@ const STATUS_COLORS: Record<string, string> = {
   remediation: "bg-orange-100 text-orange-700",
 };
 
-export function AllTraineesClient({ trainees }: AllTraineesClientProps) {
+export function AllTraineesClient({
+  trainees,
+  canManageAssignments,
+  ftos,
+}: AllTraineesClientProps) {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("active");
+
+  // Assign FTO dialog state
+  const [assignTrainee, setAssignTrainee] = useState<TraineeRow | null>(null);
+  const [assignFtoId, setAssignFtoId] = useState("");
+  const [assignDate, setAssignDate] = useState(
+    new Date().toISOString().slice(0, 10)
+  );
+  const [assignError, setAssignError] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
 
   const filtered = trainees.filter((t) => {
     const matchesSearch =
@@ -58,6 +98,28 @@ export function AllTraineesClient({ trainees }: AllTraineesClientProps) {
 
   const activeCount = trainees.filter((t) => t.status === "active").length;
   const remCount = trainees.filter((t) => t.status === "remediation").length;
+
+  function handleAssign() {
+    if (!assignTrainee) return;
+    setAssignError(null);
+    if (!assignFtoId || assignFtoId === "__none__") {
+      setAssignError("Please select an FTO.");
+      return;
+    }
+    startTransition(async () => {
+      const result = await createAssignment(
+        assignTrainee.id,
+        assignFtoId,
+        assignDate
+      );
+      if (result.success) {
+        setAssignTrainee(null);
+        setAssignFtoId("");
+      } else {
+        setAssignError(result.error ?? "Failed to assign FTO.");
+      }
+    });
+  }
 
   return (
     <div className="space-y-6">
@@ -152,6 +214,9 @@ export function AllTraineesClient({ trainees }: AllTraineesClientProps) {
                     <TableHead>Progress</TableHead>
                     <TableHead className="text-center">DORs</TableHead>
                     <TableHead>Start Date</TableHead>
+                    {canManageAssignments && (
+                      <TableHead className="text-right">Actions</TableHead>
+                    )}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -201,6 +266,25 @@ export function AllTraineesClient({ trainees }: AllTraineesClientProps) {
                             year: "numeric",
                           })}
                         </TableCell>
+                        {canManageAssignments && (
+                          <TableCell className="text-right">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                setAssignTrainee(t);
+                                setAssignFtoId("");
+                                setAssignDate(
+                                  new Date().toISOString().slice(0, 10)
+                                );
+                                setAssignError(null);
+                              }}
+                            >
+                              <UserCog className="h-3.5 w-3.5 mr-1" />
+                              Assign FTO
+                            </Button>
+                          </TableCell>
+                        )}
                       </TableRow>
                     );
                   })}
@@ -210,6 +294,90 @@ export function AllTraineesClient({ trainees }: AllTraineesClientProps) {
           )}
         </CardContent>
       </Card>
+
+      {/* Assign FTO Dialog */}
+      <Dialog
+        open={!!assignTrainee}
+        onOpenChange={(open) => {
+          if (!open) {
+            setAssignTrainee(null);
+            setAssignFtoId("");
+            setAssignError(null);
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Assign FTO</DialogTitle>
+            <DialogDescription>
+              {assignTrainee && (
+                <>
+                  Assign an FTO to{" "}
+                  <strong>
+                    {assignTrainee.lastName}, {assignTrainee.firstName}
+                  </strong>
+                  .
+                  {assignTrainee.currentFto && (
+                    <>
+                      {" "}
+                      Currently assigned to{" "}
+                      <strong>{assignTrainee.currentFto}</strong> &mdash; this
+                      will be automatically ended.
+                    </>
+                  )}
+                </>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+
+          {assignError && (
+            <Card className="border-destructive/50 bg-destructive/10 p-3">
+              <p className="text-sm text-destructive">{assignError}</p>
+            </Card>
+          )}
+
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>FTO</Label>
+              <Select value={assignFtoId} onValueChange={setAssignFtoId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select an FTO..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {ftos.map((f) => (
+                    <SelectItem key={f.id} value={f.id}>
+                      {f.name} ({f.employeeId})
+                      {f.role === "supervisor" ? " [Sup]" : ""}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Start Date</Label>
+              <Input
+                type="date"
+                value={assignDate}
+                onChange={(e) => setAssignDate(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setAssignTrainee(null)}
+              disabled={isPending}
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleAssign} disabled={isPending}>
+              {isPending ? "Assigning..." : "Assign FTO"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
