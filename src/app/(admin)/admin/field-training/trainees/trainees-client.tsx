@@ -48,7 +48,7 @@ type TraineeRow = {
   status: string;
   divisionName: string | null;
   divisionId: string | null;
-  currentFto: string | null;
+  currentFtos: string[];
   currentPhase: string | null;
   phasesCompleted: number;
   totalPhases: number;
@@ -233,7 +233,7 @@ export function TraineesClient({
                         </p>
                       </div>
                     </TableCell>
-                    <TableCell>{t.currentFto ?? <span className="text-muted-foreground">Unassigned</span>}</TableCell>
+                    <TableCell>{t.currentFtos.length > 0 ? t.currentFtos.join(", ") : <span className="text-muted-foreground">Unassigned</span>}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2 min-w-[120px]">
                         <Progress value={skillPct} className="h-2 flex-1" />

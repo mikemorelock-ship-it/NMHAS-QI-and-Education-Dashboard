@@ -28,7 +28,6 @@ export default async function FieldTrainingAllTraineesPage() {
           include: {
             fto: { select: { firstName: true, lastName: true } },
           },
-          take: 1,
         },
         traineePhases: {
           include: {
@@ -66,7 +65,6 @@ export default async function FieldTrainingAllTraineesPage() {
         role: f.role,
       }))}
       trainees={trainees.map((t) => {
-        const currentAssignment = t.traineeAssignments[0];
         const currentPhase = t.traineePhases.find(
           (tp) => tp.status === "in_progress"
         );
@@ -82,9 +80,9 @@ export default async function FieldTrainingAllTraineesPage() {
           employeeId: t.employeeId || "",
           status: t.traineeStatus || "active",
           startDate: (t.startDate || t.createdAt).toISOString(),
-          currentFto: currentAssignment
-            ? `${currentAssignment.fto.lastName}, ${currentAssignment.fto.firstName}`
-            : null,
+          currentFtos: t.traineeAssignments.map(
+            (a) => `${a.fto.lastName}, ${a.fto.firstName}`
+          ),
           currentPhase: currentPhase?.phase.name || null,
           completedPhases,
           totalPhases,

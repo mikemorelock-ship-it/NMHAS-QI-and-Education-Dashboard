@@ -562,11 +562,13 @@ export async function createAssignment(
 ): Promise<ActionResult> {
   const session = await requirePermission("manage_training_assignments");
   try {
-    // Mark any current active assignment as reassigned
-    await prisma.trainingAssignment.updateMany({
-      where: { traineeId, status: "active" },
-      data: { status: "reassigned", endDate: new Date() },
+    // Check if this trainee is already actively assigned to this FTO
+    const existing = await prisma.trainingAssignment.findFirst({
+      where: { traineeId, ftoId, status: "active" },
     });
+    if (existing) {
+      return { success: false, error: "This trainee is already assigned to this FTO." };
+    }
 
     await prisma.trainingAssignment.create({
       data: { traineeId, ftoId, startDate: new Date(startDate), status: "active" },
@@ -1938,20 +1940,20 @@ export async function reviewAssignmentRequest(
 
     // If approved, create the actual training assignment
     if (decision === "approved") {
-      // End any existing active assignment for this trainee
-      await prisma.trainingAssignment.updateMany({
-        where: { traineeId: request.traineeId, status: "active" },
-        data: { status: "reassigned", endDate: new Date() },
+      // Check if already assigned to prevent duplicates
+      const existing = await prisma.trainingAssignment.findFirst({
+        where: { traineeId: request.traineeId, ftoId: request.requesterId, status: "active" },
       });
-
-      await prisma.trainingAssignment.create({
-        data: {
-          traineeId: request.traineeId,
-          ftoId: request.requesterId,
-          startDate: new Date(),
-          status: "active",
-        },
-      });
+      if (!existing) {
+        await prisma.trainingAssignment.create({
+          data: {
+            traineeId: request.traineeId,
+            ftoId: request.requesterId,
+            startDate: new Date(),
+            status: "active",
+          },
+        });
+      }
     }
 
     await prisma.auditLog.create({

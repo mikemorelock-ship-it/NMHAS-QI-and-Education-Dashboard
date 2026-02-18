@@ -40,7 +40,7 @@ interface TraineeRow {
   employeeId: string;
   status: string;
   startDate: string;
-  currentFto: string | null;
+  currentFtos: string[];
   currentPhase: string | null;
   completedPhases: number;
   totalPhases: number;
@@ -243,7 +243,11 @@ export function AllTraineesClient({
                             {t.status}
                           </Badge>
                         </TableCell>
-                        <TableCell>{t.currentFto || "-"}</TableCell>
+                        <TableCell>
+                          {t.currentFtos.length > 0
+                            ? t.currentFtos.join(", ")
+                            : "-"}
+                        </TableCell>
                         <TableCell>{t.currentPhase || "-"}</TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2 min-w-[120px]">
@@ -312,17 +316,16 @@ export function AllTraineesClient({
             <DialogDescription>
               {assignTrainee && (
                 <>
-                  Assign an FTO to{" "}
+                  Assign an additional FTO to{" "}
                   <strong>
                     {assignTrainee.lastName}, {assignTrainee.firstName}
                   </strong>
                   .
-                  {assignTrainee.currentFto && (
+                  {assignTrainee.currentFtos.length > 0 && (
                     <>
                       {" "}
-                      Currently assigned to{" "}
-                      <strong>{assignTrainee.currentFto}</strong> &mdash; this
-                      will be automatically ended.
+                      Currently assigned to:{" "}
+                      <strong>{assignTrainee.currentFtos.join(", ")}</strong>.
                     </>
                   )}
                 </>

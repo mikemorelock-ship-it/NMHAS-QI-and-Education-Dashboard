@@ -2,7 +2,6 @@
 
 import { useState, useTransition, useMemo } from "react";
 import {
-  ArrowLeftRight,
   Bell,
   CheckCircle2,
   ChevronDown,
@@ -129,13 +128,6 @@ export function AssignmentsClient({
   );
   const [newError, setNewError] = useState<string | null>(null);
 
-  // Reassign dialog state
-  const [reassignDialog, setReassignDialog] = useState<ActiveAssignment | null>(
-    null
-  );
-  const [reassignFtoId, setReassignFtoId] = useState("");
-  const [reassignError, setReassignError] = useState<string | null>(null);
-
   // End assignment confirm state
   const [endingId, setEndingId] = useState<string | null>(null);
 
@@ -197,29 +189,6 @@ export function AssignmentsClient({
     setNewFtoId("");
     setNewStartDate(new Date().toISOString().slice(0, 10));
     setNewError(null);
-  }
-
-  function handleReassign() {
-    if (!reassignDialog) return;
-    setReassignError(null);
-    if (!reassignFtoId || reassignFtoId === "__none__") {
-      setReassignError("Please select a new FTO.");
-      return;
-    }
-
-    startTransition(async () => {
-      const result = await createAssignment(
-        reassignDialog.traineeId,
-        reassignFtoId,
-        new Date().toISOString().slice(0, 10)
-      );
-      if (result.success) {
-        setReassignDialog(null);
-        setReassignFtoId("");
-      } else {
-        setReassignError(result.error ?? "Failed to reassign.");
-      }
-    });
   }
 
   function handleEndAssignment(assignmentId: string) {
@@ -518,27 +487,13 @@ export function AssignmentsClient({
                               </Button>
                             </>
                           ) : (
-                            <>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => {
-                                  setReassignDialog(a);
-                                  setReassignFtoId("");
-                                  setReassignError(null);
-                                }}
-                              >
-                                <ArrowLeftRight className="h-3.5 w-3.5 mr-1" />
-                                Reassign
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => setEndingId(a.id)}
-                              >
-                                End
-                              </Button>
-                            </>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => setEndingId(a.id)}
+                            >
+                              End
+                            </Button>
                           )}
                         </div>
                       </TableCell>
@@ -639,8 +594,8 @@ export function AssignmentsClient({
           <DialogHeader>
             <DialogTitle>New Assignment</DialogTitle>
             <DialogDescription>
-              Assign a trainee to an FTO. Any existing active assignment for this
-              trainee will be automatically ended.
+              Assign a trainee to an FTO. A trainee can have multiple FTOs
+              assigned simultaneously.
             </DialogDescription>
           </DialogHeader>
 
@@ -709,71 +664,6 @@ export function AssignmentsClient({
         </DialogContent>
       </Dialog>
 
-      {/* ----------------------------------------------------------------- */}
-      {/* Reassign Dialog */}
-      {/* ----------------------------------------------------------------- */}
-      <Dialog
-        open={!!reassignDialog}
-        onOpenChange={(open) => {
-          if (!open) {
-            setReassignDialog(null);
-            setReassignFtoId("");
-            setReassignError(null);
-          }
-        }}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Reassign Trainee</DialogTitle>
-            <DialogDescription>
-              {reassignDialog && (
-                <>
-                  Reassign <strong>{reassignDialog.traineeName}</strong> from{" "}
-                  <strong>{reassignDialog.ftoName}</strong> to a new FTO.
-                </>
-              )}
-            </DialogDescription>
-          </DialogHeader>
-
-          {reassignError && (
-            <Card className="border-destructive/50 bg-destructive/10 p-3">
-              <p className="text-sm text-destructive">{reassignError}</p>
-            </Card>
-          )}
-
-          <div className="space-y-2">
-            <Label>New FTO</Label>
-            <Select value={reassignFtoId} onValueChange={setReassignFtoId}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select new FTO..." />
-              </SelectTrigger>
-              <SelectContent>
-                {ftos
-                  .filter((f) => f.id !== reassignDialog?.ftoId)
-                  .map((f) => (
-                    <SelectItem key={f.id} value={f.id}>
-                      {f.name}{f.employeeId ? ` (${f.employeeId})` : ""}
-                      {f.role === "supervisor" ? " [Sup]" : ""}
-                    </SelectItem>
-                  ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setReassignDialog(null)}
-              disabled={isPending}
-            >
-              Cancel
-            </Button>
-            <Button onClick={handleReassign} disabled={isPending}>
-              {isPending ? "Reassigning..." : "Reassign"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

@@ -20,7 +20,6 @@ export default async function TraineesPage() {
       traineeAssignments: {
         where: { status: "active" },
         include: { fto: { select: { id: true, firstName: true, lastName: true } } },
-        take: 1,
       },
       traineePhases: {
         include: { phase: { select: { name: true, sortOrder: true } } },
@@ -58,9 +57,9 @@ export default async function TraineesPage() {
         status: t.traineeStatus || "active",
         divisionName: t.division?.name ?? null,
         divisionId: t.divisionId,
-        currentFto: t.traineeAssignments[0]?.fto
-          ? `${t.traineeAssignments[0].fto.firstName} ${t.traineeAssignments[0].fto.lastName}`
-          : null,
+        currentFtos: t.traineeAssignments.map(
+          (a) => `${a.fto.firstName} ${a.fto.lastName}`
+        ),
         currentPhase: t.traineePhases.find((tp) => tp.status === "in_progress")?.phase.name ?? null,
         phasesCompleted: t.traineePhases.filter((tp) => tp.status === "completed").length,
         totalPhases: t.traineePhases.length,

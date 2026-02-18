@@ -86,7 +86,6 @@ export default async function FieldTrainingOverviewPage() {
         traineeAssignments: {
           where: { status: "active" },
           include: { fto: { select: { firstName: true, lastName: true } } },
-          take: 1,
         },
       },
     }),
@@ -219,9 +218,8 @@ export default async function FieldTrainingOverviewPage() {
                   const currentPhase = t.traineePhases.find((tp) => tp.status === "in_progress")?.phase.name;
                   const phasesCompleted = t.traineePhases.filter((tp) => tp.status === "completed").length;
                   const skillPct = totalSkills > 0 ? Math.round((t._count.traineeSkillSignoffs / totalSkills) * 100) : 0;
-                  const ftoName = t.traineeAssignments[0]?.fto
-                    ? `${t.traineeAssignments[0].fto.firstName} ${t.traineeAssignments[0].fto.lastName}`
-                    : null;
+                  const ftoNames = t.traineeAssignments
+                    .map((a) => `${a.fto.firstName} ${a.fto.lastName}`);
 
                   return (
                     <Link
@@ -236,7 +234,7 @@ export default async function FieldTrainingOverviewPage() {
                             <Badge className="ml-2 bg-orange-100 text-orange-800">remediation</Badge>
                           )}
                         </div>
-                        <span className="text-sm text-muted-foreground">{ftoName ?? "Unassigned"}</span>
+                        <span className="text-sm text-muted-foreground">{ftoNames.length > 0 ? ftoNames.join(", ") : "Unassigned"}</span>
                       </div>
                       <div className="flex items-center gap-4 text-sm">
                         <span className="text-muted-foreground">
