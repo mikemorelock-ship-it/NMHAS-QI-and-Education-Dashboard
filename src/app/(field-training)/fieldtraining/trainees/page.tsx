@@ -17,43 +17,70 @@ export default async function FieldTrainingAllTraineesPage() {
     "manage_training_assignments"
   );
 
-  // Fetch all trainee users with their current assignments and phase progress
-  const [trainees, ftos] = await Promise.all([
-    prisma.user.findMany({
-      where: { role: "trainee" },
-      orderBy: [{ traineeStatus: "asc" }, { lastName: "asc" }],
-      include: {
-        traineeAssignments: {
-          where: { status: "active" },
-          include: {
-            fto: { select: { firstName: true, lastName: true } },
+  const [trainees, ftos, pendingRequests, divisions, phases] =
+    await Promise.all([
+      prisma.user.findMany({
+        where: { role: "trainee" },
+        orderBy: [{ traineeStatus: "asc" }, { lastName: "asc" }],
+        include: {
+          division: { select: { name: true } },
+          traineeAssignments: {
+            where: { status: "active" },
+            include: {
+              fto: { select: { id: true, firstName: true, lastName: true } },
+            },
+          },
+          traineePhases: {
+            include: {
+              phase: { select: { name: true, slug: true, sortOrder: true } },
+            },
+            orderBy: { phase: { sortOrder: "asc" } },
+          },
+          traineeDailyEvals: {
+            where: { status: "submitted" },
+            select: { overallRating: true },
+          },
+          _count: {
+            select: { traineeDailyEvals: true },
           },
         },
-        traineePhases: {
-          include: {
-            phase: { select: { name: true, sortOrder: true } },
-          },
-          orderBy: { phase: { sortOrder: "asc" } },
-        },
-        _count: {
-          select: { traineeDailyEvals: true },
-        },
-      },
-    }),
-    canManageAssignments
-      ? prisma.user.findMany({
-          where: { role: { in: ["fto", "supervisor"] }, isActive: true },
-          orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            employeeId: true,
-            role: true,
-          },
-        })
-      : Promise.resolve([]),
-  ]);
+      }),
+      canManageAssignments
+        ? prisma.user.findMany({
+            where: { role: { in: ["fto", "supervisor"] }, isActive: true },
+            orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              employeeId: true,
+              role: true,
+            },
+          })
+        : Promise.resolve([]),
+      canManageAssignments
+        ? prisma.assignmentRequest.findMany({
+            where: { status: "pending" },
+            orderBy: { createdAt: "desc" },
+            include: {
+              requester: { select: { firstName: true, lastName: true } },
+              trainee: {
+                select: { firstName: true, lastName: true, employeeId: true },
+              },
+            },
+          })
+        : Promise.resolve([]),
+      prisma.division.findMany({
+        where: { isActive: true },
+        orderBy: { name: "asc" },
+        select: { name: true },
+      }),
+      prisma.trainingPhase.findMany({
+        where: { isActive: true, slug: { not: "orientation" } },
+        orderBy: { sortOrder: "asc" },
+        select: { name: true },
+      }),
+    ]);
 
   return (
     <AllTraineesClient
@@ -64,29 +91,54 @@ export default async function FieldTrainingAllTraineesPage() {
         employeeId: f.employeeId || "",
         role: f.role,
       }))}
+      pendingRequests={pendingRequests.map((r) => ({
+        id: r.id,
+        requesterName: `${r.requester.firstName} ${r.requester.lastName}`,
+        traineeName: `${r.trainee.lastName}, ${r.trainee.firstName}`,
+        traineeEmployeeId: r.trainee.employeeId,
+        reason: r.reason,
+        createdAt: r.createdAt.toISOString(),
+      }))}
+      divisions={divisions.map((d) => d.name)}
+      phases={phases.map((p) => p.name)}
       trainees={trainees.map((t) => {
-        const currentPhase = t.traineePhases.find(
+        // Filter out orientation phase
+        const nonOrientationPhases = t.traineePhases.filter(
+          (tp) => tp.phase.slug !== "orientation"
+        );
+        const currentPhase = nonOrientationPhases.find(
           (tp) => tp.status === "in_progress"
         );
-        const completedPhases = t.traineePhases.filter(
+        const completedPhases = nonOrientationPhases.filter(
           (tp) => tp.status === "completed"
         ).length;
-        const totalPhases = t.traineePhases.length;
+        const totalPhases = nonOrientationPhases.length;
+
+        // Compute avg rating from submitted DORs
+        const ratings = t.traineeDailyEvals.map((d) => d.overallRating);
+        const avgRating =
+          ratings.length > 0
+            ? Math.round(
+                (ratings.reduce((s, r) => s + r, 0) / ratings.length) * 10
+              ) / 10
+            : null;
 
         return {
           id: t.id,
           firstName: t.firstName,
           lastName: t.lastName,
-          employeeId: t.employeeId || "",
           status: t.traineeStatus || "active",
-          startDate: (t.startDate || t.createdAt).toISOString(),
-          currentFtos: t.traineeAssignments.map(
-            (a) => `${a.fto.lastName}, ${a.fto.firstName}`
-          ),
+          division: t.division?.name ?? null,
+          currentAssignments: t.traineeAssignments.map((a) => ({
+            id: a.id,
+            ftoId: a.fto.id,
+            ftoName: `${a.fto.lastName}, ${a.fto.firstName}`,
+          })),
           currentPhase: currentPhase?.phase.name || null,
           completedPhases,
           totalPhases,
           dorCount: t._count.traineeDailyEvals,
+          avgRating,
         };
       })}
     />

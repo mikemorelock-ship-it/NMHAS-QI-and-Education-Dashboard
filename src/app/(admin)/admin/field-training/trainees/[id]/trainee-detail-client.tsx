@@ -181,6 +181,8 @@ export function TraineeDetailClient({
   skillCategories,
   ftos,
   currentUserId,
+  backUrl = "/admin/field-training/trainees",
+  dorNewUrl,
 }: {
   trainee: Trainee;
   assignments: Assignment[];
@@ -189,6 +191,8 @@ export function TraineeDetailClient({
   skillCategories: SkillCat[];
   ftos: { id: string; firstName: string; lastName: string; role: string }[];
   currentUserId: string;
+  backUrl?: string;
+  dorNewUrl?: string;
 }) {
   const [expandedDor, setExpandedDor] = useState<string | null>(null);
   const [expandedSkill, setExpandedSkill] = useState<string | null>(null);
@@ -300,7 +304,7 @@ export function TraineeDetailClient({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" asChild>
-            <Link href="/admin/field-training/trainees"><ArrowLeft className="h-4 w-4" /></Link>
+            <Link href={backUrl}><ArrowLeft className="h-4 w-4" /></Link>
           </Button>
           <div>
             <h1 className="text-2xl font-bold tracking-tight">
@@ -448,7 +452,7 @@ export function TraineeDetailClient({
                 <CardDescription>{dors.length} DOR{dors.length !== 1 ? "s" : ""} recorded</CardDescription>
               </div>
               <Button asChild>
-                <Link href={`/admin/field-training/dors/new?traineeId=${trainee.id}`}>
+                <Link href={dorNewUrl || `/admin/field-training/dors/new?traineeId=${trainee.id}`}>
                   New DOR
                 </Link>
               </Button>
