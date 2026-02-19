@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { DataEntryClient } from "./data-entry-client";
 import { parsePagination } from "@/lib/pagination";
+import { getTemplateLookupData } from "@/actions/upload";
 
 export const dynamic = "force-dynamic";
 
@@ -27,7 +28,7 @@ export default async function DataEntryPage({
   const { page, pageSize } = parsePagination(params, { pageSize: 50 });
   const skip = (page - 1) * pageSize;
 
-  const [metrics, divisions, regions, recentEntries, associations, totalEntryCount] =
+  const [metrics, divisions, regions, recentEntries, associations, totalEntryCount, uploadLookup] =
     await Promise.all([
       prisma.metricDefinition.findMany({
         where: { isActive: true },
@@ -81,6 +82,9 @@ export default async function DataEntryPage({
         },
       }),
       prisma.metricEntry.count(),
+      hasAdminPermission(session.role, "upload_batch_data")
+        ? getTemplateLookupData()
+        : Promise.resolve(null),
     ]);
 
   // Build associations map: metricId -> { divisionIds[], regionIds[] }
@@ -138,6 +142,7 @@ export default async function DataEntryPage({
       prefill={prefill}
       totalEntryCount={totalEntryCount}
       pagination={paginationMeta}
+      uploadLookup={uploadLookup}
     />
   );
 }

@@ -9,6 +9,8 @@ import {
   fetchEntriesForPeriod,
 } from "@/actions/entries";
 import type { PrefillEntry } from "@/actions/entries";
+import type { TemplateLookupData } from "@/actions/upload";
+import { UploadClient } from "@/app/(admin)/admin/upload/upload-client";
 import { formatPeriod, formatMetricValue } from "@/lib/utils";
 import { PaginationControls } from "@/components/PaginationControls";
 import { PERIOD_TYPES } from "@/lib/constants";
@@ -43,7 +45,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Trash2, Pencil, Plus, X, Upload, CheckCircle, Filter, ListChecks } from "lucide-react";
+import { Trash2, Pencil, Plus, X, Upload, CheckCircle, Filter, ListChecks, FileUp } from "lucide-react";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -142,6 +144,7 @@ export function DataEntryClient({
   prefill,
   totalEntryCount,
   pagination,
+  uploadLookup,
 }: {
   metrics: MetricOption[];
   divisions: DivisionOption[];
@@ -158,6 +161,7 @@ export function DataEntryClient({
     hasNextPage: boolean;
     hasPreviousPage: boolean;
   };
+  uploadLookup?: TemplateLookupData | null;
 }) {
   // -----------------------------------------------------------------------
   // Single Entry state
@@ -669,6 +673,12 @@ export function DataEntryClient({
             <Upload className="h-4 w-4 mr-1.5" />
             Freeform Bulk
           </TabsTrigger>
+          {uploadLookup && (
+            <TabsTrigger value="upload">
+              <FileUp className="h-4 w-4 mr-1.5" />
+              Upload CSV
+            </TabsTrigger>
+          )}
         </TabsList>
 
         {/* ================================================================ */}
@@ -1263,6 +1273,15 @@ export function DataEntryClient({
             </CardContent>
           </Card>
         </TabsContent>
+
+        {/* ================================================================ */}
+        {/* Upload CSV Tab                                                   */}
+        {/* ================================================================ */}
+        {uploadLookup && (
+          <TabsContent value="upload" className="space-y-6">
+            <UploadClient lookup={uploadLookup} />
+          </TabsContent>
+        )}
       </Tabs>
 
       {/* ================================================================ */}

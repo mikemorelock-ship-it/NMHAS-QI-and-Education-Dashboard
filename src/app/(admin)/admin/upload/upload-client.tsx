@@ -883,13 +883,6 @@ export function UploadClient({ lookup }: { lookup: TemplateLookupData }) {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-nmh-gray">Upload Data</h1>
-        <p className="text-muted-foreground mt-1">
-          Import metric data from CSV files. Max 5 MB / 10,000 rows.
-        </p>
-      </div>
-
       <StepIndicator current={step} steps={steps} />
 
       {/* ================================================================== */}

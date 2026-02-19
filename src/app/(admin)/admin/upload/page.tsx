@@ -1,18 +1,7 @@
-import { verifySession } from "@/lib/auth";
-import { hasAdminPermission } from "@/lib/permissions";
-import { notFound } from "next/navigation";
-import { getTemplateLookupData } from "@/actions/upload";
-import { UploadClient } from "./upload-client";
+import { redirect } from "next/navigation";
 
-export const dynamic = "force-dynamic";
-
-export default async function UploadPage() {
-  const session = await verifySession();
-  if (!session || !hasAdminPermission(session.role, "upload_batch_data")) {
-    notFound();
-  }
-
-  const lookup = await getTemplateLookupData();
-
-  return <UploadClient lookup={lookup} />;
+// Upload functionality has been moved to the Data Entry page (Upload CSV tab).
+// Redirect any bookmarks or stale links.
+export default function UploadPage() {
+  redirect("/admin/data-entry");
 }
