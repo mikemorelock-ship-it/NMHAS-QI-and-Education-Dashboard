@@ -152,6 +152,21 @@ export const HELP_FEATURES: HelpFeature[] = [
 
   // ---- Admin Portal ----
   {
+    id: "admin-developer-guide",
+    portals: ["admin"],
+    title: "Developer Guide",
+    icon: "BookOpen",
+    description:
+      "Comprehensive technical documentation covering the architecture, data model, authentication system, coding patterns, deployment, and known quirks of the codebase. Designed for developer continuity — if the original developer is unavailable, start here.",
+    path: "/admin/developer-guide",
+    tips: [
+      "Use the table of contents sidebar to navigate directly to specific topics.",
+      "The search bar filters across all sections and subsections.",
+      "Print the guide for offline reference using the Print button.",
+      "Update the guide content in src/lib/developer-guide.ts when making significant architectural changes.",
+    ],
+  },
+  {
     id: "admin-overview",
     portals: ["admin"],
     title: "Admin Overview",

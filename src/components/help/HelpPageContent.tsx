@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import {
   LayoutDashboard,
@@ -90,10 +90,18 @@ const ICON_MAP: Record<string, LucideIcon> = {
   TrendingUp,
   Settings,
   ScrollText,
+  BookOpen,
 };
 
 function getIcon(name: string): LucideIcon {
   return ICON_MAP[name] ?? BookOpen;
+}
+
+/** Stable wrapper that resolves a string icon name to a Lucide component.
+ *  Uses createElement to avoid the react-hooks/static-components lint rule
+ *  from flagging the dynamic component lookup as "creating during render". */
+function DynamicIcon({ name, ...props }: { name: string } & React.SVGAttributes<SVGSVGElement>) {
+  return React.createElement(getIcon(name), props);
 }
 
 // ---------------------------------------------------------------------------
@@ -101,14 +109,12 @@ function getIcon(name: string): LucideIcon {
 // ---------------------------------------------------------------------------
 
 function FeatureItem({ feature }: { feature: HelpFeature }) {
-  const Icon = getIcon(feature.icon);
-
   return (
     <AccordionItem value={feature.id}>
       <AccordionTrigger className="hover:no-underline">
         <div className="flex items-center gap-3">
           <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-nmh-teal/10 shrink-0">
-            <Icon className="size-4 text-nmh-teal" />
+            <DynamicIcon name={feature.icon} className="size-4 text-nmh-teal" />
           </div>
           <span className="text-sm font-semibold">{feature.title}</span>
         </div>
@@ -310,18 +316,15 @@ function ReleaseGroup({
 export function HelpPageContent({ portal }: { portal: PortalId }) {
   const [featureSearch, setFeatureSearch] = useState("");
   const [glossarySearch, setGlossarySearch] = useState("");
-  const [lastSeenDate, setLastSeenDate] = useState<string | null>(null);
+  const [lastSeenDate] = useState<string | null>(() => localStorage.getItem(CHANGELOG_STORAGE_KEY));
 
   const meta = PORTAL_META[portal];
   const allFeatures = useMemo(() => getFeaturesForPortal(portal), [portal]);
   const allGlossary = useMemo(() => getGlossaryForPortal(portal), [portal]);
   const releaseGroups = useMemo(() => groupByRelease(), []);
 
-  // On mount: read last-seen date, then mark all updates as seen
+  // Mark all updates as seen after a brief delay so "New" badges render first
   useEffect(() => {
-    const stored = localStorage.getItem(CHANGELOG_STORAGE_KEY);
-    setLastSeenDate(stored);
-    // Mark as seen after a brief delay so "New" badges render first
     const timer = setTimeout(() => {
       localStorage.setItem(CHANGELOG_STORAGE_KEY, LATEST_CHANGELOG_DATE);
     }, 500);

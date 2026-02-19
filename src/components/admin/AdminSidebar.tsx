@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -34,6 +34,7 @@ import {
   Camera,
   ChevronDown,
   ScrollText,
+  BookOpen,
   type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -149,6 +150,12 @@ const navEntries: NavEntry[] = [
   { href: "/admin/audit-log", label: "Audit Log", icon: ScrollText, permission: "view_audit_log" },
   { href: "/admin/resources", label: "Resources", icon: Users, permission: "manage_departments" },
   { href: "/admin/users", label: "Users", icon: Shield, permission: "manage_users" },
+  {
+    href: "/admin/developer-guide",
+    label: "Developer Guide",
+    icon: BookOpen,
+    permission: "view_admin",
+  },
   { href: "/admin/help", label: "Help", icon: HelpCircle, permission: "view_admin" },
 ];
 
@@ -164,13 +171,15 @@ interface AdminSidebarProps {
 
 export function AdminSidebar({ userRole, userName, pendingApprovals = 0 }: AdminSidebarProps) {
   const pathname = usePathname();
-  const [newUpdates, setNewUpdates] = useState(0);
 
-  // Check for unseen changelog entries
-  useEffect(() => {
+  // Derive unseen changelog count — recalculates on navigation so it clears
+  // after visiting the help page (which writes to localStorage)
+  const newUpdates = useMemo(() => {
+    // pathname is in deps to trigger recomputation after navigation
+    void pathname;
     const lastSeen = localStorage.getItem(CHANGELOG_STORAGE_KEY);
-    setNewUpdates(getUnseenCount(lastSeen));
-  }, [pathname]); // Re-check on navigation (clears after visiting help)
+    return getUnseenCount(lastSeen);
+  }, [pathname]);
 
   // Auto-expand groups that contain the active route
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(() => {
