@@ -172,10 +172,20 @@ export function MetricsClient({
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
 
-  // DnD state
+  // DnD state — sync from server props when they change (e.g. after create/archive/delete)
   const [localMetrics, setLocalMetrics] = useState<MetricRow[]>(metrics);
   const [hasOrderChanges, setHasOrderChanges] = useState(false);
   const [orderSaved, setOrderSaved] = useState(false);
+
+  // Keep localMetrics in sync with server-provided metrics prop
+  // (router.refresh() delivers new props but useState ignores them after mount)
+  const [prevMetrics, setPrevMetrics] = useState(metrics);
+  if (metrics !== prevMetrics) {
+    setPrevMetrics(metrics);
+    if (!hasOrderChanges) {
+      setLocalMetrics(metrics);
+    }
+  }
 
   const sensors = useSensors(
     useSensor(PointerSensor, {

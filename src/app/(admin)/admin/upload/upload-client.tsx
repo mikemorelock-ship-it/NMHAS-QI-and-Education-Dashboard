@@ -52,6 +52,8 @@ type ColumnMapping = {
   metric: string;
   period: string;
   value: string;
+  numerator: string;
+  denominator: string;
   department: string;
   division: string;
   region: string;
@@ -73,6 +75,8 @@ const HEADER_HINTS: Record<keyof ColumnMapping, string[]> = {
   metric: ["metric", "metric_name", "metric name", "kpi", "measure", "indicator"],
   period: ["period", "date", "month", "period_start", "period start", "year", "time"],
   value: ["value", "amount", "count", "result", "score", "total", "number"],
+  numerator: ["numerator", "compliant", "events", "num"],
+  denominator: ["denominator", "total", "exposure", "denom"],
   department: ["department", "dept", "department_name", "department name"],
   division: ["division", "unit", "group", "section", "division_name"],
   region: [
@@ -187,6 +191,8 @@ export function UploadClient({ lookup }: { lookup: TemplateLookupData }) {
     metric: "",
     period: "",
     value: "",
+    numerator: "",
+    denominator: "",
     department: "",
     division: "",
     region: "",
@@ -258,7 +264,13 @@ export function UploadClient({ lookup }: { lookup: TemplateLookupData }) {
     }
 
     return lookup.metrics.filter((m) => matchingMetricIds.has(m.id));
-  }, [lookup.metrics, lookup.associations, lookup.regions, templateDivisionFilter, templateDeptFilter]);
+  }, [
+    lookup.metrics,
+    lookup.associations,
+    lookup.regions,
+    templateDivisionFilter,
+    templateDeptFilter,
+  ]);
 
   // Search-filtered metrics for display in the checklist
   const displayedMetrics = useMemo(() => {
@@ -282,21 +294,29 @@ export function UploadClient({ lookup }: { lookup: TemplateLookupData }) {
         const endMonth = parseInt(endParts[1]) - 1;
 
         if (templatePeriodType === "monthly") {
-          let y = startYear, m = startMonth;
+          let y = startYear,
+            m = startMonth;
           while (y < endYear || (y === endYear && m <= endMonth)) {
             periods.push(`${y}-${String(m + 1).padStart(2, "0")}`);
             m++;
-            if (m > 11) { m = 0; y++; }
+            if (m > 11) {
+              m = 0;
+              y++;
+            }
           }
         } else if (templatePeriodType === "quarterly") {
           // Snap start to quarter start
-          let y = startYear, q = Math.floor(startMonth / 3);
+          let y = startYear,
+            q = Math.floor(startMonth / 3);
           const endQ = Math.floor(endMonth / 3);
           while (y < endYear || (y === endYear && q <= endQ)) {
             const qMonth = q * 3 + 1;
             periods.push(`${y}-${String(qMonth).padStart(2, "0")}`);
             q++;
-            if (q > 3) { q = 0; y++; }
+            if (q > 3) {
+              q = 0;
+              y++;
+            }
           }
         } else if (templatePeriodType === "annual") {
           for (let y = startYear; y <= endYear; y++) {
@@ -308,9 +328,7 @@ export function UploadClient({ lookup }: { lookup: TemplateLookupData }) {
         }
       } else {
         // Single period
-        periods.push(templateStartDate.length <= 7
-          ? templateStartDate
-          : templateStartDate);
+        periods.push(templateStartDate.length <= 7 ? templateStartDate : templateStartDate);
       }
     }
 
@@ -331,8 +349,42 @@ export function UploadClient({ lookup }: { lookup: TemplateLookupData }) {
       if (a.regionId) assocMap[a.metricDefinitionId].regionIds.push(a.regionId);
     }
 
-    // Build rows
+    // Determine if any selected metrics are rate/proportion type
+    const hasRateMetrics = selectedMetrics.some(
+      (m) => m.dataType === "rate" || m.dataType === "proportion"
+    );
+
+    // Build rows — include Numerator/Denominator columns when rate/proportion metrics are selected
     const rows: string[][] = [];
+
+    // Helper to build a row with the right number of columns
+    const buildRow = (
+      metricName: string,
+      period: string,
+      divName: string,
+      regionName: string,
+      metric: (typeof selectedMetrics)[0]
+    ): string[] => {
+      const isComponent = metric.dataType === "rate" || metric.dataType === "proportion";
+      if (hasRateMetrics) {
+        // 8 columns: Metric, Period, Value, Numerator, Denominator, Division, Department, Notes
+        // For rate/proportion: leave Value blank, user fills Numerator + Denominator
+        // For continuous: user fills Value, leave Numerator + Denominator blank
+        return [
+          metricName,
+          period,
+          isComponent ? "" : "", // Value — always empty in template
+          isComponent ? "" : "", // Numerator — user fills for rate/proportion
+          isComponent ? "" : "", // Denominator — user fills for rate/proportion
+          divName,
+          regionName,
+          "",
+        ];
+      } else {
+        // 6 columns: Metric, Period, Value, Division, Department, Notes
+        return [metricName, period, "", divName, regionName, ""];
+      }
+    };
 
     for (const metric of selectedMetrics) {
       const assoc = assocMap[metric.id];
@@ -340,9 +392,7 @@ export function UploadClient({ lookup }: { lookup: TemplateLookupData }) {
       for (const period of periods) {
         if (templateIncludeScope && assoc) {
           // Region-level rows
-          const regionIds = assoc.regionIds.length > 0
-            ? assoc.regionIds
-            : [];
+          const regionIds = assoc.regionIds.length > 0 ? assoc.regionIds : [];
 
           // Filter to selected division/department if needed
           let filteredRegionIds = regionIds;
@@ -362,45 +412,77 @@ export function UploadClient({ lookup }: { lookup: TemplateLookupData }) {
               const division = region
                 ? lookup.divisions.find((d) => d.id === region.divisionId)
                 : null;
-              rows.push([
-                metric.name,
-                period,
-                "",
-                division?.name ?? "",
-                region?.name ?? "",
-                "",
-              ]);
+              rows.push(
+                buildRow(metric.name, period, division?.name ?? "", region?.name ?? "", metric)
+              );
             }
           } else {
             // Division-level rows
-            const divIds = assoc.divisionIds.length > 0
-              ? assoc.divisionIds
-              : [];
+            const divIds = assoc.divisionIds.length > 0 ? assoc.divisionIds : [];
 
-            const filteredDivIds = templateDivisionFilter !== "__all__"
-              ? divIds.filter((id) => id === templateDivisionFilter)
-              : divIds;
+            const filteredDivIds =
+              templateDivisionFilter !== "__all__"
+                ? divIds.filter((id) => id === templateDivisionFilter)
+                : divIds;
 
             if (filteredDivIds.length > 0) {
               for (const divId of filteredDivIds) {
                 const div = lookup.divisions.find((d) => d.id === divId);
-                rows.push([metric.name, period, "", div?.name ?? "", "", ""]);
+                rows.push(buildRow(metric.name, period, div?.name ?? "", "", metric));
               }
             } else {
               // No associations — single row
-              rows.push([metric.name, period, "", "", "", ""]);
+              rows.push(buildRow(metric.name, period, "", "", metric));
             }
           }
         } else {
           // No scope expansion — one row per metric+period
-          rows.push([metric.name, period, "", "", "", ""]);
+          rows.push(buildRow(metric.name, period, "", "", metric));
         }
       }
     }
 
+    // Build header row — include Numerator/Denominator columns with custom labels when needed
+    let fields: string[];
+    if (hasRateMetrics) {
+      // Collect unique numerator/denominator labels from selected rate/proportion metrics
+      const rateMetrics = selectedMetrics.filter(
+        (m) => m.dataType === "rate" || m.dataType === "proportion"
+      );
+      const numLabels = new Set(
+        rateMetrics.map((m) => {
+          if (m.dataType === "proportion") return m.numeratorLabel || "Compliant";
+          return m.numeratorLabel || "Events";
+        })
+      );
+      const denLabels = new Set(
+        rateMetrics.map((m) => {
+          if (m.dataType === "proportion") return m.denominatorLabel || "Total";
+          return m.denominatorLabel || "Exposure";
+        })
+      );
+
+      // If all rate metrics share the same label, use it; otherwise use generic with examples
+      const numHeader = numLabels.size === 1 ? `Numerator (${[...numLabels][0]})` : `Numerator`;
+      const denHeader = denLabels.size === 1 ? `Denominator (${[...denLabels][0]})` : `Denominator`;
+
+      fields = [
+        "Metric",
+        "Period",
+        "Value",
+        numHeader,
+        denHeader,
+        "Division",
+        "Department",
+        "Notes",
+      ];
+    } else {
+      fields = ["Metric", "Period", "Value", "Division", "Department", "Notes"];
+    }
+
     // Generate CSV with PapaParse
     const csv = Papa.unparse({
-      fields: ["Metric", "Period", "Value", "Division", "Department", "Notes"],
+      fields,
       data: rows,
     });
 
@@ -489,6 +571,8 @@ export function UploadClient({ lookup }: { lookup: TemplateLookupData }) {
           metric: autoDetectColumn(headers, "metric"),
           period: autoDetectColumn(headers, "period"),
           value: autoDetectColumn(headers, "value"),
+          numerator: autoDetectColumn(headers, "numerator"),
+          denominator: autoDetectColumn(headers, "denominator"),
           department: autoDetectColumn(headers, "department"),
           division: autoDetectColumn(headers, "division"),
           region: autoDetectColumn(headers, "region"),
@@ -532,6 +616,8 @@ export function UploadClient({ lookup }: { lookup: TemplateLookupData }) {
     const metricColIdx = rawHeaders.indexOf(mapping.metric);
     const periodColIdx = rawHeaders.indexOf(mapping.period);
     const valueColIdx = rawHeaders.indexOf(mapping.value);
+    const numColIdx = rawHeaders.indexOf(mapping.numerator);
+    const denColIdx = rawHeaders.indexOf(mapping.denominator);
     const deptColIdx = rawHeaders.indexOf(mapping.department);
     const divColIdx = rawHeaders.indexOf(mapping.division);
     const indColIdx = rawHeaders.indexOf(mapping.region);
@@ -541,19 +627,7 @@ export function UploadClient({ lookup }: { lookup: TemplateLookupData }) {
       const row = rawRows[i];
       const rowNum = i + 2; // +2 for 1-indexed + header row
 
-      // --- Value ---
-      const rawValue = valueColIdx >= 0 ? row[valueColIdx]?.replace(/[$,%]/g, "").trim() : "";
-      const value = parseFloat(rawValue);
-      if (isNaN(value)) {
-        results.push({
-          row: rowNum,
-          status: "error",
-          message: `Invalid value: "${row[valueColIdx] ?? ""}"`,
-        });
-        continue;
-      }
-
-      // --- Metric ---
+      // --- Metric (resolve first so we know the dataType) ---
       const rawMetric = metricColIdx >= 0 ? row[metricColIdx]?.trim() : "";
       const metricId = fuzzyMatch(rawMetric, filteredMetrics);
       if (!metricId) {
@@ -565,8 +639,80 @@ export function UploadClient({ lookup }: { lookup: TemplateLookupData }) {
         continue;
       }
 
-      // --- Department (auto-resolved from metric) ---
       const metricDef = lookup.metrics.find((m) => m.id === metricId);
+      const isComponentMetric =
+        metricDef?.dataType === "rate" || metricDef?.dataType === "proportion";
+
+      // --- Value / Numerator / Denominator ---
+      let value: number;
+      let numerator: number | null = null;
+      let denominator: number | null = null;
+
+      // Check if numerator & denominator columns are mapped and have values
+      const rawNum = numColIdx >= 0 ? row[numColIdx]?.replace(/[$,%]/g, "").trim() : "";
+      const rawDen = denColIdx >= 0 ? row[denColIdx]?.replace(/[$,%]/g, "").trim() : "";
+      const hasComponents = rawNum !== "" && rawDen !== "";
+
+      if (hasComponents) {
+        // Parse numerator and denominator
+        numerator = parseFloat(rawNum);
+        denominator = parseFloat(rawDen);
+
+        if (isNaN(numerator)) {
+          results.push({
+            row: rowNum,
+            status: "error",
+            message: `Invalid numerator: "${row[numColIdx] ?? ""}"`,
+          });
+          continue;
+        }
+        if (isNaN(denominator)) {
+          results.push({
+            row: rowNum,
+            status: "error",
+            message: `Invalid denominator: "${row[denColIdx] ?? ""}"`,
+          });
+          continue;
+        }
+        if (denominator === 0) {
+          results.push({
+            row: rowNum,
+            status: "error",
+            message: `Denominator cannot be zero`,
+          });
+          continue;
+        }
+
+        // Calculate value from components
+        if (metricDef?.dataType === "rate" && metricDef.rateMultiplier) {
+          value = (numerator / denominator) * metricDef.rateMultiplier;
+        } else {
+          // Proportion or rate without multiplier: numerator / denominator
+          value = numerator / denominator;
+        }
+      } else {
+        // Fall back to Value column
+        const rawValue = valueColIdx >= 0 ? row[valueColIdx]?.replace(/[$,%]/g, "").trim() : "";
+        value = parseFloat(rawValue);
+        if (isNaN(value)) {
+          if (isComponentMetric && numColIdx < 0) {
+            results.push({
+              row: rowNum,
+              status: "error",
+              message: `Rate/proportion metric requires Numerator and Denominator columns, or a Value`,
+            });
+          } else {
+            results.push({
+              row: rowNum,
+              status: "error",
+              message: `Invalid value: "${row[valueColIdx] ?? ""}"`,
+            });
+          }
+          continue;
+        }
+      }
+
+      // --- Department (auto-resolved from metric) ---
       const departmentId = metricDef?.departmentId ?? "";
       if (!departmentId) {
         results.push({
@@ -643,8 +789,8 @@ export function UploadClient({ lookup }: { lookup: TemplateLookupData }) {
           periodStart: periodDate.toISOString(),
           value,
           notes,
-          numerator: null,
-          denominator: null,
+          numerator,
+          denominator,
         },
       });
     }
@@ -714,6 +860,8 @@ export function UploadClient({ lookup }: { lookup: TemplateLookupData }) {
       metric: "",
       period: "",
       value: "",
+      numerator: "",
+      denominator: "",
       department: "",
       division: "",
       region: "",
@@ -763,26 +911,31 @@ export function UploadClient({ lookup }: { lookup: TemplateLookupData }) {
           {templateOpen && (
             <CardContent className="space-y-5">
               <p className="text-sm text-muted-foreground">
-                Generate a pre-filled CSV template with the correct columns and rows. Select metrics and
-                options, then download and fill in the values.
+                Generate a pre-filled CSV template with the correct columns and rows. Select metrics
+                and options, then download and fill in the values.
               </p>
 
               {/* Division & Department filters */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Filter by Division</Label>
-                  <Select value={templateDivisionFilter} onValueChange={(v) => {
-                    setTemplateDivisionFilter(v);
-                    setTemplateDeptFilter("__all__");
-                    setTemplateMetricIds(new Set());
-                  }}>
+                  <Select
+                    value={templateDivisionFilter}
+                    onValueChange={(v) => {
+                      setTemplateDivisionFilter(v);
+                      setTemplateDeptFilter("__all__");
+                      setTemplateMetricIds(new Set());
+                    }}
+                  >
                     <SelectTrigger className="w-full">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="__all__">All Divisions</SelectItem>
                       {lookup.divisions.map((d) => (
-                        <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+                        <SelectItem key={d.id} value={d.id}>
+                          {d.name}
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -790,17 +943,22 @@ export function UploadClient({ lookup }: { lookup: TemplateLookupData }) {
 
                 <div className="space-y-2">
                   <Label>Filter by Department</Label>
-                  <Select value={templateDeptFilter} onValueChange={(v) => {
-                    setTemplateDeptFilter(v);
-                    setTemplateMetricIds(new Set());
-                  }}>
+                  <Select
+                    value={templateDeptFilter}
+                    onValueChange={(v) => {
+                      setTemplateDeptFilter(v);
+                      setTemplateMetricIds(new Set());
+                    }}
+                  >
                     <SelectTrigger className="w-full">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="__all__">All Departments</SelectItem>
                       {templateDepts.map((d) => (
-                        <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+                        <SelectItem key={d.id} value={d.id}>
+                          {d.name}
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -819,7 +977,9 @@ export function UploadClient({ lookup }: { lookup: TemplateLookupData }) {
                       variant="ghost"
                       size="sm"
                       className="text-xs h-7"
-                      onClick={() => setTemplateMetricIds(new Set(templateMetrics.map((m) => m.id)))}
+                      onClick={() =>
+                        setTemplateMetricIds(new Set(templateMetrics.map((m) => m.id)))
+                      }
                     >
                       Select All
                     </Button>
@@ -914,8 +1074,7 @@ export function UploadClient({ lookup }: { lookup: TemplateLookupData }) {
 
                 <div className="space-y-2">
                   <Label>
-                    End Period{" "}
-                    <span className="text-muted-foreground font-normal">(optional)</span>
+                    End Period <span className="text-muted-foreground font-normal">(optional)</span>
                   </Label>
                   <Input
                     type={templatePeriodType === "daily" ? "date" : "month"}
@@ -931,9 +1090,7 @@ export function UploadClient({ lookup }: { lookup: TemplateLookupData }) {
                     checked={templateIncludeScope}
                     onCheckedChange={(v) => setTemplateIncludeScope(!!v)}
                   />
-                  <span className="text-sm">
-                    Expand rows by division/department
-                  </span>
+                  <span className="text-sm">Expand rows by division/department</span>
                 </label>
                 <p className="text-[11px] text-muted-foreground">
                   Creates separate rows for each associated division or department per metric,
@@ -1021,12 +1178,18 @@ export function UploadClient({ lookup }: { lookup: TemplateLookupData }) {
               <h4 className="text-sm font-medium">Expected format</h4>
               <p className="text-xs text-muted-foreground">
                 Your CSV should include columns for at least: <strong>Metric Name</strong>,{" "}
-                <strong>Period</strong> (e.g. 2025-01 or 01/2025), and <strong>Value</strong>.
-                Optional columns: Department, Division, Region, Notes. Headers are auto-detected.
+                <strong>Period</strong> (e.g. 2025-01 or 01/2025), and either <strong>Value</strong>{" "}
+                or <strong>Numerator + Denominator</strong> (for rate/proportion metrics). Optional
+                columns: Department, Division, Region, Notes. Headers are auto-detected.
               </p>
               <div className="bg-muted/50 rounded-lg p-3 text-xs font-mono overflow-x-auto">
-                <pre>{`Metric,Period,Value,Department,Division,Notes\nTotal Calls,2025-01,1523,Clinical and Operational Metrics,Air Care,\nAvg Response Time,2025-01,8.2,Clinical and Operational Metrics,Ground Ambulance,`}</pre>
+                <pre>{`Metric,Period,Value,Numerator,Denominator,Division,Department,Notes\nTotal Calls,2025-01,1523,,,Air Care,,\nCompliance Rate,2025-01,,45,50,Ground Ambulance,,`}</pre>
               </div>
+              <p className="text-[11px] text-muted-foreground">
+                For rate/proportion metrics, provide Numerator and Denominator — the system will
+                automatically calculate the value and use the components for control chart limits
+                (UCL/LCL).
+              </p>
             </div>
           </CardContent>
         </Card>
@@ -1175,43 +1338,37 @@ export function UploadClient({ lookup }: { lookup: TemplateLookupData }) {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {(
                 [
-                  {
-                    field: "metric" as const,
-                    label: "Metric Name",
-                    required: true,
-                  },
-                  {
-                    field: "period" as const,
-                    label: "Period / Date",
-                    required: true,
-                  },
+                  { field: "metric" as const, label: "Metric Name", required: true, hint: "" },
+                  { field: "period" as const, label: "Period / Date", required: true, hint: "" },
                   {
                     field: "value" as const,
                     label: "Value",
-                    required: true,
+                    required: false,
+                    hint: "Direct value — or use Numerator + Denominator below for rate/proportion metrics",
+                  },
+                  {
+                    field: "numerator" as const,
+                    label: "Numerator",
+                    required: false,
+                    hint: "For rate/proportion metrics (e.g., Compliant, Events)",
+                  },
+                  {
+                    field: "denominator" as const,
+                    label: "Denominator",
+                    required: false,
+                    hint: "For rate/proportion metrics (e.g., Total, Exposure)",
                   },
                   {
                     field: "department" as const,
                     label: "Department",
                     required: !fixedDepartment,
+                    hint: "",
                   },
-                  {
-                    field: "division" as const,
-                    label: "Division",
-                    required: false,
-                  },
-                  {
-                    field: "region" as const,
-                    label: "Region",
-                    required: false,
-                  },
-                  {
-                    field: "notes" as const,
-                    label: "Notes",
-                    required: false,
-                  },
+                  { field: "division" as const, label: "Division", required: false, hint: "" },
+                  { field: "region" as const, label: "Region", required: false, hint: "" },
+                  { field: "notes" as const, label: "Notes", required: false, hint: "" },
                 ] as const
-              ).map(({ field, label, required }) => (
+              ).map(({ field, label, required, hint }) => (
                 <div key={field} className="space-y-2">
                   <Label>
                     {label}
@@ -1258,6 +1415,7 @@ export function UploadClient({ lookup }: { lookup: TemplateLookupData }) {
                       ))}
                     </SelectContent>
                   </Select>
+                  {hint && <p className="text-[11px] text-muted-foreground">{hint}</p>}
                 </div>
               ))}
             </div>
@@ -1272,7 +1430,7 @@ export function UploadClient({ lookup }: { lookup: TemplateLookupData }) {
                 disabled={
                   !mapping.metric ||
                   !mapping.period ||
-                  !mapping.value ||
+                  (!mapping.value && !(mapping.numerator && mapping.denominator)) ||
                   (!mapping.department && !fixedDepartment)
                 }
                 className="bg-[#00b0ad] hover:bg-[#00383d] text-white"

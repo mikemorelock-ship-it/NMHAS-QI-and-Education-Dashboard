@@ -66,7 +66,7 @@ export async function importUploadedData(rows: ValidatedRow[]): Promise<UploadAc
   }
 
   let created = 0;
-  let skipped = 0;
+  const skipped = 0;
   const errors: Array<{ row: number; message: string }> = [];
 
   try {
@@ -166,6 +166,9 @@ export type LookupData = {
     departmentId: string;
     unit: string;
     dataType: string;
+    numeratorLabel: string | null;
+    denominatorLabel: string | null;
+    rateMultiplier: number | null;
   }>;
   divisions: Array<{
     id: string;
@@ -216,6 +219,9 @@ export async function getTemplateLookupData(): Promise<TemplateLookupData> {
         departmentId: true,
         unit: true,
         dataType: true,
+        numeratorLabel: true,
+        denominatorLabel: true,
+        rateMultiplier: true,
       },
       orderBy: { name: "asc" },
     }),
@@ -257,6 +263,9 @@ export async function getLookupData(): Promise<LookupData> {
         departmentId: true,
         unit: true,
         dataType: true,
+        numeratorLabel: true,
+        denominatorLabel: true,
+        rateMultiplier: true,
       },
       orderBy: { name: "asc" },
     }),
