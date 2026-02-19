@@ -48,6 +48,8 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: path.resolve(__dirname),
   },
+  // Prevent bundler from trying to resolve native addons (used only in local dev)
+  serverExternalPackages: ["better-sqlite3", "@prisma/adapter-better-sqlite3"],
   headers: async () => [
     {
       // Apply security headers to all routes

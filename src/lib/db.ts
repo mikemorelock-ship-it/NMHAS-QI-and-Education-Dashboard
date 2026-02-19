@@ -1,4 +1,5 @@
 import { PrismaClient } from "@/generated/prisma/client";
+import { PrismaLibSql } from "@prisma/adapter-libsql/web";
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
@@ -12,13 +13,12 @@ function createPrismaClient() {
     );
   }
 
-  let adapter;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let adapter: any;
 
   // Use Turso (libsql) for remote URLs, better-sqlite3 for local file: URLs
   if (dbUrl.startsWith("libsql://") || dbUrl.startsWith("https://")) {
-    // Use web-compatible adapter (HTTP-only, no native binary required)
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { PrismaLibSql } = require("@prisma/adapter-libsql/web");
+    // Web-compatible adapter (HTTP-only, no native binary required)
     adapter = new PrismaLibSql({
       url: dbUrl,
       authToken: process.env.TURSO_AUTH_TOKEN,
