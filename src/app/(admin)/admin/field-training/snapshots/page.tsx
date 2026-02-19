@@ -71,12 +71,7 @@ export default async function SnapshotsPage() {
         const evals = t.traineeDailyEvals;
         const avgRating =
           evals.length > 0
-            ? Number(
-                (
-                  evals.reduce((sum, e) => sum + e.overallRating, 0) /
-                  evals.length
-                ).toFixed(1)
-              )
+            ? Number((evals.reduce((sum, e) => sum + e.overallRating, 0) / evals.length).toFixed(1))
             : null;
         return {
           id: t.id,

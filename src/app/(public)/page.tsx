@@ -9,12 +9,7 @@ import { ViewToggle, type ViewMode } from "@/components/dashboard/ViewToggle";
 import { MetricChart } from "@/components/dashboard/MetricChart";
 import { DateRangeFilter } from "@/components/dashboard/DateRangeFilter";
 import { CHART_COLORS } from "@/lib/constants";
-import type {
-  DivisionOverview,
-  DivisionDetail,
-  KpiData,
-  MetricChartData,
-} from "@/types";
+import type { DivisionOverview, DivisionDetail, KpiData, MetricChartData } from "@/types";
 
 // ---------------------------------------------------------------------------
 // Skeleton loaders
@@ -24,10 +19,7 @@ function KpiGridSkeleton() {
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
       {Array.from({ length: 8 }).map((_, i) => (
-        <div
-          key={i}
-          className="min-h-[140px] rounded-xl border bg-card p-4 animate-pulse"
-        >
+        <div key={i} className="min-h-[140px] rounded-xl border bg-card p-4 animate-pulse">
           <div className="h-3 w-24 bg-muted rounded mb-3" />
           <div className="h-8 w-20 bg-muted rounded mb-4" />
           <div className="h-3 w-16 bg-muted rounded" />
@@ -42,9 +34,7 @@ function KpiGridSkeleton() {
 // ---------------------------------------------------------------------------
 
 export default function PublicDashboardPage() {
-  const [overviewData, setOverviewData] = useState<DivisionOverview[] | null>(
-    null
-  );
+  const [overviewData, setOverviewData] = useState<DivisionOverview[] | null>(null);
   const [detailData, setDetailData] = useState<DivisionDetail | null>(null);
   const [activeSlug, setActiveSlug] = useState<string>("");
   const [dateRange, setDateRange] = useState<string>("ytd");
@@ -75,9 +65,7 @@ export default function PublicDashboardPage() {
     async (slug: string) => {
       setDetailLoading(true);
       try {
-        const res = await fetch(
-          `/api/dashboard/${slug}?range=${encodeURIComponent(dateRange)}`
-        );
+        const res = await fetch(`/api/dashboard/${slug}?range=${encodeURIComponent(dateRange)}`);
         if (!res.ok) throw new Error("Failed to fetch division detail");
         const data: DivisionDetail = await res.json();
         setDetailData(data);
@@ -153,9 +141,7 @@ export default function PublicDashboardPage() {
     <div className="px-4 md:px-8 py-6 max-w-[1600px] mx-auto space-y-6">
       {/* Header row */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <h1 className="text-2xl font-bold tracking-tight">
-          EMS Operations Dashboard
-        </h1>
+        <h1 className="text-2xl font-bold tracking-tight">EMS Operations Dashboard</h1>
         <div className="flex items-center gap-3">
           <ViewToggle value={viewMode} onChange={setViewMode} />
           <DateRangeFilter value={dateRange} onChange={setDateRange} />
@@ -211,9 +197,7 @@ export default function PublicDashboardPage() {
         )
       ) : (
         !loading && (
-          <div className="text-center py-12 text-muted-foreground">
-            No KPI data available.
-          </div>
+          <div className="text-center py-12 text-muted-foreground">No KPI data available.</div>
         )
       )}
 

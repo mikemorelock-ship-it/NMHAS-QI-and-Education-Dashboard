@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -25,9 +25,29 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ArrowLeft, ExternalLink, AlertTriangle } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  ArrowLeft,
+  ExternalLink,
+  AlertTriangle,
+  Lightbulb,
+  Save,
+  X,
+  Loader2,
+  MessageSquare,
+  AlertCircle,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { createDailyObservationReport, getTraineeDorHistory } from "@/actions/field-training";
+import { useDorAutosave, type DorDraftData } from "@/hooks/use-dor-autosave";
+import { getTraineeFocusAreas } from "@/actions/focus-areas";
+import type { FocusArea } from "@/lib/focus-areas";
 
 type Props = {
   fto: { id: string; firstName: string; lastName: string };
@@ -83,7 +103,7 @@ function RatingInput({
   onChange,
   showLabel = false,
 }: {
-  value: number;
+  value: number | null;
   onChange: (v: number) => void;
   showLabel?: boolean;
 }) {
@@ -96,7 +116,7 @@ function RatingInput({
           onClick={() => onChange(i)}
           className={cn(
             "w-8 h-8 rounded text-xs font-bold transition-all",
-            i <= value
+            value !== null && i <= value
               ? `${RATING_COLORS[i]} text-white`
               : "bg-muted text-muted-foreground hover:bg-muted-foreground/20"
           )}
@@ -104,7 +124,7 @@ function RatingInput({
           {i}
         </button>
       ))}
-      {showLabel && (
+      {showLabel && value !== null && (
         <span className="ml-2 text-xs text-muted-foreground">{RATING_LABELS[value]}</span>
       )}
     </div>
@@ -120,21 +140,101 @@ type DorHistoryItem = {
   recommendAction: string;
 };
 
-export function FtoNewDorClient({ fto, trainees, phases, dorCategories, traineePhaseMap, unackDorMap }: Props) {
+const SEVERITY_COLORS: Record<string, { border: string; bg: string; text: string }> = {
+  high: { border: "border-l-red-500", bg: "bg-red-50", text: "text-red-700" },
+  medium: { border: "border-l-orange-500", bg: "bg-orange-50", text: "text-orange-700" },
+  low: { border: "border-l-blue-500", bg: "bg-blue-50", text: "text-blue-700" },
+};
+
+export function FtoNewDorClient({
+  fto,
+  trainees,
+  phases,
+  dorCategories,
+  traineePhaseMap,
+  unackDorMap,
+}: Props) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
-  const [overallRating, setOverallRating] = useState(4);
+  const [overallRating, setOverallRating] = useState<number | null>(null);
   const [categoryRatings, setCategoryRatings] = useState<
-    Record<string, { rating: number; comments: string }>
-  >(Object.fromEntries(dorCategories.map((c) => [c.id, { rating: 4, comments: "" }])));
+    Record<string, { rating: number | null; comments: string }>
+  >(Object.fromEntries(dorCategories.map((c) => [c.id, { rating: null, comments: "" }])));
   const [nrtFlag, setNrtFlag] = useState(false);
   const [remFlag, setRemFlag] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+
+  // Comment dialog state
+  const [commentDialog, setCommentDialog] = useState<{ catId: string; catName: string } | null>(
+    null
+  );
+  const [commentDraft, setCommentDraft] = useState("");
 
   // Trainee selection state
   const [selectedTraineeId, setSelectedTraineeId] = useState<string | null>(null);
   const [dorHistory, setDorHistory] = useState<DorHistoryItem[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
+
+  // Focus areas state
+  const [focusAreas, setFocusAreas] = useState<FocusArea[]>([]);
+  const [loadingFocusAreas, setLoadingFocusAreas] = useState(false);
+  const [focusAreasExpanded, setFocusAreasExpanded] = useState(true);
+
+  // Autosave
+  const { restoredDraft, saveDraft, clearDraft, lastSavedAt } = useDorAutosave({ ftoId: fto.id });
+  const [showRestoredBanner, setShowRestoredBanner] = useState(false);
+  const narrativeRef = useRef<HTMLTextAreaElement>(null);
+  const dateRef = useRef<HTMLInputElement>(null);
+
+  // Show restored banner on mount when a draft exists
+  useEffect(() => {
+    if (restoredDraft) {
+      setShowRestoredBanner(true);
+    }
+  }, [restoredDraft]);
+
+  // Autosave effect: debounce save on form state changes
+  useEffect(() => {
+    const draftData: DorDraftData = {
+      traineeId: selectedTraineeId || undefined,
+      date: dateRef.current?.value || undefined,
+      phaseId: autoPhaseId || undefined,
+      overallRating,
+      categoryRatings,
+      narrative: narrativeRef.current?.value || undefined,
+      recommendAction: undefined,
+      nrtFlag,
+      remFlag,
+      savedAt: new Date().toISOString(),
+    };
+    saveDraft(draftData);
+  }, [selectedTraineeId, overallRating, categoryRatings, nrtFlag, remFlag, saveDraft]);
+
+  function restoreDraft() {
+    if (!restoredDraft) return;
+    if (restoredDraft.traineeId) {
+      setSelectedTraineeId(restoredDraft.traineeId);
+      handleTraineeChange(restoredDraft.traineeId);
+    }
+    if (restoredDraft.date && dateRef.current) {
+      dateRef.current.value = restoredDraft.date;
+    }
+    setOverallRating(restoredDraft.overallRating ?? 4);
+    if (restoredDraft.categoryRatings) {
+      setCategoryRatings(restoredDraft.categoryRatings);
+    }
+    setNrtFlag(restoredDraft.nrtFlag ?? false);
+    setRemFlag(restoredDraft.remFlag ?? false);
+    if (restoredDraft.narrative && narrativeRef.current) {
+      narrativeRef.current.value = restoredDraft.narrative;
+    }
+    setShowRestoredBanner(false);
+  }
+
+  function discardDraft() {
+    clearDraft();
+    setShowRestoredBanner(false);
+  }
 
   // Derived auto-phase
   const autoPhaseId = selectedTraineeId ? traineePhaseMap[selectedTraineeId] || null : null;
@@ -147,11 +247,25 @@ export function FtoNewDorClient({ fto, trainees, phases, dorCategories, traineeP
   async function handleTraineeChange(traineeId: string) {
     setSelectedTraineeId(traineeId);
     setDorHistory([]);
+    setFocusAreas([]);
     setLoadingHistory(true);
-    const result = await getTraineeDorHistory(traineeId);
+    setLoadingFocusAreas(true);
+
+    // Fetch history and focus areas in parallel
+    const [historyResult, focusResult] = await Promise.all([
+      getTraineeDorHistory(traineeId),
+      getTraineeFocusAreas(traineeId),
+    ]);
+
     setLoadingHistory(false);
-    if (result.success && result.dors) {
-      setDorHistory(result.dors);
+    setLoadingFocusAreas(false);
+
+    if (historyResult.success && historyResult.dors) {
+      setDorHistory(historyResult.dors);
+    }
+    if (focusResult.success) {
+      setFocusAreas(focusResult.focusAreas);
+      setFocusAreasExpanded(true);
     }
   }
 
@@ -160,10 +274,27 @@ export function FtoNewDorClient({ fto, trainees, phases, dorCategories, traineeP
     setError(null);
     setSubmitting(true);
 
+    // Validate all ratings are selected (skip for drafts)
+    if (!asDraft) {
+      const missingCategories = dorCategories.filter((c) => categoryRatings[c.id]?.rating == null);
+      if (overallRating == null) {
+        setError("Please select an overall rating.");
+        setSubmitting(false);
+        return;
+      }
+      if (missingCategories.length > 0) {
+        setError(
+          `Please rate all categories. Missing: ${missingCategories.map((c) => c.name).join(", ")}`
+        );
+        setSubmitting(false);
+        return;
+      }
+    }
+
     const form = e.currentTarget;
     const formData = new FormData(form);
     formData.set("ftoId", fto.id);
-    formData.set("overallRating", overallRating.toString());
+    formData.set("overallRating", (overallRating ?? 4).toString());
     formData.set("nrtFlag", nrtFlag.toString());
     formData.set("remFlag", remFlag.toString());
 
@@ -185,15 +316,16 @@ export function FtoNewDorClient({ fto, trainees, phases, dorCategories, traineeP
       return;
     }
 
+    clearDraft();
     router.push("/fieldtraining/dors");
   }
 
   return (
     <div className="space-y-6 max-w-3xl mx-auto">
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" asChild>
+        <Button variant="ghost" size="icon" asChild aria-label="Go back">
           <Link href="/fieldtraining/dors">
-            <ArrowLeft className="h-4 w-4" />
+            <ArrowLeft className="h-4 w-4" aria-hidden="true" />
           </Link>
         </Button>
         <div>
@@ -202,6 +334,47 @@ export function FtoNewDorClient({ fto, trainees, phases, dorCategories, traineeP
         </div>
       </div>
 
+      {/* Autosave: Restore draft banner */}
+      {showRestoredBanner && restoredDraft && (
+        <Card className="border-blue-300 bg-blue-50">
+          <CardContent className="pt-4 pb-4">
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-2 text-sm text-blue-800">
+                <Save className="h-4 w-4" />
+                <span>
+                  Unsaved draft found from {new Date(restoredDraft.savedAt).toLocaleString()}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="text-blue-700 border-blue-300 hover:bg-blue-100"
+                  onClick={restoreDraft}
+                >
+                  Resume Draft
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-blue-600 hover:text-blue-800"
+                  onClick={discardDraft}
+                >
+                  <X className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Autosave status */}
+      {lastSavedAt && !showRestoredBanner && (
+        <p className="text-xs text-muted-foreground text-right">
+          Draft saved {new Date(lastSavedAt).toLocaleTimeString()}
+        </p>
+      )}
+
       <form
         onSubmit={(e) => {
           e.preventDefault();
@@ -209,13 +382,15 @@ export function FtoNewDorClient({ fto, trainees, phases, dorCategories, traineeP
           handleSubmit(e, false);
         }}
       >
-        {error && (
-          <Card className="border-destructive mb-4">
-            <CardContent className="pt-6">
-              <p className="text-sm text-destructive">{error}</p>
-            </CardContent>
-          </Card>
-        )}
+        <div aria-live="polite">
+          {error && (
+            <Card className="border-destructive mb-4">
+              <CardContent className="pt-6">
+                <p className="text-sm text-destructive" role="alert">{error}</p>
+              </CardContent>
+            </Card>
+          )}
+        </div>
 
         <Card>
           <CardHeader>
@@ -246,17 +421,14 @@ export function FtoNewDorClient({ fto, trainees, phases, dorCategories, traineeP
               </div>
               <div className="space-y-2">
                 <Label>FTO</Label>
-                <Input
-                  value={`${fto.lastName}, ${fto.firstName}`}
-                  disabled
-                  className="bg-muted"
-                />
+                <Input value={`${fto.lastName}, ${fto.firstName}`} disabled className="bg-muted" />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Date</Label>
                 <Input
+                  ref={dateRef}
                   name="date"
                   type="date"
                   defaultValue={new Date().toISOString().split("T")[0]}
@@ -291,17 +463,14 @@ export function FtoNewDorClient({ fto, trainees, phases, dorCategories, traineeP
               <div className="flex items-start gap-3">
                 <AlertTriangle className="h-5 w-5 text-red-600 shrink-0 mt-0.5" />
                 <div>
-                  <p className="font-medium text-red-800">
-                    Cannot Create New DOR
-                  </p>
+                  <p className="font-medium text-red-800">Cannot Create New DOR</p>
                   <p className="text-sm text-red-700 mt-1">
                     This trainee has{" "}
                     <strong>
                       {unackCount} unacknowledged DOR{unackCount > 1 ? "s" : ""}
                     </strong>{" "}
-                    that must be reviewed first. Please direct the trainee to log
-                    in and acknowledge their previous DOR{unackCount > 1 ? "s" : ""}{" "}
-                    before submitting a new one.
+                    that must be reviewed first. Please direct the trainee to log in and acknowledge
+                    their previous DOR{unackCount > 1 ? "s" : ""} before submitting a new one.
                   </p>
                   <Button
                     variant="outline"
@@ -317,6 +486,64 @@ export function FtoNewDorClient({ fto, trainees, phases, dorCategories, traineeP
           </Card>
         )}
 
+        {/* AI Focus Areas */}
+        {selectedTraineeId && !isBlocked && (
+          <Card className="mt-4 border-violet-200">
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Lightbulb className="h-5 w-5 text-violet-600" />
+                  Recommended Focus Areas
+                </CardTitle>
+                {focusAreas.length > 0 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-xs text-muted-foreground"
+                    onClick={() => setFocusAreasExpanded(!focusAreasExpanded)}
+                  >
+                    {focusAreasExpanded ? "Collapse" : "Expand"}
+                  </Button>
+                )}
+              </div>
+            </CardHeader>
+            <CardContent>
+              {loadingFocusAreas ? (
+                <div className="flex items-center justify-center gap-2 py-4 text-sm text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Analyzing trainee history...
+                </div>
+              ) : focusAreas.length === 0 ? (
+                <p className="text-sm text-muted-foreground py-2">
+                  No specific focus areas identified. Continue with standard evaluation.
+                </p>
+              ) : focusAreasExpanded ? (
+                <div className="space-y-2">
+                  {focusAreas.map((area, i) => {
+                    const colors = SEVERITY_COLORS[area.severity];
+                    return (
+                      <div
+                        key={i}
+                        className={cn("rounded-md border-l-4 p-3", colors.border, colors.bg)}
+                      >
+                        <p className={cn("text-sm font-medium", colors.text)}>{area.title}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">{area.detail}</p>
+                      </div>
+                    );
+                  })}
+                  <p className="text-[11px] text-muted-foreground italic mt-2">
+                    These suggestions are based on training history and are advisory only.
+                  </p>
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  {focusAreas.length} focus area{focusAreas.length === 1 ? "" : "s"} identified.
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
         {/* DOR History */}
         {selectedTraineeId && (
           <Card className="mt-4">
@@ -328,9 +555,7 @@ export function FtoNewDorClient({ fto, trainees, phases, dorCategories, traineeP
             </CardHeader>
             <CardContent>
               {loadingHistory ? (
-                <p className="text-sm text-muted-foreground py-4 text-center">
-                  Loading history...
-                </p>
+                <p className="text-sm text-muted-foreground py-4 text-center">Loading history...</p>
               ) : dorHistory.length === 0 ? (
                 <p className="text-sm text-muted-foreground py-4 text-center">
                   No previous DORs found.
@@ -381,7 +606,7 @@ export function FtoNewDorClient({ fto, trainees, phases, dorCategories, traineeP
 
         <Card className="mt-4">
           <CardHeader>
-            <CardTitle>Performance Ratings</CardTitle>
+            <CardTitle className="text-xl">Daily Observation Report</CardTitle>
             <CardDescription>
               Rate the trainee in each category using the FTEP 1-7 scale.
               <span className="block mt-1 text-xs">
@@ -392,50 +617,77 @@ export function FtoNewDorClient({ fto, trainees, phases, dorCategories, traineeP
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {dorCategories.map((cat) => (
-                <div key={cat.id} className="p-3 rounded-lg border">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1 min-w-0">
-                      <Label className="text-sm font-medium">{cat.name}</Label>
-                      {cat.description && (
-                        <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
-                          {cat.description}
-                        </p>
-                      )}
-                      <div className="mt-2">
-                        <RatingInput
-                          value={categoryRatings[cat.id]?.rating ?? 4}
-                          onChange={(v) =>
-                            setCategoryRatings((prev) => ({
-                              ...prev,
-                              [cat.id]: { ...prev[cat.id], rating: v },
-                            }))
-                          }
-                        />
+              {dorCategories.map((cat) => {
+                const rating = categoryRatings[cat.id]?.rating;
+                const comments = categoryRatings[cat.id]?.comments || "";
+                const hasComment = !!comments.trim();
+                const isLowRating = rating !== null && rating < 4;
+                const needsComment = isLowRating && !hasComment;
+
+                return (
+                  <div
+                    key={cat.id}
+                    className={cn(
+                      "p-3 rounded-lg border transition-colors",
+                      needsComment && "border-amber-400 bg-amber-50/50"
+                    )}
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <Label className="text-sm font-medium">{cat.name}</Label>
+                        {cat.description && (
+                          <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
+                            {cat.description}
+                          </p>
+                        )}
+                        <div className="mt-2">
+                          <RatingInput
+                            value={rating ?? null}
+                            onChange={(v) =>
+                              setCategoryRatings((prev) => ({
+                                ...prev,
+                                [cat.id]: { ...prev[cat.id], rating: v },
+                              }))
+                            }
+                          />
+                        </div>
                       </div>
-                    </div>
-                    <div className="flex-1">
-                      <Input
-                        placeholder="Comments (optional)"
-                        value={categoryRatings[cat.id]?.comments ?? ""}
-                        onChange={(e) =>
-                          setCategoryRatings((prev) => ({
-                            ...prev,
-                            [cat.id]: { ...prev[cat.id], comments: e.target.value },
-                          }))
-                        }
-                      />
+                      <button
+                        type="button"
+                        title={hasComment ? "Edit comment" : "Add comment"}
+                        onClick={() => {
+                          setCommentDraft(comments);
+                          setCommentDialog({ catId: cat.id, catName: cat.name });
+                        }}
+                        className={cn(
+                          "relative inline-flex items-center justify-center rounded-md transition-colors shrink-0",
+                          "h-9 w-9 border",
+                          needsComment
+                            ? "border-amber-400 bg-amber-50 text-amber-600 hover:bg-amber-100 animate-pulse"
+                            : hasComment
+                              ? "border-nmh-teal bg-nmh-teal/10 text-nmh-teal hover:bg-nmh-teal/20"
+                              : "border-input text-muted-foreground hover:bg-accent hover:text-foreground"
+                        )}
+                      >
+                        <MessageSquare className="h-4 w-4" />
+                        {hasComment && (
+                          <span className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-nmh-teal ring-2 ring-background" />
+                        )}
+                        {needsComment && (
+                          <span className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-amber-500 ring-2 ring-background" />
+                        )}
+                      </button>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </CardContent>
         </Card>
 
         <Card className="mt-4">
           <CardHeader>
-            <CardTitle>Performance Summary</CardTitle>
+            <CardTitle className="text-lg">Performance Summary</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
@@ -475,7 +727,7 @@ export function FtoNewDorClient({ fto, trainees, phases, dorCategories, traineeP
 
         <Card className="mt-4">
           <CardHeader>
-            <CardTitle>Overall Assessment</CardTitle>
+            <CardTitle className="text-lg">Overall Assessment</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
@@ -502,6 +754,7 @@ export function FtoNewDorClient({ fto, trainees, phases, dorCategories, traineeP
             <div className="space-y-2">
               <Label>Narrative / Notes</Label>
               <Textarea
+                ref={narrativeRef}
                 name="narrative"
                 placeholder="Overall observations, strengths, areas for improvement..."
                 rows={4}
@@ -509,22 +762,13 @@ export function FtoNewDorClient({ fto, trainees, phases, dorCategories, traineeP
             </div>
             <div className="flex items-center gap-6">
               <div className="flex items-center gap-2">
-                <Checkbox
-                  id="nrtFlag"
-                  checked={nrtFlag}
-                  onCheckedChange={(v) => setNrtFlag(!!v)}
-                />
+                <Checkbox id="nrtFlag" checked={nrtFlag} onCheckedChange={(v) => setNrtFlag(!!v)} />
                 <Label htmlFor="nrtFlag" className="text-sm">
-                  <Badge className="bg-red-100 text-red-800">NRT</Badge> Not Responding to
-                  Training
+                  <Badge className="bg-red-100 text-red-800">NRT</Badge> Not Responding to Training
                 </Label>
               </div>
               <div className="flex items-center gap-2">
-                <Checkbox
-                  id="remFlag"
-                  checked={remFlag}
-                  onCheckedChange={(v) => setRemFlag(!!v)}
-                />
+                <Checkbox id="remFlag" checked={remFlag} onCheckedChange={(v) => setRemFlag(!!v)} />
                 <Label htmlFor="remFlag" className="text-sm">
                   <Badge className="bg-orange-100 text-orange-800">REM</Badge> Remedial Training
                 </Label>
@@ -559,6 +803,68 @@ export function FtoNewDorClient({ fto, trainees, phases, dorCategories, traineeP
           </Button>
         </div>
       </form>
+
+      {/* Comment Dialog */}
+      <Dialog
+        open={commentDialog !== null}
+        onOpenChange={(open) => {
+          if (!open) setCommentDialog(null);
+        }}
+      >
+        <DialogContent className="sm:max-w-xl overflow-hidden">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <MessageSquare className="h-4 w-4" />
+              Comments — {commentDialog?.catName}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 overflow-hidden">
+            {commentDialog &&
+              (categoryRatings[commentDialog.catId]?.rating ?? null) !== null &&
+              (categoryRatings[commentDialog.catId]?.rating ?? 4) < 4 && (
+                <div className="flex items-center gap-2 text-sm text-amber-700 bg-amber-50 rounded-md px-3 py-2 border border-amber-200">
+                  <AlertCircle className="h-4 w-4 shrink-0" />
+                  <span>
+                    This category is rated below standard. Please provide comments to help the
+                    trainee improve.
+                  </span>
+                </div>
+              )}
+            <Textarea
+              value={commentDraft}
+              onChange={(e) => setCommentDraft(e.target.value)}
+              placeholder="Enter observations, specific examples, teaching points, or areas for improvement..."
+              rows={8}
+              className="!field-sizing-normal resize-y min-h-[180px]"
+              autoFocus
+            />
+            <p className="text-xs text-muted-foreground">
+              Detailed comments help trainees understand expectations and track their growth.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCommentDialog(null)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                if (commentDialog) {
+                  setCategoryRatings((prev) => ({
+                    ...prev,
+                    [commentDialog.catId]: {
+                      ...prev[commentDialog.catId],
+                      comments: commentDraft,
+                    },
+                  }));
+                }
+                setCommentDialog(null);
+              }}
+            >
+              Save Comment
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

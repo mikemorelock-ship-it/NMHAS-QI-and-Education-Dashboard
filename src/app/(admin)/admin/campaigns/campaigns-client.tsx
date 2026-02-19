@@ -36,12 +36,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Plus,
   Pencil,
@@ -59,10 +54,7 @@ import {
   User,
 } from "lucide-react";
 import { CampaignGanttChart } from "@/components/qi/CampaignGanttChart";
-import {
-  CAMPAIGN_STATUS_LABELS,
-  CAMPAIGN_STATUS_COLORS,
-} from "@/lib/constants";
+import { CAMPAIGN_STATUS_LABELS, CAMPAIGN_STATUS_COLORS } from "@/lib/constants";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -103,10 +95,7 @@ interface Props {
 function StatusBadge({ status }: { status: string }) {
   const color = CAMPAIGN_STATUS_COLORS[status] ?? "#4b4f54";
   return (
-    <Badge
-      variant="secondary"
-      style={{ backgroundColor: `${color}20`, color }}
-    >
+    <Badge variant="secondary" style={{ backgroundColor: `${color}20`, color }}>
       {CAMPAIGN_STATUS_LABELS[status] ?? status}
     </Badge>
   );
@@ -131,20 +120,37 @@ function CampaignFormFields({
       </div>
       <div>
         <Label htmlFor="description">Description</Label>
-        <Textarea id="description" name="description" defaultValue={defaults?.description ?? ""} rows={3} maxLength={2000} />
+        <Textarea
+          id="description"
+          name="description"
+          defaultValue={defaults?.description ?? ""}
+          rows={3}
+          maxLength={2000}
+        />
       </div>
       <div>
         <Label htmlFor="goals">Goals / Objectives</Label>
-        <Textarea id="goals" name="goals" defaultValue={defaults?.goals ?? ""} rows={3} maxLength={2000} placeholder="One goal per line, e.g.:&#10;- Reduce response time to under 8 min&#10;- Deploy in all divisions" />
+        <Textarea
+          id="goals"
+          name="goals"
+          defaultValue={defaults?.goals ?? ""}
+          rows={3}
+          maxLength={2000}
+          placeholder="One goal per line, e.g.:&#10;- Reduce response time to under 8 min&#10;- Deploy in all divisions"
+        />
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div>
           <Label htmlFor="status">Status</Label>
           <Select name="status" defaultValue={defaults?.status ?? "planning"}>
-            <SelectTrigger id="status"><SelectValue /></SelectTrigger>
+            <SelectTrigger id="status">
+              <SelectValue />
+            </SelectTrigger>
             <SelectContent>
               {Object.entries(CAMPAIGN_STATUS_LABELS).map(([val, label]) => (
-                <SelectItem key={val} value={val}>{label}</SelectItem>
+                <SelectItem key={val} value={val}>
+                  {label}
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -152,11 +158,15 @@ function CampaignFormFields({
         <div>
           <Label htmlFor="ownerId">Owner</Label>
           <Select name="ownerId" defaultValue={defaults?.ownerId ?? "__none__"}>
-            <SelectTrigger id="ownerId"><SelectValue placeholder="Select owner" /></SelectTrigger>
+            <SelectTrigger id="ownerId">
+              <SelectValue placeholder="Select owner" />
+            </SelectTrigger>
             <SelectContent>
               <SelectItem value="__none__">None</SelectItem>
               {users.map((u) => (
-                <SelectItem key={u.id} value={u.id}>{u.firstName} {u.lastName}</SelectItem>
+                <SelectItem key={u.id} value={u.id}>
+                  {u.firstName} {u.lastName}
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -165,7 +175,12 @@ function CampaignFormFields({
       <div className="grid grid-cols-2 gap-4">
         <div>
           <Label htmlFor="startDate">Start Date</Label>
-          <Input id="startDate" name="startDate" type="date" defaultValue={defaults?.startDate ?? ""} />
+          <Input
+            id="startDate"
+            name="startDate"
+            type="date"
+            defaultValue={defaults?.startDate ?? ""}
+          />
         </div>
         <div>
           <Label htmlFor="endDate">End Date</Label>
@@ -174,7 +189,13 @@ function CampaignFormFields({
       </div>
       <div>
         <Label htmlFor="sortOrder">Sort Order</Label>
-        <Input id="sortOrder" name="sortOrder" type="number" min={0} defaultValue={defaults?.sortOrder ?? 0} />
+        <Input
+          id="sortOrder"
+          name="sortOrder"
+          type="number"
+          min={0}
+          defaultValue={defaults?.sortOrder ?? 0}
+        />
       </div>
     </div>
   );
@@ -268,7 +289,13 @@ export function CampaignsClient({ campaigns, users }: Props) {
             Manage quality improvement campaigns and initiatives
           </p>
         </div>
-        <Button className="shrink-0 self-start sm:self-auto" onClick={() => { setError(null); setShowCreate(true); }}>
+        <Button
+          className="shrink-0 self-start sm:self-auto"
+          onClick={() => {
+            setError(null);
+            setShowCreate(true);
+          }}
+        >
           <Plus className="h-4 w-4 mr-2" /> New Campaign
         </Button>
       </div>
@@ -301,7 +328,9 @@ export function CampaignsClient({ campaigns, users }: Props) {
               <SelectContent>
                 <SelectItem value="__all__">All Statuses</SelectItem>
                 {Object.entries(CAMPAIGN_STATUS_LABELS).map(([val, label]) => (
-                  <SelectItem key={val} value={val}>{label}</SelectItem>
+                  <SelectItem key={val} value={val}>
+                    {label}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -314,7 +343,9 @@ export function CampaignsClient({ campaigns, users }: Props) {
                 <SelectItem value="__all__">All Owners</SelectItem>
                 <SelectItem value="__none__">Unassigned</SelectItem>
                 {ownerOptions.map(([id, name]) => (
-                  <SelectItem key={id} value={id}>{name}</SelectItem>
+                  <SelectItem key={id} value={id}>
+                    {name}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -323,7 +354,10 @@ export function CampaignsClient({ campaigns, users }: Props) {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => { setFilterStatus("__all__"); setFilterOwner("__all__"); }}
+                onClick={() => {
+                  setFilterStatus("__all__");
+                  setFilterOwner("__all__");
+                }}
               >
                 <RefreshCcw className="h-3 w-3 mr-1" /> Reset
               </Button>
@@ -351,20 +385,29 @@ export function CampaignsClient({ campaigns, users }: Props) {
                   {filteredCampaigns.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
-                        {hasFilters ? "No campaigns match the current filters." : "No campaigns yet. Create one to get started."}
+                        {hasFilters
+                          ? "No campaigns match the current filters."
+                          : "No campaigns yet. Create one to get started."}
                       </TableCell>
                     </TableRow>
                   ) : (
                     filteredCampaigns.map((c) => (
                       <TableRow key={c.id} className={c.isActive ? "" : "opacity-50"}>
                         <TableCell>
-                          <Link href={`/admin/campaigns/${c.id}`} className="font-medium hover:text-nmh-teal flex items-center gap-1">
+                          <Link
+                            href={`/admin/campaigns/${c.id}`}
+                            className="font-medium hover:text-nmh-teal flex items-center gap-1"
+                          >
                             {c.name}
                             <ArrowRight className="h-3 w-3" />
                           </Link>
                         </TableCell>
-                        <TableCell><StatusBadge status={c.status} /></TableCell>
-                        <TableCell className="text-sm text-muted-foreground">{c.ownerName ?? "—"}</TableCell>
+                        <TableCell>
+                          <StatusBadge status={c.status} />
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {c.ownerName ?? "—"}
+                        </TableCell>
                         <TableCell className="text-sm text-muted-foreground">
                           {c.startDate ?? "—"} → {c.endDate ?? "—"}
                         </TableCell>
@@ -372,10 +415,26 @@ export function CampaignsClient({ campaigns, users }: Props) {
                         <TableCell className="text-center">{c.actionItemCount}</TableCell>
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-1">
-                            <Button variant="ghost" size="icon" onClick={() => handleToggle(c)} title={c.isActive ? "Deactivate" : "Activate"}>
-                              {c.isActive ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleToggle(c)}
+                              title={c.isActive ? "Deactivate" : "Activate"}
+                            >
+                              {c.isActive ? (
+                                <Eye className="h-4 w-4" />
+                              ) : (
+                                <EyeOff className="h-4 w-4" />
+                              )}
                             </Button>
-                            <Button variant="ghost" size="icon" onClick={() => { setError(null); setEditTarget(c); }}>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => {
+                                setError(null);
+                                setEditTarget(c);
+                              }}
+                            >
                               <Pencil className="h-4 w-4" />
                             </Button>
                             <Button variant="ghost" size="icon" onClick={() => setDeleteTarget(c)}>
@@ -397,7 +456,9 @@ export function CampaignsClient({ campaigns, users }: Props) {
           {filteredCampaigns.length === 0 ? (
             <Card>
               <CardContent className="py-8 text-center text-muted-foreground">
-                {hasFilters ? "No campaigns match the current filters." : "No campaigns yet. Create one to get started."}
+                {hasFilters
+                  ? "No campaigns match the current filters."
+                  : "No campaigns yet. Create one to get started."}
               </CardContent>
             </Card>
           ) : (
@@ -423,9 +484,7 @@ export function CampaignsClient({ campaigns, users }: Props) {
                   </CardHeader>
                   <CardContent className="space-y-3">
                     {c.description && (
-                      <p className="text-sm text-muted-foreground line-clamp-2">
-                        {c.description}
-                      </p>
+                      <p className="text-sm text-muted-foreground line-clamp-2">{c.description}</p>
                     )}
 
                     <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
@@ -435,10 +494,12 @@ export function CampaignsClient({ campaigns, users }: Props) {
                         </span>
                       )}
                       <span className="flex items-center gap-1">
-                        <GitBranchPlus className="h-3 w-3" /> {c.diagramCount} diagram{c.diagramCount !== 1 ? "s" : ""}
+                        <GitBranchPlus className="h-3 w-3" /> {c.diagramCount} diagram
+                        {c.diagramCount !== 1 ? "s" : ""}
                       </span>
                       <span className="flex items-center gap-1">
-                        <ListChecks className="h-3 w-3" /> {c.actionItemCount} action{c.actionItemCount !== 1 ? "s" : ""}
+                        <ListChecks className="h-3 w-3" /> {c.actionItemCount} action
+                        {c.actionItemCount !== 1 ? "s" : ""}
                       </span>
                     </div>
 
@@ -450,10 +511,26 @@ export function CampaignsClient({ campaigns, users }: Props) {
                     )}
 
                     <div className="flex items-center gap-1 pt-1 border-t">
-                      <Button variant="ghost" size="sm" onClick={() => handleToggle(c)} title={c.isActive ? "Deactivate" : "Activate"}>
-                        {c.isActive ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleToggle(c)}
+                        title={c.isActive ? "Deactivate" : "Activate"}
+                      >
+                        {c.isActive ? (
+                          <Eye className="h-3.5 w-3.5" />
+                        ) : (
+                          <EyeOff className="h-3.5 w-3.5" />
+                        )}
                       </Button>
-                      <Button variant="ghost" size="sm" onClick={() => { setError(null); setEditTarget(c); }}>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setError(null);
+                          setEditTarget(c);
+                        }}
+                      >
                         <Pencil className="h-3.5 w-3.5" />
                       </Button>
                       <Button variant="ghost" size="sm" onClick={() => setDeleteTarget(c)}>
@@ -487,27 +564,44 @@ export function CampaignsClient({ campaigns, users }: Props) {
       {/* Create Dialog */}
       <Dialog open={showCreate} onOpenChange={setShowCreate}>
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-          <DialogHeader><DialogTitle>Create Campaign</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle>Create Campaign</DialogTitle>
+          </DialogHeader>
           <form action={handleCreate}>
             <CampaignFormFields users={users} />
             <DialogFooter className="mt-4">
-              <Button type="button" variant="outline" onClick={() => setShowCreate(false)}>Cancel</Button>
-              <Button type="submit" disabled={isPending}>{isPending ? "Creating..." : "Create"}</Button>
+              <Button type="button" variant="outline" onClick={() => setShowCreate(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={isPending}>
+                {isPending ? "Creating..." : "Create"}
+              </Button>
             </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
 
       {/* Edit Dialog */}
-      <Dialog open={!!editTarget} onOpenChange={(open) => { if (!open) setEditTarget(null); }}>
+      <Dialog
+        open={!!editTarget}
+        onOpenChange={(open) => {
+          if (!open) setEditTarget(null);
+        }}
+      >
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-          <DialogHeader><DialogTitle>Edit Campaign</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle>Edit Campaign</DialogTitle>
+          </DialogHeader>
           {editTarget && (
             <form action={handleEdit}>
               <CampaignFormFields users={users} defaults={editTarget} />
               <DialogFooter className="mt-4">
-                <Button type="button" variant="outline" onClick={() => setEditTarget(null)}>Cancel</Button>
-                <Button type="submit" disabled={isPending}>{isPending ? "Saving..." : "Save"}</Button>
+                <Button type="button" variant="outline" onClick={() => setEditTarget(null)}>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={isPending}>
+                  {isPending ? "Saving..." : "Save"}
+                </Button>
               </DialogFooter>
             </form>
           )}
@@ -515,15 +609,24 @@ export function CampaignsClient({ campaigns, users }: Props) {
       </Dialog>
 
       {/* Delete Dialog */}
-      <Dialog open={!!deleteTarget} onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}>
+      <Dialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => {
+          if (!open) setDeleteTarget(null);
+        }}
+      >
         <DialogContent>
-          <DialogHeader><DialogTitle>Delete Campaign</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle>Delete Campaign</DialogTitle>
+          </DialogHeader>
           <p className="text-sm text-muted-foreground">
-            Are you sure you want to delete <strong>{deleteTarget?.name}</strong>?
-            Associated driver diagrams will be unlinked (not deleted).
+            Are you sure you want to delete <strong>{deleteTarget?.name}</strong>? Associated driver
+            diagrams will be unlinked (not deleted).
           </p>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteTarget(null)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setDeleteTarget(null)}>
+              Cancel
+            </Button>
             <Button variant="destructive" onClick={handleDelete} disabled={isPending}>
               {isPending ? "Deleting..." : "Delete"}
             </Button>

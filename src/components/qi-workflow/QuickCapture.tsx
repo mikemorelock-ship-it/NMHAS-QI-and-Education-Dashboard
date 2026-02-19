@@ -7,12 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
@@ -120,7 +115,8 @@ export function QuickCapture({
       <div>
         <h2 className="text-xl font-bold">Quick Capture</h2>
         <p className="text-sm text-muted-foreground mt-1">
-          Create standalone items quickly. You can optionally connect them to existing campaigns or diagrams afterward.
+          Create standalone items quickly. You can optionally connect them to existing campaigns or
+          diagrams afterward.
         </p>
       </div>
 
@@ -274,7 +270,8 @@ export function QuickCapture({
                     <SelectItem value="__none__">None</SelectItem>
                     {metrics.map((m) => (
                       <SelectItem key={m.id} value={m.id}>
-                        {m.name}{m.departmentName ? ` (${m.departmentName})` : ""}
+                        {m.name}
+                        {m.departmentName ? ` (${m.departmentName})` : ""}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -350,11 +347,7 @@ export function QuickCapture({
                 </div>
                 <div>
                   <Label htmlFor="qc-pdsa-start">Plan Start Date</Label>
-                  <Input
-                    id="qc-pdsa-start"
-                    name="planStartDate"
-                    type="date"
-                  />
+                  <Input id="qc-pdsa-start" name="planStartDate" type="date" />
                 </div>
               </div>
               <input type="hidden" name="status" value="planning" />

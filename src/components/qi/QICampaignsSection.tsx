@@ -11,12 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   LayoutGrid,
   LayoutList,
@@ -28,10 +23,7 @@ import {
   Calendar,
   User,
 } from "lucide-react";
-import {
-  CAMPAIGN_STATUS_LABELS,
-  CAMPAIGN_STATUS_COLORS,
-} from "@/lib/constants";
+import { CAMPAIGN_STATUS_LABELS, CAMPAIGN_STATUS_COLORS } from "@/lib/constants";
 import { CampaignGanttChart } from "@/components/qi/CampaignGanttChart";
 
 // ---------------------------------------------------------------------------
@@ -70,10 +62,7 @@ interface Props {
 function StatusBadge({ status }: { status: string }) {
   const color = CAMPAIGN_STATUS_COLORS[status] ?? "#4b4f54";
   return (
-    <Badge
-      variant="secondary"
-      style={{ backgroundColor: `${color}20`, color }}
-    >
+    <Badge variant="secondary" style={{ backgroundColor: `${color}20`, color }}>
       {CAMPAIGN_STATUS_LABELS[status] ?? status}
     </Badge>
   );
@@ -128,9 +117,7 @@ export function QICampaignsSection({ campaigns }: Props) {
                 <Card className="hover:shadow-md transition-shadow cursor-pointer h-full">
                   <CardHeader className="pb-3">
                     <div className="flex items-center justify-between">
-                      <CardTitle className="text-base truncate">
-                        {c.name}
-                      </CardTitle>
+                      <CardTitle className="text-base truncate">{c.name}</CardTitle>
                       <div className="flex items-center gap-2 shrink-0">
                         <Badge
                           variant="secondary"
@@ -147,9 +134,7 @@ export function QICampaignsSection({ campaigns }: Props) {
                   </CardHeader>
                   <CardContent className="space-y-3">
                     {c.description && (
-                      <p className="text-sm text-muted-foreground line-clamp-2">
-                        {c.description}
-                      </p>
+                      <p className="text-sm text-muted-foreground line-clamp-2">{c.description}</p>
                     )}
 
                     {/* Progress bar */}
@@ -237,12 +222,8 @@ export function QICampaignsSection({ campaigns }: Props) {
                     <TableCell className="text-sm text-muted-foreground">
                       {c.startDate ?? "—"} → {c.endDate ?? "—"}
                     </TableCell>
-                    <TableCell className="text-center">
-                      {c.diagrams.length}
-                    </TableCell>
-                    <TableCell className="text-center">
-                      {c.totalCycles}
-                    </TableCell>
+                    <TableCell className="text-center">{c.diagrams.length}</TableCell>
+                    <TableCell className="text-center">{c.totalCycles}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -253,10 +234,7 @@ export function QICampaignsSection({ campaigns }: Props) {
 
       {/* Gantt View */}
       <TabsContent value="gantt" className="mt-4">
-        <CampaignGanttChart
-          campaigns={ganttItems}
-          linkPrefix="/quality-improvement/campaign"
-        />
+        <CampaignGanttChart campaigns={ganttItems} linkPrefix="/quality-improvement/campaign" />
       </TabsContent>
     </Tabs>
   );

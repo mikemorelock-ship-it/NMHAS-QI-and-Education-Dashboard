@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
 import { z } from "zod";
 import { requireAdmin } from "@/lib/require-auth";
+import { createAuditLog, computeChanges } from "@/lib/audit";
 
 // ---------------------------------------------------------------------------
 // Schemas
@@ -14,7 +15,9 @@ const EntrySchema = z.object({
   departmentId: z.string().min(1, "Department is required"),
   divisionId: z.string().optional().nullable(),
   regionId: z.string().optional().nullable(),
-  periodType: z.enum(["daily", "weekly", "bi-weekly", "monthly", "quarterly", "annual"]).default("monthly"),
+  periodType: z
+    .enum(["daily", "weekly", "bi-weekly", "monthly", "quarterly", "annual"])
+    .default("monthly"),
   periodStart: z.string().min(1, "Period start is required"),
   value: z.coerce.number(),
   numerator: z.coerce.number().optional().nullable(),
@@ -27,7 +30,9 @@ const BulkEntrySchema = z.object({
   departmentId: z.string().min(1),
   divisionId: z.string().optional().nullable(),
   regionId: z.string().optional().nullable(),
-  periodType: z.enum(["daily", "weekly", "bi-weekly", "monthly", "quarterly", "annual"]).default("monthly"),
+  periodType: z
+    .enum(["daily", "weekly", "bi-weekly", "monthly", "quarterly", "annual"])
+    .default("monthly"),
   periodStart: z.string().min(1),
   value: z.number(),
   numerator: z.number().optional().nullable(),
@@ -67,7 +72,9 @@ function parsePeriodDate(periodStart: string): Date | null {
     // Full ISO string or other format — normalise to noon UTC on that day
     const parsed = new Date(periodStart);
     if (isNaN(parsed.getTime())) return null;
-    d = new Date(Date.UTC(parsed.getUTCFullYear(), parsed.getUTCMonth(), parsed.getUTCDate(), 12, 0, 0));
+    d = new Date(
+      Date.UTC(parsed.getUTCFullYear(), parsed.getUTCMonth(), parsed.getUTCDate(), 12, 0, 0)
+    );
   }
   return isNaN(d.getTime()) ? null : d;
 }
@@ -168,10 +175,7 @@ export async function createEntry(formData: FormData): Promise<ActionResult> {
   } catch (err: unknown) {
     console.error("createEntry error:", err);
     // Check for unique constraint violation
-    if (
-      err instanceof Error &&
-      err.message.includes("Unique constraint failed")
-    ) {
+    if (err instanceof Error && err.message.includes("Unique constraint failed")) {
       return {
         success: false,
         error:
@@ -188,10 +192,7 @@ export async function createEntry(formData: FormData): Promise<ActionResult> {
   return { success: true };
 }
 
-export async function updateEntry(
-  id: string,
-  formData: FormData
-): Promise<ActionResult> {
+export async function updateEntry(id: string, formData: FormData): Promise<ActionResult> {
   let session;
   try {
     session = await requireAdmin("enter_metric_data");
@@ -227,6 +228,12 @@ export async function updateEntry(
   const data = parsed.data;
 
   try {
+    // Fetch existing entry for change tracking
+    const existing = await prisma.metricEntry.findUnique({ where: { id } });
+    if (!existing) {
+      return { success: false, error: "Entry not found." };
+    }
+
     // Look up metric to check dataType for auto-compute
     const metricDef = await prisma.metricDefinition.findUnique({
       where: { id: data.metricDefinitionId },
@@ -265,15 +272,29 @@ export async function updateEntry(
       },
     });
 
-    await prisma.auditLog.create({
-      data: {
-        action: "UPDATE",
-        entity: "MetricEntry",
-        entityId: id,
-        details: `Updated entry: value=${data.value}`,
-        actorId: session.userId,
-        actorType: "admin",
+    const changes = computeChanges(
+      {
+        value: existing.value,
+        numerator: existing.numerator,
+        denominator: existing.denominator,
+        notes: existing.notes,
       },
+      {
+        value: data.value,
+        numerator: num ?? null,
+        denominator: den ?? null,
+        notes: data.notes ?? null,
+      },
+    );
+
+    await createAuditLog({
+      action: "UPDATE",
+      entity: "MetricEntry",
+      entityId: id,
+      details: `Updated entry: value=${data.value}`,
+      changes: changes ?? undefined,
+      actorId: session.userId,
+      actorType: "user",
     });
   } catch (err) {
     console.error("updateEntry error:", err);
@@ -428,10 +449,7 @@ export async function bulkCreateEntries(
     return { success: true, count: results.length };
   } catch (err: unknown) {
     console.error("bulkCreateEntries error:", err);
-    if (
-      err instanceof Error &&
-      err.message.includes("Unique constraint failed")
-    ) {
+    if (err instanceof Error && err.message.includes("Unique constraint failed")) {
       return {
         success: false,
         error:
@@ -442,9 +460,7 @@ export async function bulkCreateEntries(
   }
 }
 
-export async function bulkDeleteEntries(
-  ids: string[]
-): Promise<ActionResult> {
+export async function bulkDeleteEntries(ids: string[]): Promise<ActionResult> {
   let session;
   try {
     session = await requireAdmin("enter_metric_data");

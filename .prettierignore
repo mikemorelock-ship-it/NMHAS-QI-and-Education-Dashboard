@@ -1,0 +1,11 @@
+node_modules
+.next
+out
+build
+coverage
+src/generated
+prisma/migrations
+*.db
+*.db-journal
+*.db-wal
+package-lock.json

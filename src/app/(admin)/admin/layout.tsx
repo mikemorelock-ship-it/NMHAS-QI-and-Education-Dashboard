@@ -7,11 +7,7 @@ import { IdleTimeout } from "@/components/IdleTimeout";
 import { prisma } from "@/lib/db";
 import type { UserRole } from "@/lib/permissions";
 
-export default async function AdminLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const session = await verifySession();
   if (!session) {
     redirect("/login");
@@ -32,9 +28,7 @@ export default async function AdminLayout({
     const token = cookieStore.get("session")?.value;
     if (token) {
       const payloadB64 = token.split(".")[1];
-      const payload = JSON.parse(
-        Buffer.from(payloadB64, "base64url").toString()
-      );
+      const payload = JSON.parse(Buffer.from(payloadB64, "base64url").toString());
       if (typeof payload.iat === "number") {
         expiresAt = (payload.iat + 86400) * 1000; // iat + 24h in ms
       }
@@ -45,14 +39,18 @@ export default async function AdminLayout({
 
   return (
     <div className="min-h-screen flex">
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:z-[9999] focus:top-4 focus:left-4 focus:px-4 focus:py-2 focus:bg-teal-600 focus:text-white focus:rounded-md focus:text-sm focus:font-medium"
+      >
+        Skip to main content
+      </a>
       <AdminSidebar
         userRole={session.role as UserRole}
         userName={`${session.firstName} ${session.lastName}`}
         pendingApprovals={pendingCount}
       />
-      <main className="flex-1 p-6 lg:p-8 bg-muted/30 overflow-auto">
-        {children}
-      </main>
+      <main id="main-content" className="flex-1 p-6 lg:p-8 bg-muted/30 overflow-auto">{children}</main>
       <SessionTimeoutWarning
         expiresAt={expiresAt}
         loginPath="/login"

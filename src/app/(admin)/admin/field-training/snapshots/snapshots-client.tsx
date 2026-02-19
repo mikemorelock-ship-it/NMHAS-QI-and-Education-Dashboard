@@ -21,12 +21,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   Camera,
   Search,
@@ -109,13 +104,10 @@ export function SnapshotsClient({
   const [sortDir, setSortDir] = useState<SortDir>("asc");
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
-  const [results, setResults] = useState<
-    { traineeName: string; token: string }[] | null
-  >(null);
+  const [results, setResults] = useState<{ traineeName: string; token: string }[] | null>(null);
   const [resultsOpen, setResultsOpen] = useState(false);
 
-  const siteUrl =
-    typeof window !== "undefined" ? window.location.origin : "";
+  const siteUrl = typeof window !== "undefined" ? window.location.origin : "";
 
   // Filter + sort trainees
   const filteredTrainees = useMemo(() => {
@@ -186,8 +178,7 @@ export function SnapshotsClient({
   }
 
   function SortIcon({ field }: { field: SortField }) {
-    if (sortField !== field)
-      return <ArrowUpDown className="h-3 w-3 ml-1 opacity-40" />;
+    if (sortField !== field) return <ArrowUpDown className="h-3 w-3 ml-1 opacity-40" />;
     return sortDir === "asc" ? (
       <ArrowUp className="h-3 w-3 ml-1" />
     ) : (
@@ -221,9 +212,7 @@ export function SnapshotsClient({
       if (ids.length === 1) {
         const result = await createTraineeSnapshot(ids[0]);
         if (result.success && result.data) {
-          setResults([
-            { traineeName: result.data.traineeName, token: result.data.token },
-          ]);
+          setResults([{ traineeName: result.data.traineeName, token: result.data.token }]);
           setResultsOpen(true);
           setSelected(new Set());
         } else {
@@ -260,8 +249,7 @@ export function SnapshotsClient({
     navigator.clipboard.writeText(`${siteUrl}/snapshot/${token}`);
   }
 
-  const activeFilters =
-    (phaseFilter !== "all" ? 1 : 0) + (divisionFilter !== "all" ? 1 : 0);
+  const activeFilters = (phaseFilter !== "all" ? 1 : 0) + (divisionFilter !== "all" ? 1 : 0);
 
   return (
     <div className="space-y-6">
@@ -378,8 +366,7 @@ export function SnapshotsClient({
                 <TableHead className="w-12">
                   <Checkbox
                     checked={
-                      filteredTrainees.length > 0 &&
-                      selected.size === filteredTrainees.length
+                      filteredTrainees.length > 0 && selected.size === filteredTrainees.length
                     }
                     onCheckedChange={toggleAll}
                   />
@@ -434,10 +421,7 @@ export function SnapshotsClient({
             <TableBody>
               {filteredTrainees.length === 0 ? (
                 <TableRow>
-                  <TableCell
-                    colSpan={6}
-                    className="text-center text-muted-foreground py-8"
-                  >
+                  <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
                     {searchQuery || phaseFilter !== "all" || divisionFilter !== "all"
                       ? "No trainees match your filters."
                       : "No active trainees."}
@@ -445,10 +429,7 @@ export function SnapshotsClient({
                 </TableRow>
               ) : (
                 filteredTrainees.map((t) => (
-                  <TableRow
-                    key={t.id}
-                    className={selected.has(t.id) ? "bg-nmh-teal/5" : undefined}
-                  >
+                  <TableRow key={t.id} className={selected.has(t.id) ? "bg-nmh-teal/5" : undefined}>
                     <TableCell>
                       <Checkbox
                         checked={selected.has(t.id)}
@@ -468,10 +449,7 @@ export function SnapshotsClient({
                     </TableCell>
                     <TableCell>
                       {t.currentPhase ? (
-                        <Badge
-                          variant="outline"
-                          className="text-xs font-normal"
-                        >
+                        <Badge variant="outline" className="text-xs font-normal">
                           {t.currentPhase}
                         </Badge>
                       ) : (
@@ -481,9 +459,7 @@ export function SnapshotsClient({
                     <TableCell className="text-center text-sm text-muted-foreground">
                       {t.dorCount}
                     </TableCell>
-                    <TableCell
-                      className={`text-center text-sm ${ratingColor(t.avgRating)}`}
-                    >
+                    <TableCell className={`text-center text-sm ${ratingColor(t.avgRating)}`}>
                       {t.avgRating !== null ? t.avgRating.toFixed(1) : "—"}
                     </TableCell>
                   </TableRow>
@@ -554,11 +530,7 @@ export function SnapshotsClient({
                               <Copy className="h-3.5 w-3.5" />
                             </Button>
                             <Button variant="ghost" size="sm" title="Open" asChild>
-                              <a
-                                href={`/snapshot/${s.token}`}
-                                target="_blank"
-                                rel="noreferrer"
-                              >
+                              <a href={`/snapshot/${s.token}`} target="_blank" rel="noreferrer">
                                 <ExternalLink className="h-3.5 w-3.5" />
                               </a>
                             </Button>
@@ -600,8 +572,8 @@ export function SnapshotsClient({
           </DialogHeader>
           <div className="flex flex-col gap-3 py-2 min-h-0">
             <p className="text-sm text-muted-foreground shrink-0">
-              Share these links with directors, medical directors, or educators.
-              Anyone with the link can view the report.
+              Share these links with directors, medical directors, or educators. Anyone with the
+              link can view the report.
             </p>
             <div className="overflow-y-auto space-y-2 min-h-0">
               {results?.map((r, i) => (
@@ -619,20 +591,12 @@ export function SnapshotsClient({
                     </div>
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => copyLink(r.token)}
-                    >
+                    <Button variant="outline" size="sm" onClick={() => copyLink(r.token)}>
                       <Copy className="h-3.5 w-3.5 mr-1" />
                       Copy
                     </Button>
                     <Button variant="outline" size="sm" asChild>
-                      <a
-                        href={`/snapshot/${r.token}`}
-                        target="_blank"
-                        rel="noreferrer"
-                      >
+                      <a href={`/snapshot/${r.token}`} target="_blank" rel="noreferrer">
                         <ExternalLink className="h-3.5 w-3.5" />
                       </a>
                     </Button>

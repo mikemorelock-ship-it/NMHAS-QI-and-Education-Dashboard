@@ -134,9 +134,7 @@ export function CampaignDetailView({ campaign, diagrams, cycles, actionItems }: 
           </Badge>
         </div>
 
-        {campaign.description && (
-          <p className="text-muted-foreground">{campaign.description}</p>
-        )}
+        {campaign.description && <p className="text-muted-foreground">{campaign.description}</p>}
 
         <div className="flex items-center gap-4 flex-wrap text-sm text-muted-foreground">
           {campaign.ownerName && (
@@ -224,12 +222,17 @@ export function CampaignDetailView({ campaign, diagrams, cycles, actionItems }: 
                     )}
                     <div className="flex items-center gap-2 flex-wrap">
                       {d.metricName && (
-                        <Badge variant="outline" className="text-xs bg-nmh-teal/5 text-nmh-teal border-nmh-teal/20">
+                        <Badge
+                          variant="outline"
+                          className="text-xs bg-nmh-teal/5 text-nmh-teal border-nmh-teal/20"
+                        >
                           <BarChart3 className="h-3 w-3 mr-1" />
                           {d.metricName}
                         </Badge>
                       )}
-                      <Badge variant="secondary" className="text-xs">{d.nodeCount} nodes</Badge>
+                      <Badge variant="secondary" className="text-xs">
+                        {d.nodeCount} nodes
+                      </Badge>
                       {d.pdsaCycleCount > 0 && (
                         <Badge variant="secondary" className="text-xs">
                           <RefreshCcw className="h-3 w-3 mr-1" />
@@ -279,7 +282,9 @@ export function CampaignDetailView({ campaign, diagrams, cycles, actionItems }: 
                             <p className="text-sm font-medium leading-tight">{c.title}</p>
                             <p className="text-xs text-muted-foreground">Cycle #{c.cycleNumber}</p>
                             {c.changeIdea && (
-                              <p className="text-xs text-muted-foreground truncate">→ {c.changeIdea}</p>
+                              <p className="text-xs text-muted-foreground truncate">
+                                → {c.changeIdea}
+                              </p>
                             )}
                             {c.outcome && (
                               <Badge variant="outline" className="text-xs mt-1">
@@ -312,19 +317,36 @@ export function CampaignDetailView({ campaign, diagrams, cycles, actionItems }: 
                   const pColor = ACTION_ITEM_PRIORITY_COLORS[a.priority] ?? "#4b4f54";
                   const sColor = ACTION_ITEM_STATUS_COLORS[a.status] ?? "#4b4f54";
                   return (
-                    <div key={a.id} className={`flex items-center gap-3 px-4 py-3 ${a.status === "completed" ? "opacity-60" : ""}`}>
-                      <CheckCircle2 className={`h-5 w-5 shrink-0 ${a.status === "completed" ? "text-green-600" : "text-muted-foreground/30"}`} />
+                    <div
+                      key={a.id}
+                      className={`flex items-center gap-3 px-4 py-3 ${a.status === "completed" ? "opacity-60" : ""}`}
+                    >
+                      <CheckCircle2
+                        className={`h-5 w-5 shrink-0 ${a.status === "completed" ? "text-green-600" : "text-muted-foreground/30"}`}
+                      />
                       <div className="flex-1 min-w-0">
-                        <p className={`text-sm font-medium ${a.status === "completed" ? "line-through" : ""}`}>{a.title}</p>
+                        <p
+                          className={`text-sm font-medium ${a.status === "completed" ? "line-through" : ""}`}
+                        >
+                          {a.title}
+                        </p>
                         <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
                           {a.assigneeName && <span>{a.assigneeName}</span>}
                           {a.dueDate && <span>Due {a.dueDate}</span>}
                         </div>
                       </div>
-                      <Badge variant="secondary" style={{ backgroundColor: `${pColor}20`, color: pColor }} className="text-xs shrink-0">
+                      <Badge
+                        variant="secondary"
+                        style={{ backgroundColor: `${pColor}20`, color: pColor }}
+                        className="text-xs shrink-0"
+                      >
                         {ACTION_ITEM_PRIORITY_LABELS[a.priority] ?? a.priority}
                       </Badge>
-                      <Badge variant="secondary" style={{ backgroundColor: `${sColor}20`, color: sColor }} className="text-xs shrink-0">
+                      <Badge
+                        variant="secondary"
+                        style={{ backgroundColor: `${sColor}20`, color: sColor }}
+                        className="text-xs shrink-0"
+                      >
                         {ACTION_ITEM_STATUS_LABELS[a.status] ?? a.status}
                       </Badge>
                     </div>

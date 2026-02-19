@@ -70,8 +70,7 @@ export default async function DepartmentDetailPage({ params }: PageProps) {
 
       let trend = 0;
       if (previousValue !== 0) {
-        trend =
-          ((currentValue - previousValue) / Math.abs(previousValue)) * 100;
+        trend = ((currentValue - previousValue) / Math.abs(previousValue)) * 100;
       }
 
       const sparklineEntries = await prisma.metricEntry.findMany({
@@ -159,9 +158,7 @@ export default async function DepartmentDetailPage({ params }: PageProps) {
 
       {/* Page title + description */}
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">
-          {department.name}
-        </h1>
+        <h1 className="text-2xl font-bold tracking-tight">{department.name}</h1>
         {department.description && (
           <p className="text-muted-foreground mt-1">{department.description}</p>
         )}

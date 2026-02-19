@@ -164,7 +164,10 @@ export function CampaignDetailClient({
     startTransition(async () => {
       const res = await assignDiagramToCampaign(selectedDiagramId, campaign.id);
       if (!res.success) setError(res.error ?? "Failed");
-      else { setShowAddDiagram(false); setSelectedDiagramId(""); }
+      else {
+        setShowAddDiagram(false);
+        setSelectedDiagramId("");
+      }
     });
   }
 
@@ -226,16 +229,24 @@ export function CampaignDetailClient({
     <div className="space-y-6">
       {/* Breadcrumb + Header */}
       <div>
-        <Link href="/admin/campaigns" className="text-sm text-muted-foreground hover:text-nmh-teal flex items-center gap-1 mb-2">
+        <Link
+          href="/admin/campaigns"
+          className="text-sm text-muted-foreground hover:text-nmh-teal flex items-center gap-1 mb-2"
+        >
           <ArrowLeft className="h-3.5 w-3.5" /> Back to Campaigns
         </Link>
         <div className="flex items-center gap-3">
           <h1 className="text-2xl font-bold text-nmh-gray">{campaign.name}</h1>
-          <Badge variant="secondary" style={{ backgroundColor: `${statusColor}20`, color: statusColor }}>
+          <Badge
+            variant="secondary"
+            style={{ backgroundColor: `${statusColor}20`, color: statusColor }}
+          >
             {CAMPAIGN_STATUS_LABELS[campaign.status] ?? campaign.status}
           </Badge>
         </div>
-        {campaign.description && <p className="text-sm text-muted-foreground mt-1">{campaign.description}</p>}
+        {campaign.description && (
+          <p className="text-sm text-muted-foreground mt-1">{campaign.description}</p>
+        )}
       </div>
 
       {error && (
@@ -255,7 +266,9 @@ export function CampaignDetailClient({
         <Card>
           <CardContent className="pt-6">
             <p className="text-xs text-muted-foreground mb-1">Timeline</p>
-            <p className="text-sm font-medium">{campaign.startDate ?? "—"} → {campaign.endDate ?? "—"}</p>
+            <p className="text-sm font-medium">
+              {campaign.startDate ?? "—"} → {campaign.endDate ?? "—"}
+            </p>
           </CardContent>
         </Card>
         <Card>
@@ -285,7 +298,9 @@ export function CampaignDetailClient({
         </CardHeader>
         <CardContent>
           {diagrams.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-4">No diagrams linked to this campaign yet.</p>
+            <p className="text-sm text-muted-foreground text-center py-4">
+              No diagrams linked to this campaign yet.
+            </p>
           ) : (
             <Table>
               <TableHeader>
@@ -302,18 +317,30 @@ export function CampaignDetailClient({
                 {diagrams.map((d) => (
                   <TableRow key={d.id}>
                     <TableCell>
-                      <Link href={`/admin/driver-diagrams/${d.id}`} className="font-medium hover:text-nmh-teal">
+                      <Link
+                        href={`/admin/driver-diagrams/${d.id}`}
+                        className="font-medium hover:text-nmh-teal"
+                      >
                         {d.name}
                       </Link>
                     </TableCell>
                     <TableCell>
-                      <Badge variant="secondary" className="text-xs">{d.status}</Badge>
+                      <Badge variant="secondary" className="text-xs">
+                        {d.status}
+                      </Badge>
                     </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{d.metricName ?? "—"}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {d.metricName ?? "—"}
+                    </TableCell>
                     <TableCell className="text-center">{d.nodeCount}</TableCell>
                     <TableCell className="text-center">{d.pdsaCycleCount}</TableCell>
                     <TableCell className="text-right">
-                      <Button variant="ghost" size="icon" onClick={() => handleRemoveDiagram(d.id)} title="Remove from campaign">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleRemoveDiagram(d.id)}
+                        title="Remove from campaign"
+                      >
                         <X className="h-4 w-4 text-muted-foreground" />
                       </Button>
                     </TableCell>
@@ -335,7 +362,9 @@ export function CampaignDetailClient({
         </CardHeader>
         <CardContent>
           {cycles.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-4">No PDSA cycles in this campaign&apos;s diagrams yet.</p>
+            <p className="text-sm text-muted-foreground text-center py-4">
+              No PDSA cycles in this campaign&apos;s diagrams yet.
+            </p>
           ) : (
             <Table>
               <TableHeader>
@@ -356,7 +385,10 @@ export function CampaignDetailClient({
                       <TableCell className="font-medium">{c.title}</TableCell>
                       <TableCell>{c.cycleNumber}</TableCell>
                       <TableCell>
-                        <Badge variant="secondary" style={{ backgroundColor: `${sColor}20`, color: sColor }}>
+                        <Badge
+                          variant="secondary"
+                          style={{ backgroundColor: `${sColor}20`, color: sColor }}
+                        >
                           {PDSA_STATUS_LABELS[c.status] ?? c.status}
                         </Badge>
                       </TableCell>
@@ -365,9 +397,13 @@ export function CampaignDetailClient({
                           <Badge variant="outline" className="text-xs">
                             {PDSA_OUTCOME_LABELS[c.outcome] ?? c.outcome}
                           </Badge>
-                        ) : "—"}
+                        ) : (
+                          "—"
+                        )}
                       </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">{c.diagramName ?? "—"}</TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {c.diagramName ?? "—"}
+                      </TableCell>
                       <TableCell className="text-sm text-muted-foreground">{c.updatedAt}</TableCell>
                     </TableRow>
                   );
@@ -385,7 +421,14 @@ export function CampaignDetailClient({
             <ListChecks className="h-4 w-4 text-nmh-teal" />
             Action Items ({actionItems.length})
           </CardTitle>
-          <Button size="sm" variant="outline" onClick={() => { setError(null); setShowCreateAction(true); }}>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              setError(null);
+              setShowCreateAction(true);
+            }}
+          >
             <Plus className="h-3.5 w-3.5 mr-1" /> Add Action Item
           </Button>
         </CardHeader>
@@ -412,31 +455,61 @@ export function CampaignDetailClient({
                   return (
                     <TableRow key={a.id} className={a.status === "completed" ? "opacity-60" : ""}>
                       <TableCell>
-                        <button onClick={() => handleToggleComplete(a)} className="hover:scale-110 transition-transform">
-                          <CheckCircle2 className={`h-5 w-5 ${a.status === "completed" ? "text-green-600" : "text-muted-foreground/30"}`} />
+                        <button
+                          onClick={() => handleToggleComplete(a)}
+                          className="hover:scale-110 transition-transform"
+                        >
+                          <CheckCircle2
+                            className={`h-5 w-5 ${a.status === "completed" ? "text-green-600" : "text-muted-foreground/30"}`}
+                          />
                         </button>
                       </TableCell>
                       <TableCell>
-                        <span className={`font-medium ${a.status === "completed" ? "line-through" : ""}`}>{a.title}</span>
+                        <span
+                          className={`font-medium ${a.status === "completed" ? "line-through" : ""}`}
+                        >
+                          {a.title}
+                        </span>
                         {a.pdsaCycleName && (
-                          <span className="block text-xs text-muted-foreground">→ {a.pdsaCycleName}</span>
+                          <span className="block text-xs text-muted-foreground">
+                            → {a.pdsaCycleName}
+                          </span>
                         )}
                       </TableCell>
                       <TableCell>
-                        <Badge variant="secondary" style={{ backgroundColor: `${pColor}20`, color: pColor }} className="text-xs">
+                        <Badge
+                          variant="secondary"
+                          style={{ backgroundColor: `${pColor}20`, color: pColor }}
+                          className="text-xs"
+                        >
                           {ACTION_ITEM_PRIORITY_LABELS[a.priority] ?? a.priority}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">{a.assigneeName ?? "—"}</TableCell>
-                      <TableCell className="text-sm text-muted-foreground">{a.dueDate ?? "—"}</TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {a.assigneeName ?? "—"}
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {a.dueDate ?? "—"}
+                      </TableCell>
                       <TableCell>
-                        <Badge variant="secondary" style={{ backgroundColor: `${sColor}20`, color: sColor }} className="text-xs">
+                        <Badge
+                          variant="secondary"
+                          style={{ backgroundColor: `${sColor}20`, color: sColor }}
+                          className="text-xs"
+                        >
                           {ACTION_ITEM_STATUS_LABELS[a.status] ?? a.status}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1">
-                          <Button variant="ghost" size="icon" onClick={() => { setError(null); setEditAction(a); }}>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => {
+                              setError(null);
+                              setEditAction(a);
+                            }}
+                          >
                             <Pencil className="h-4 w-4" />
                           </Button>
                           <Button variant="ghost" size="icon" onClick={() => setDeleteAction(a)}>
@@ -456,20 +529,28 @@ export function CampaignDetailClient({
       {/* Add Diagram Dialog */}
       <Dialog open={showAddDiagram} onOpenChange={setShowAddDiagram}>
         <DialogContent>
-          <DialogHeader><DialogTitle>Add Diagram to Campaign</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle>Add Diagram to Campaign</DialogTitle>
+          </DialogHeader>
           <div className="space-y-3">
             <Label>Select a diagram</Label>
             <Select value={selectedDiagramId} onValueChange={setSelectedDiagramId}>
-              <SelectTrigger><SelectValue placeholder="Choose diagram..." /></SelectTrigger>
+              <SelectTrigger>
+                <SelectValue placeholder="Choose diagram..." />
+              </SelectTrigger>
               <SelectContent>
                 {unassignedDiagrams.map((d) => (
-                  <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+                  <SelectItem key={d.id} value={d.id}>
+                    {d.name}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowAddDiagram(false)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setShowAddDiagram(false)}>
+              Cancel
+            </Button>
             <Button onClick={handleAddDiagram} disabled={!selectedDiagramId || isPending}>
               {isPending ? "Adding..." : "Add"}
             </Button>
@@ -480,27 +561,48 @@ export function CampaignDetailClient({
       {/* Create Action Item Dialog */}
       <Dialog open={showCreateAction} onOpenChange={setShowCreateAction}>
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-          <DialogHeader><DialogTitle>Create Action Item</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle>Create Action Item</DialogTitle>
+          </DialogHeader>
           <form action={handleCreateAction}>
             <ActionItemFormFields users={users} campaignCycles={campaignCycles} />
             <DialogFooter className="mt-4">
-              <Button type="button" variant="outline" onClick={() => setShowCreateAction(false)}>Cancel</Button>
-              <Button type="submit" disabled={isPending}>{isPending ? "Creating..." : "Create"}</Button>
+              <Button type="button" variant="outline" onClick={() => setShowCreateAction(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={isPending}>
+                {isPending ? "Creating..." : "Create"}
+              </Button>
             </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
 
       {/* Edit Action Item Dialog */}
-      <Dialog open={!!editAction} onOpenChange={(open) => { if (!open) setEditAction(null); }}>
+      <Dialog
+        open={!!editAction}
+        onOpenChange={(open) => {
+          if (!open) setEditAction(null);
+        }}
+      >
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-          <DialogHeader><DialogTitle>Edit Action Item</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle>Edit Action Item</DialogTitle>
+          </DialogHeader>
           {editAction && (
             <form action={handleEditAction}>
-              <ActionItemFormFields users={users} campaignCycles={campaignCycles} defaults={editAction} />
+              <ActionItemFormFields
+                users={users}
+                campaignCycles={campaignCycles}
+                defaults={editAction}
+              />
               <DialogFooter className="mt-4">
-                <Button type="button" variant="outline" onClick={() => setEditAction(null)}>Cancel</Button>
-                <Button type="submit" disabled={isPending}>{isPending ? "Saving..." : "Save"}</Button>
+                <Button type="button" variant="outline" onClick={() => setEditAction(null)}>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={isPending}>
+                  {isPending ? "Saving..." : "Save"}
+                </Button>
               </DialogFooter>
             </form>
           )}
@@ -508,14 +610,23 @@ export function CampaignDetailClient({
       </Dialog>
 
       {/* Delete Action Item Dialog */}
-      <Dialog open={!!deleteAction} onOpenChange={(open) => { if (!open) setDeleteAction(null); }}>
+      <Dialog
+        open={!!deleteAction}
+        onOpenChange={(open) => {
+          if (!open) setDeleteAction(null);
+        }}
+      >
         <DialogContent>
-          <DialogHeader><DialogTitle>Delete Action Item</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle>Delete Action Item</DialogTitle>
+          </DialogHeader>
           <p className="text-sm text-muted-foreground">
             Are you sure you want to delete <strong>{deleteAction?.title}</strong>?
           </p>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteAction(null)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setDeleteAction(null)}>
+              Cancel
+            </Button>
             <Button variant="destructive" onClick={handleDeleteAction} disabled={isPending}>
               {isPending ? "Deleting..." : "Delete"}
             </Button>
@@ -543,20 +654,36 @@ function ActionItemFormFields({
     <div className="space-y-4">
       <div>
         <Label htmlFor="title">Title *</Label>
-        <Input id="title" name="title" defaultValue={defaults?.title ?? ""} required maxLength={200} />
+        <Input
+          id="title"
+          name="title"
+          defaultValue={defaults?.title ?? ""}
+          required
+          maxLength={200}
+        />
       </div>
       <div>
         <Label htmlFor="description">Description</Label>
-        <Textarea id="description" name="description" defaultValue={defaults?.description ?? ""} rows={3} maxLength={2000} />
+        <Textarea
+          id="description"
+          name="description"
+          defaultValue={defaults?.description ?? ""}
+          rows={3}
+          maxLength={2000}
+        />
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div>
           <Label htmlFor="status">Status</Label>
           <Select name="status" defaultValue={defaults?.status ?? "open"}>
-            <SelectTrigger id="status"><SelectValue /></SelectTrigger>
+            <SelectTrigger id="status">
+              <SelectValue />
+            </SelectTrigger>
             <SelectContent>
               {Object.entries(ACTION_ITEM_STATUS_LABELS).map(([val, label]) => (
-                <SelectItem key={val} value={val}>{label}</SelectItem>
+                <SelectItem key={val} value={val}>
+                  {label}
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -564,10 +691,14 @@ function ActionItemFormFields({
         <div>
           <Label htmlFor="priority">Priority</Label>
           <Select name="priority" defaultValue={defaults?.priority ?? "medium"}>
-            <SelectTrigger id="priority"><SelectValue /></SelectTrigger>
+            <SelectTrigger id="priority">
+              <SelectValue />
+            </SelectTrigger>
             <SelectContent>
               {Object.entries(ACTION_ITEM_PRIORITY_LABELS).map(([val, label]) => (
-                <SelectItem key={val} value={val}>{label}</SelectItem>
+                <SelectItem key={val} value={val}>
+                  {label}
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -577,11 +708,15 @@ function ActionItemFormFields({
         <div>
           <Label htmlFor="assigneeId">Assignee</Label>
           <Select name="assigneeId" defaultValue={defaults?.assigneeId ?? "__none__"}>
-            <SelectTrigger id="assigneeId"><SelectValue placeholder="Unassigned" /></SelectTrigger>
+            <SelectTrigger id="assigneeId">
+              <SelectValue placeholder="Unassigned" />
+            </SelectTrigger>
             <SelectContent>
               <SelectItem value="__none__">Unassigned</SelectItem>
               {users.map((u) => (
-                <SelectItem key={u.id} value={u.id}>{u.firstName} {u.lastName}</SelectItem>
+                <SelectItem key={u.id} value={u.id}>
+                  {u.firstName} {u.lastName}
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -595,11 +730,15 @@ function ActionItemFormFields({
         <div>
           <Label htmlFor="pdsaCycleId">Linked PDSA Cycle</Label>
           <Select name="pdsaCycleId" defaultValue={defaults?.pdsaCycleId ?? "__none__"}>
-            <SelectTrigger id="pdsaCycleId"><SelectValue placeholder="None" /></SelectTrigger>
+            <SelectTrigger id="pdsaCycleId">
+              <SelectValue placeholder="None" />
+            </SelectTrigger>
             <SelectContent>
               <SelectItem value="__none__">None</SelectItem>
               {campaignCycles.map((c) => (
-                <SelectItem key={c.id} value={c.id}>{c.title}</SelectItem>
+                <SelectItem key={c.id} value={c.id}>
+                  {c.title}
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>

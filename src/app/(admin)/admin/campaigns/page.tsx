@@ -44,10 +44,5 @@ export default async function CampaignsPage() {
     actionItemCount: c._count.actionItems,
   }));
 
-  return (
-    <CampaignsClient
-      campaigns={campaignsData}
-      users={users}
-    />
-  );
+  return <CampaignsClient campaigns={campaignsData} users={users} />;
 }

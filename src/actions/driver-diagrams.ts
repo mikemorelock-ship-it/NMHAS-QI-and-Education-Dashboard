@@ -55,7 +55,9 @@ function formDataToRecord(formData: FormData): Record<string, string> {
 // Driver Diagram CRUD
 // ---------------------------------------------------------------------------
 
-export async function createDriverDiagram(formData: FormData): Promise<ActionResult<{ id: string }>> {
+export async function createDriverDiagram(
+  formData: FormData
+): Promise<ActionResult<{ id: string }>> {
   let session;
   try {
     session = await requireAdmin("manage_driver_diagrams");
@@ -214,7 +216,10 @@ export async function deleteDriverDiagram(id: string): Promise<ActionResult> {
   return { success: true };
 }
 
-export async function toggleDriverDiagramActive(id: string, isActive: boolean): Promise<ActionResult> {
+export async function toggleDriverDiagramActive(
+  id: string,
+  isActive: boolean
+): Promise<ActionResult> {
   let session;
   try {
     session = await requireAdmin("manage_driver_diagrams");
@@ -312,7 +317,10 @@ export async function createDriverNode(formData: FormData): Promise<ActionResult
     console.error("createDriverNode error:", err);
     const msg = err instanceof Error ? err.message : String(err);
     if (msg.includes("Foreign key constraint") || msg.includes("foreign key")) {
-      return { success: false, error: "The driver diagram was not found. Please go back and create the diagram first." };
+      return {
+        success: false,
+        error: "The driver diagram was not found. Please go back and create the diagram first.",
+      };
     }
     return { success: false, error: `Failed to create node: ${msg.slice(0, 200)}` };
   }

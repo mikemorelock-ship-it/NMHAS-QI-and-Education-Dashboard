@@ -44,10 +44,5 @@ export default async function DriverDiagramsPage() {
     pdsaCycleCount: d._count.pdsaCycles,
   }));
 
-  return (
-    <DriverDiagramsClient
-      diagrams={diagramsData}
-      metrics={metrics}
-    />
-  );
+  return <DriverDiagramsClient diagrams={diagramsData} metrics={metrics} />;
 }

@@ -21,6 +21,7 @@ import {
   LogOut,
   Eye,
   ArrowLeft,
+  FileBarChart,
   FileUp,
   GitBranchPlus,
   RefreshCcw,
@@ -32,6 +33,7 @@ import {
   Wand2,
   Camera,
   ChevronDown,
+  ScrollText,
   type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -47,6 +49,7 @@ interface NavItem {
   label: string;
   icon: LucideIcon;
   permission: AdminPermission;
+  exact?: boolean;
 }
 
 interface NavGroup {
@@ -67,26 +70,85 @@ function isNavGroup(entry: NavEntry): entry is NavGroup {
 
 const navEntries: NavEntry[] = [
   { href: "/admin", label: "Overview", icon: LayoutDashboard, permission: "view_admin" },
-  { href: "/admin/departments", label: "Divisions & Depts", icon: Building2, permission: "manage_departments" },
-  { href: "/admin/metrics", label: "Metrics", icon: BarChart3, permission: "manage_metric_defs" },
-  { href: "/admin/scorecards", label: "Scorecards", icon: ClipboardList, permission: "manage_scorecards" },
   {
-    label: "Quality Improvement",
+    href: "/admin/departments",
+    label: "Divisions & Depts",
+    icon: Building2,
+    permission: "manage_departments",
+  },
+  { href: "/admin/metrics", label: "Metrics", icon: BarChart3, permission: "manage_metric_defs" },
+  {
+    href: "/admin/scorecards",
+    label: "Scorecards",
+    icon: ClipboardList,
+    permission: "manage_scorecards",
+  },
+  {
+    label: "QI",
     icon: Target,
     items: [
-      { href: "/admin/qi-workflow", label: "Workflow", icon: Wand2, permission: "manage_campaigns" },
-      { href: "/admin/campaigns", label: "Campaigns", icon: Target, permission: "manage_campaigns" },
-      { href: "/admin/driver-diagrams", label: "Diagrams", icon: GitBranchPlus, permission: "manage_driver_diagrams" },
-      { href: "/admin/pdsa-cycles", label: "PDSA Cycles", icon: RefreshCcw, permission: "manage_driver_diagrams" },
-      { href: "/admin/action-items", label: "Actions", icon: ListChecks, permission: "manage_action_items" },
+      {
+        href: "/admin/qi-workflow",
+        label: "Workflow",
+        icon: Wand2,
+        permission: "manage_campaigns",
+      },
+      {
+        href: "/admin/campaigns",
+        label: "Campaigns",
+        icon: Target,
+        permission: "manage_campaigns",
+      },
+      {
+        href: "/admin/driver-diagrams",
+        label: "Diagrams",
+        icon: GitBranchPlus,
+        permission: "manage_driver_diagrams",
+      },
+      {
+        href: "/admin/pdsa-cycles",
+        label: "PDSA Cycles",
+        icon: RefreshCcw,
+        permission: "manage_driver_diagrams",
+      },
+      {
+        href: "/admin/action-items",
+        label: "Actions",
+        icon: ListChecks,
+        permission: "manage_action_items",
+      },
     ],
   },
-  { href: "/admin/field-training", label: "Field Training", icon: GraduationCap, permission: "manage_ftos_trainees" },
-  { href: "/admin/field-training/snapshots", label: "Trainee Snapshots", icon: Camera, permission: "manage_ftos_trainees" },
-  { href: "/admin/data-entry", label: "Data Entry", icon: PenLine, permission: "enter_metric_data" },
+  {
+    label: "Field Training",
+    icon: GraduationCap,
+    items: [
+      {
+        href: "/admin/field-training",
+        label: "Overview",
+        icon: GraduationCap,
+        permission: "manage_ftos_trainees",
+        exact: true,
+      },
+      {
+        href: "/admin/field-training/snapshots",
+        label: "Trainee Snapshots",
+        icon: Camera,
+        permission: "manage_ftos_trainees",
+      },
+    ],
+  },
+  {
+    href: "/admin/data-entry",
+    label: "Data Entry",
+    icon: PenLine,
+    permission: "enter_metric_data",
+  },
   { href: "/admin/upload", label: "Upload Data", icon: FileUp, permission: "upload_batch_data" },
+  { href: "/admin/reports", label: "Reports", icon: FileBarChart, permission: "export_reports" },
+  { href: "/admin/audit-log", label: "Audit Log", icon: ScrollText, permission: "view_audit_log" },
   { href: "/admin/resources", label: "Resources", icon: Users, permission: "manage_departments" },
-  { href: "/admin/users", label: "Admin Users", icon: Shield, permission: "manage_users" },
+  { href: "/admin/users", label: "Users", icon: Shield, permission: "manage_users" },
   { href: "/admin/help", label: "Help", icon: HelpCircle, permission: "view_admin" },
 ];
 
@@ -100,11 +162,7 @@ interface AdminSidebarProps {
   pendingApprovals?: number;
 }
 
-export function AdminSidebar({
-  userRole,
-  userName,
-  pendingApprovals = 0,
-}: AdminSidebarProps) {
+export function AdminSidebar({ userRole, userName, pendingApprovals = 0 }: AdminSidebarProps) {
   const pathname = usePathname();
   const [newUpdates, setNewUpdates] = useState(0);
 
@@ -123,7 +181,7 @@ export function AdminSidebar({
           entry.items.some(
             (item) =>
               pathname === item.href ||
-              (item.href !== "/admin" && pathname.startsWith(item.href))
+              (!item.exact && item.href !== "/admin" && pathname.startsWith(item.href))
           )
         ) {
           initial.add(entry.label);
@@ -142,15 +200,16 @@ export function AdminSidebar({
     });
   };
 
-  const isItemActive = (href: string) =>
-    pathname === href || (href !== "/admin" && pathname.startsWith(href));
+  const isItemActive = (href: string, exact?: boolean) =>
+    pathname === href || (!exact && href !== "/admin" && pathname.startsWith(href));
 
   const renderNavLink = (item: NavItem) => {
-    const isActive = isItemActive(item.href);
+    const isActive = isItemActive(item.href, item.exact);
     return (
       <Link
         key={item.href}
         href={item.href}
+        aria-current={isActive ? "page" : undefined}
         className={cn(
           "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
           isActive
@@ -158,7 +217,7 @@ export function AdminSidebar({
             : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
         )}
       >
-        <item.icon className="h-4 w-4" />
+        <item.icon className="h-4 w-4" aria-hidden="true" />
         {item.label}
         {item.href === "/admin/users" && pendingApprovals > 0 && (
           <Badge className="ml-auto bg-nmh-orange text-white text-xs px-1.5 py-0.5 min-w-[20px] text-center">
@@ -180,14 +239,12 @@ export function AdminSidebar({
         <h1 className="text-lg font-bold tracking-tight">
           <span className="text-nmh-teal">NMH</span> EMS Dashboard
         </h1>
-        <p className="text-xs text-sidebar-foreground/60">
-          Admin Portal
-        </p>
+        <p className="text-xs text-sidebar-foreground/60">Admin Portal</p>
         <Link
           href="/"
           className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium bg-nmh-teal/10 text-nmh-teal hover:bg-nmh-teal/20 transition-colors"
         >
-          <ArrowLeft className="h-4 w-4" />
+          <ArrowLeft className="h-4 w-4" aria-hidden="true" />
           Back to Dashboard
         </Link>
       </div>
@@ -202,14 +259,18 @@ export function AdminSidebar({
             if (visibleChildren.length === 0) return null;
 
             const isExpanded = expandedGroups.has(entry.label);
-            const hasActiveChild = visibleChildren.some((item) =>
-              isItemActive(item.href)
-            );
+            // Highlight group header if any child matches, or if the
+            // pathname falls under any child's base path (e.g. deep
+            // sub-routes like /admin/field-training/dors/new)
+            const hasActiveChild =
+              visibleChildren.some((item) => isItemActive(item.href, item.exact)) ||
+              entry.items.some((item) => item.href !== "/admin" && pathname.startsWith(item.href));
 
             return (
               <div key={entry.label}>
                 <button
                   onClick={() => toggleGroup(entry.label)}
+                  aria-expanded={isExpanded}
                   className={cn(
                     "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors w-full",
                     hasActiveChild
@@ -217,13 +278,14 @@ export function AdminSidebar({
                       : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
                   )}
                 >
-                  <entry.icon className="h-4 w-4" />
+                  <entry.icon className="h-4 w-4" aria-hidden="true" />
                   {entry.label}
                   <ChevronDown
                     className={cn(
                       "h-3 w-3 ml-auto transition-transform",
                       !isExpanded && "-rotate-90"
                     )}
+                    aria-hidden="true"
                   />
                 </button>
                 {isExpanded && (
@@ -244,9 +306,7 @@ export function AdminSidebar({
       <div className="p-4 border-t border-sidebar-border space-y-2 shrink-0">
         {/* User info */}
         <div className="px-3 py-2">
-          <p className="text-sm font-medium text-sidebar-foreground truncate">
-            {userName}
-          </p>
+          <p className="text-sm font-medium text-sidebar-foreground truncate">{userName}</p>
           <Badge
             variant="outline"
             className="mt-1 text-xs border-sidebar-border text-sidebar-foreground/60"
@@ -259,7 +319,7 @@ export function AdminSidebar({
           href="/"
           className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground transition-colors"
         >
-          <Eye className="h-4 w-4" />
+          <Eye className="h-4 w-4" aria-hidden="true" />
           View Dashboard
         </Link>
         <form action={logoutAction}>
@@ -267,7 +327,7 @@ export function AdminSidebar({
             variant="ghost"
             className="w-full justify-start gap-3 px-3 py-2.5 text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
           >
-            <LogOut className="h-4 w-4" />
+            <LogOut className="h-4 w-4" aria-hidden="true" />
             Sign Out
           </Button>
         </form>

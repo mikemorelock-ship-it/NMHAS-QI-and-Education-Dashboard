@@ -107,10 +107,7 @@ export function MetricHierarchy({
       />
 
       {/* Vertical connector from parent down to horizontal line */}
-      <div
-        className="w-px h-6"
-        style={{ backgroundColor: NMH_COLORS.lightGray }}
-      />
+      <div className="w-px h-6" style={{ backgroundColor: NMH_COLORS.lightGray }} />
 
       {/* Horizontal rail + vertical drops to children */}
       {bottomNodes.length > 0 && (
@@ -132,10 +129,7 @@ export function MetricHierarchy({
             {bottomNodes.map((node) => (
               <div key={node.id} className="flex flex-col items-center">
                 {/* Vertical drop from horizontal rail */}
-                <div
-                  className="w-px h-5"
-                  style={{ backgroundColor: NMH_COLORS.lightGray }}
-                />
+                <div className="w-px h-5" style={{ backgroundColor: NMH_COLORS.lightGray }} />
                 <HierarchyNodeBox
                   node={node}
                   departmentSlug={departmentSlug}
@@ -188,9 +182,7 @@ function HierarchyNodeBox({
         {node.name}
       </p>
       {node.isCurrent && (
-        <p className="text-[10px] text-[#00b0ad]/70 mt-0.5 font-medium">
-          Viewing
-        </p>
+        <p className="text-[10px] text-[#00b0ad]/70 mt-0.5 font-medium">Viewing</p>
       )}
     </div>
   );

@@ -6,6 +6,7 @@ import { prisma } from "@/lib/db";
 import { slugify } from "@/lib/utils";
 import { z } from "zod";
 import { requireAdmin } from "@/lib/require-auth";
+import { createAuditLog, computeChanges } from "@/lib/audit";
 
 // ---------------------------------------------------------------------------
 // Schemas
@@ -45,9 +46,7 @@ function formDataToObject(formData: FormData): Record<string, string> {
 // Department actions
 // ---------------------------------------------------------------------------
 
-export async function createDepartment(
-  formData: FormData
-): Promise<ActionResult> {
+export async function createDepartment(formData: FormData): Promise<ActionResult> {
   let session;
   try {
     session = await requireAdmin("manage_departments");
@@ -108,10 +107,7 @@ export async function createDepartment(
   redirect("/admin/departments");
 }
 
-export async function updateDepartment(
-  id: string,
-  formData: FormData
-): Promise<ActionResult> {
+export async function updateDepartment(id: string, formData: FormData): Promise<ActionResult> {
   let session;
   try {
     session = await requireAdmin("manage_departments");
@@ -139,13 +135,21 @@ export async function updateDepartment(
   const slug = slugify(name);
 
   try {
+    // Fetch current state for change tracking
+    const current = await prisma.department.findUnique({ where: { id } });
+    if (!current) {
+      return { success: false, error: "Department not found." };
+    }
+
     // Check for slug conflict with a different department
-    const existing = await prisma.department.findUnique({ where: { slug } });
-    if (existing && existing.id !== id) {
-      return {
-        success: false,
-        error: `Another department already uses the slug "${slug}".`,
-      };
+    if (slug !== current.slug) {
+      const existing = await prisma.department.findUnique({ where: { slug } });
+      if (existing && existing.id !== id) {
+        return {
+          success: false,
+          error: `Another department already uses the slug "${slug}".`,
+        };
+      }
     }
 
     await prisma.department.update({
@@ -153,15 +157,19 @@ export async function updateDepartment(
       data: { name, slug, type, description: description ?? null, sortOrder },
     });
 
-    await prisma.auditLog.create({
-      data: {
-        action: "UPDATE",
-        entity: "Department",
-        entityId: id,
-        details: `Updated department "${name}"`,
-        actorId: session.userId,
-        actorType: "admin",
-      },
+    const changes = computeChanges(
+      { name: current.name, type: current.type, description: current.description, sortOrder: current.sortOrder },
+      { name, type, description: description ?? null, sortOrder },
+    );
+
+    await createAuditLog({
+      action: "UPDATE",
+      entity: "Department",
+      entityId: id,
+      details: `Updated department "${name}"`,
+      changes: changes ?? undefined,
+      actorId: session.userId,
+      actorType: "user",
     });
   } catch (err) {
     console.error("updateDepartment error:", err);
@@ -176,10 +184,7 @@ export async function updateDepartment(
   return { success: true };
 }
 
-export async function toggleDepartmentActive(
-  id: string,
-  isActive: boolean
-): Promise<ActionResult> {
+export async function toggleDepartmentActive(id: string, isActive: boolean): Promise<ActionResult> {
   let session;
   try {
     session = await requireAdmin("manage_departments");
@@ -260,9 +265,7 @@ export async function deleteDepartment(id: string): Promise<ActionResult> {
 // Division actions
 // ---------------------------------------------------------------------------
 
-export async function createDivision(
-  formData: FormData
-): Promise<ActionResult> {
+export async function createDivision(formData: FormData): Promise<ActionResult> {
   let session;
   try {
     session = await requireAdmin("manage_departments");
@@ -326,10 +329,7 @@ export async function createDivision(
   return { success: true };
 }
 
-export async function updateDivision(
-  id: string,
-  formData: FormData
-): Promise<ActionResult> {
+export async function updateDivision(id: string, formData: FormData): Promise<ActionResult> {
   let session;
   try {
     session = await requireAdmin("manage_departments");
@@ -347,26 +347,25 @@ export async function updateDivision(
   const slug = slugify(name);
 
   try {
-    const division = await prisma.division.findUnique({
-      where: { id },
-      select: { departmentId: true },
-    });
+    const division = await prisma.division.findUnique({ where: { id } });
 
     if (!division) {
       return { success: false, error: "Division not found." };
     }
 
     // Check for slug conflict within the same department
-    const existing = await prisma.division.findUnique({
-      where: {
-        departmentId_slug: { departmentId: division.departmentId, slug },
-      },
-    });
-    if (existing && existing.id !== id) {
-      return {
-        success: false,
-        error: `Another division already uses the slug "${slug}" in this department.`,
-      };
+    if (slug !== division.slug) {
+      const existing = await prisma.division.findUnique({
+        where: {
+          departmentId_slug: { departmentId: division.departmentId, slug },
+        },
+      });
+      if (existing && existing.id !== id) {
+        return {
+          success: false,
+          error: `Another division already uses the slug "${slug}" in this department.`,
+        };
+      }
     }
 
     await prisma.division.update({
@@ -374,15 +373,16 @@ export async function updateDivision(
       data: { name, slug },
     });
 
-    await prisma.auditLog.create({
-      data: {
-        action: "UPDATE",
-        entity: "Division",
-        entityId: id,
-        details: `Updated division to "${name}"`,
-        actorId: session.userId,
-        actorType: "admin",
-      },
+    const changes = computeChanges({ name: division.name }, { name });
+
+    await createAuditLog({
+      action: "UPDATE",
+      entity: "Division",
+      entityId: id,
+      details: `Updated division to "${name}"`,
+      changes: changes ?? undefined,
+      actorId: session.userId,
+      actorType: "user",
     });
 
     revalidatePath(`/admin/departments/${division.departmentId}`);

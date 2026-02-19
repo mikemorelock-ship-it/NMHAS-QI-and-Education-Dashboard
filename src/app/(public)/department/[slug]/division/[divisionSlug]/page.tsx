@@ -43,16 +43,13 @@ function buildKpis(
     .map((metric) => {
       const entries = entriesByMetric.get(metric.id) ?? [];
       // Sort descending by period to get latest two
-      const sorted = [...entries].sort(
-        (a, b) => b.periodStart.getTime() - a.periodStart.getTime()
-      );
+      const sorted = [...entries].sort((a, b) => b.periodStart.getTime() - a.periodStart.getTime());
       const currentValue = sorted[0]?.value ?? 0;
       const previousValue = sorted[1]?.value ?? 0;
 
       let trend = 0;
       if (previousValue !== 0) {
-        trend =
-          ((currentValue - previousValue) / Math.abs(previousValue)) * 100;
+        trend = ((currentValue - previousValue) / Math.abs(previousValue)) * 100;
       }
 
       // Sparkline: chronological order
@@ -138,10 +135,7 @@ export default async function DivisionDetailPage({ params }: PageProps) {
   });
 
   // Group entries by metric
-  const divEntriesByMetric = new Map<
-    string,
-    Array<{ periodStart: Date; value: number }>
-  >();
+  const divEntriesByMetric = new Map<string, Array<{ periodStart: Date; value: number }>>();
   for (const entry of divisionEntries) {
     const arr = divEntriesByMetric.get(entry.metricDefinitionId) ?? [];
     arr.push({ periodStart: entry.periodStart, value: entry.value });
@@ -192,10 +186,7 @@ export default async function DivisionDetailPage({ params }: PageProps) {
       });
 
       // Group by metric
-      const entriesByMetric = new Map<
-        string,
-        Array<{ periodStart: Date; value: number }>
-      >();
+      const entriesByMetric = new Map<string, Array<{ periodStart: Date; value: number }>>();
       for (const entry of regionEntries) {
         const arr = entriesByMetric.get(entry.metricDefinitionId) ?? [];
         arr.push({ periodStart: entry.periodStart, value: entry.value });
@@ -236,9 +227,7 @@ export default async function DivisionDetailPage({ params }: PageProps) {
   );
 
   // Only include regions that actually have data
-  const regionsFiltered = regionsWithData.filter(
-    (p) => p.metrics.length > 0 || p.kpis.length > 0
-  );
+  const regionsFiltered = regionsWithData.filter((p) => p.metrics.length > 0 || p.kpis.length > 0);
 
   // ---------------------------------------------------------------------------
   // Render
@@ -254,9 +243,7 @@ export default async function DivisionDetailPage({ params }: PageProps) {
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
-            <BreadcrumbLink href={`/department/${slug}`}>
-              {department.name}
-            </BreadcrumbLink>
+            <BreadcrumbLink href={`/department/${slug}`}>{department.name}</BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
@@ -268,11 +255,7 @@ export default async function DivisionDetailPage({ params }: PageProps) {
       {/* Back button + title */}
       <div className="flex items-center gap-4">
         <Link href={`/department/${slug}`}>
-          <Button
-            variant="outline"
-            size="sm"
-            className="gap-2 min-h-12 touch-manipulation"
-          >
+          <Button variant="outline" size="sm" className="gap-2 min-h-12 touch-manipulation">
             <ArrowLeft className="size-4" />
             Back
           </Button>

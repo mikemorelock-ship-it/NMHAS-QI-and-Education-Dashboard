@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { slugify } from "@/lib/utils";
 import { z } from "zod";
 import { requireAdmin } from "@/lib/require-auth";
+import { createAuditLog, computeChanges } from "@/lib/audit";
 
 // ---------------------------------------------------------------------------
 // Schema
@@ -19,7 +20,9 @@ const MetricDefinitionSchema = z.object({
   methodology: z.string().max(2000).optional().nullable(),
   unit: z.enum(["count", "currency", "percentage", "duration", "score", "rate"]),
   chartType: z.enum(["line", "bar", "area"]).default("line"),
-  periodType: z.enum(["daily", "weekly", "bi-weekly", "monthly", "quarterly", "annual"]).default("monthly"),
+  periodType: z
+    .enum(["daily", "weekly", "bi-weekly", "monthly", "quarterly", "annual"])
+    .default("monthly"),
   category: z.string().max(100).optional().nullable(),
   sortOrder: z.coerce.number().int().min(0).default(0),
   isKpi: z.boolean().default(false),
@@ -125,7 +128,10 @@ export async function createMetricDefinition(
         return { success: false, error: "Parent metric not found." };
       }
       if (parent.parentId) {
-        return { success: false, error: "Cannot nest more than one level deep (no grandchildren)." };
+        return {
+          success: false,
+          error: "Cannot nest more than one level deep (no grandchildren).",
+        };
       }
     }
 
@@ -202,15 +208,23 @@ export async function updateMetricDefinition(
   const slug = slugify(data.name);
 
   try {
+    // Fetch current state for change tracking
+    const current = await prisma.metricDefinition.findUnique({ where: { id } });
+    if (!current) {
+      return { success: false, error: "Metric definition not found." };
+    }
+
     // Check for slug conflict with a different metric in same department
-    const existing = await prisma.metricDefinition.findUnique({
-      where: { departmentId_slug: { departmentId: data.departmentId, slug } },
-    });
-    if (existing && existing.id !== id) {
-      return {
-        success: false,
-        error: `Another metric already uses the slug "${slug}" in this department.`,
-      };
+    if (slug !== current.slug || data.departmentId !== current.departmentId) {
+      const existing = await prisma.metricDefinition.findUnique({
+        where: { departmentId_slug: { departmentId: data.departmentId, slug } },
+      });
+      if (existing && existing.id !== id) {
+        return {
+          success: false,
+          error: `Another metric already uses the slug "${slug}" in this department.`,
+        };
+      }
     }
 
     // Validate parent metric if specified
@@ -226,14 +240,20 @@ export async function updateMetricDefinition(
         return { success: false, error: "Parent metric not found." };
       }
       if (parent.parentId) {
-        return { success: false, error: "Cannot nest more than one level deep (no grandchildren)." };
+        return {
+          success: false,
+          error: "Cannot nest more than one level deep (no grandchildren).",
+        };
       }
       // Prevent making a parent into a child (if this metric already has children)
       const childCount = await prisma.metricDefinition.count({
         where: { parentId: id },
       });
       if (childCount > 0) {
-        return { success: false, error: "This metric has children and cannot become a sub-metric itself." };
+        return {
+          success: false,
+          error: "This metric has children and cannot become a sub-metric itself.",
+        };
       }
     }
 
@@ -266,15 +286,39 @@ export async function updateMetricDefinition(
       },
     });
 
-    await prisma.auditLog.create({
-      data: {
-        action: "UPDATE",
-        entity: "MetricDefinition",
-        entityId: id,
-        details: `Updated metric "${data.name}"`,
-        actorId: session.userId,
-        actorType: "admin",
+    const changes = computeChanges(
+      {
+        name: current.name,
+        target: current.target,
+        dataType: current.dataType,
+        aggregationType: current.aggregationType,
+        spcSigmaLevel: current.spcSigmaLevel,
+        isKpi: current.isKpi,
+        unit: current.unit,
+        chartType: current.chartType,
+        periodType: current.periodType,
       },
+      {
+        name: data.name,
+        target: data.target ?? null,
+        dataType: data.dataType,
+        aggregationType: data.aggregationType,
+        spcSigmaLevel: data.spcSigmaLevel,
+        isKpi: data.isKpi,
+        unit: data.unit,
+        chartType: data.chartType,
+        periodType: data.periodType,
+      },
+    );
+
+    await createAuditLog({
+      action: "UPDATE",
+      entity: "MetricDefinition",
+      entityId: id,
+      details: `Updated metric "${data.name}"`,
+      changes: changes ?? undefined,
+      actorId: session.userId,
+      actorType: "user",
     });
   } catch (err) {
     console.error("updateMetricDefinition error:", err);
@@ -288,10 +332,7 @@ export async function updateMetricDefinition(
   return { success: true };
 }
 
-export async function toggleMetricActive(
-  id: string,
-  isActive: boolean
-): Promise<ActionResult> {
+export async function toggleMetricActive(id: string, isActive: boolean): Promise<ActionResult> {
   let session;
   try {
     session = await requireAdmin("manage_metric_defs");
@@ -370,9 +411,7 @@ export async function updateMetricSortOrders(
   return { success: true };
 }
 
-export async function deleteMetricDefinition(
-  id: string
-): Promise<ActionResult> {
+export async function deleteMetricDefinition(id: string): Promise<ActionResult> {
   let session;
   try {
     session = await requireAdmin("manage_metric_defs");

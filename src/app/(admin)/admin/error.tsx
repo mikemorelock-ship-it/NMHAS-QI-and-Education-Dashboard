@@ -28,17 +28,13 @@ export default function AdminError({
         <AlertTriangle className="h-8 w-8 text-destructive" />
       </div>
       <div className="space-y-2">
-        <h2 className="text-xl font-semibold text-foreground">
-          Something went wrong
-        </h2>
+        <h2 className="text-xl font-semibold text-foreground">Something went wrong</h2>
         <p className="text-muted-foreground max-w-md">
-          An unexpected error occurred while loading this page.
-          Your data is safe — try refreshing or navigating to a different page.
+          An unexpected error occurred while loading this page. Your data is safe — try refreshing
+          or navigating to a different page.
         </p>
         {error.digest && (
-          <p className="text-xs text-muted-foreground/60 font-mono">
-            Error ID: {error.digest}
-          </p>
+          <p className="text-xs text-muted-foreground/60 font-mono">Error ID: {error.digest}</p>
         )}
       </div>
       <div className="flex gap-3">
@@ -46,10 +42,7 @@ export default function AdminError({
           <RefreshCw className="h-4 w-4 mr-2" />
           Try Again
         </Button>
-        <Button
-          variant="outline"
-          onClick={() => (window.location.href = "/admin")}
-        >
+        <Button variant="outline" onClick={() => (window.location.href = "/admin")}>
           Go to Dashboard
         </Button>
       </div>

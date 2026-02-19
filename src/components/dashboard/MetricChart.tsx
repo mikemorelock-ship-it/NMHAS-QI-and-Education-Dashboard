@@ -16,12 +16,7 @@ import {
 } from "recharts";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardContent,
-} from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { formatMetricValue } from "@/lib/utils";
 import { NMH_COLORS } from "@/lib/constants";
 import type { ChartDataPoint } from "@/types";
@@ -117,12 +112,7 @@ export function MetricChart({
   const commonAxisElements = (
     <>
       <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-      <XAxis
-        dataKey="period"
-        tick={{ fontSize: 12 }}
-        tickLine={false}
-        axisLine={false}
-      />
+      <XAxis dataKey="period" tick={{ fontSize: 12 }} tickLine={false} axisLine={false} />
       <YAxis
         tick={{ fontSize: 12 }}
         tickLine={false}
@@ -131,7 +121,9 @@ export function MetricChart({
         width={50}
       />
       <Tooltip
-        content={<CustomTooltip unit={unit} rateMultiplier={rateMultiplier} rateSuffix={rateSuffix} />}
+        content={
+          <CustomTooltip unit={unit} rateMultiplier={rateMultiplier} rateSuffix={rateSuffix} />
+        }
         cursor={{ strokeDasharray: "3 3" }}
       />
       {target !== undefined && (
@@ -162,12 +154,7 @@ export function MetricChart({
         return (
           <BarChart {...commonChartProps}>
             {commonAxisElements}
-            <Bar
-              dataKey="value"
-              fill={color}
-              radius={[4, 4, 0, 0]}
-              maxBarSize={48}
-            />
+            <Bar dataKey="value" fill={color} radius={[4, 4, 0, 0]} maxBarSize={48} />
           </BarChart>
         );
       case "area":

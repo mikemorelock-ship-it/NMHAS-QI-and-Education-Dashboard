@@ -34,9 +34,7 @@ function revalidateAll() {
 // Actions
 // ---------------------------------------------------------------------------
 
-export async function createCategory(
-  formData: FormData
-): Promise<ActionResult> {
+export async function createCategory(formData: FormData): Promise<ActionResult> {
   let session;
   try {
     session = await requireAdmin("manage_categories");
@@ -97,10 +95,7 @@ export async function createCategory(
   return { success: true };
 }
 
-export async function updateCategory(
-  id: string,
-  formData: FormData
-): Promise<ActionResult> {
+export async function updateCategory(id: string, formData: FormData): Promise<ActionResult> {
   let session;
   try {
     session = await requireAdmin("manage_categories");
@@ -162,10 +157,7 @@ export async function updateCategory(
   return { success: true };
 }
 
-export async function toggleCategoryActive(
-  id: string,
-  isActive: boolean
-): Promise<ActionResult> {
+export async function toggleCategoryActive(id: string, isActive: boolean): Promise<ActionResult> {
   let session;
   try {
     session = await requireAdmin("manage_categories");

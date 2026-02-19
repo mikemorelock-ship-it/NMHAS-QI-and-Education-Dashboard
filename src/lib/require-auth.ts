@@ -1,8 +1,5 @@
 import { verifySession, type Session } from "./auth";
-import {
-  hasPermission,
-  type Permission,
-} from "./permissions";
+import { hasPermission, type Permission } from "./permissions";
 
 // ---------------------------------------------------------------------------
 // Unified auth guards — for use in server actions
@@ -12,9 +9,7 @@ import {
  * Require an authenticated user with a specific permission.
  * Throws if not authenticated or lacks the required permission.
  */
-export async function requirePermission(
-  permission: Permission
-): Promise<Session> {
+export async function requirePermission(permission: Permission): Promise<Session> {
   const session = await verifySession();
   if (!session) {
     throw new Error("Not authenticated");

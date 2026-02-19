@@ -68,6 +68,14 @@ export interface MetricAnnotation {
   type: "intervention" | "milestone" | "event";
 }
 
+export interface QIAnnotation {
+  id: string;
+  date: string;
+  period: string;
+  label: string;
+  type: "annotation" | "pdsa";
+}
+
 export interface MetricResource {
   id: string;
   title: string;
@@ -164,6 +172,7 @@ export interface MetricDetailData {
     count: number;
   };
   annotations: MetricAnnotation[];
+  qiAnnotations: QIAnnotation[];
   resources: MetricResource[];
   responsibleParties: MetricResponsibleParty[];
   divisionBreakdown: DivisionMetricBreakdown[];

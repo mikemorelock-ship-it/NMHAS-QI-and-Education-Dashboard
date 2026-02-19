@@ -30,11 +30,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Plus,
   Pencil,
@@ -126,14 +122,9 @@ function SortableMetricItem({
   onRemove: (id: string) => void;
   onGroupChange: (id: string, groupName: string) => void;
 }) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: metric.id });
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: metric.id,
+  });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -241,8 +232,7 @@ export function ScorecardsClient({
     const query = searchQuery.toLowerCase().trim();
     return allMetrics.filter(
       (m) =>
-        !selectedMetricIdSet.has(m.id) &&
-        (query === "" || m.name.toLowerCase().includes(query))
+        !selectedMetricIdSet.has(m.id) && (query === "" || m.name.toLowerCase().includes(query))
     );
   }, [allMetrics, selectedMetricIdSet, searchQuery]);
 
@@ -268,9 +258,7 @@ export function ScorecardsClient({
       if (next.has(divId)) {
         next.delete(divId);
         // Remove all regions under this division
-        const regionIdsToRemove = regions
-          .filter((r) => r.divisionId === divId)
-          .map((r) => r.id);
+        const regionIdsToRemove = regions.filter((r) => r.divisionId === divId).map((r) => r.id);
         setFormRegionIds((prevRegs) => {
           const nextRegs = new Set(prevRegs);
           for (const rid of regionIdsToRemove) nextRegs.delete(rid);
@@ -279,9 +267,7 @@ export function ScorecardsClient({
       } else {
         next.add(divId);
         // Auto-select all departments in this division
-        const regionIdsToAdd = regions
-          .filter((r) => r.divisionId === divId)
-          .map((r) => r.id);
+        const regionIdsToAdd = regions.filter((r) => r.divisionId === divId).map((r) => r.id);
         setFormRegionIds((prevRegs) => {
           const nextRegs = new Set(prevRegs);
           for (const rid of regionIdsToAdd) nextRegs.add(rid);
@@ -316,9 +302,7 @@ export function ScorecardsClient({
   }
 
   function updateGroupName(metricId: string, groupName: string) {
-    setSelectedMetrics((prev) =>
-      prev.map((m) => (m.id === metricId ? { ...m, groupName } : m))
-    );
+    setSelectedMetrics((prev) => prev.map((m) => (m.id === metricId ? { ...m, groupName } : m)));
   }
 
   function handleDragEnd(event: DragEndEvent) {
@@ -399,18 +383,9 @@ export function ScorecardsClient({
 
   // --- Build form data for submission ---
   function buildFormData(nativeFormData: FormData): FormData {
-    nativeFormData.set(
-      "divisionIds",
-      Array.from(formDivisionIds).join(",")
-    );
-    nativeFormData.set(
-      "regionIds",
-      Array.from(formRegionIds).join(",")
-    );
-    nativeFormData.set(
-      "metricIds",
-      selectedMetrics.map((m) => m.id).join(",")
-    );
+    nativeFormData.set("divisionIds", Array.from(formDivisionIds).join(","));
+    nativeFormData.set("regionIds", Array.from(formRegionIds).join(","));
+    nativeFormData.set("metricIds", selectedMetrics.map((m) => m.id).join(","));
     // Build metric groups JSON
     const groups: Record<string, string> = {};
     for (const m of selectedMetrics) {
@@ -453,10 +428,7 @@ export function ScorecardsClient({
 
         <Dialog open={addOpen} onOpenChange={setAddOpen}>
           <DialogTrigger asChild>
-            <Button
-              className="bg-nmh-teal hover:bg-nmh-teal/90"
-              onClick={openAdd}
-            >
+            <Button className="bg-nmh-teal hover:bg-nmh-teal/90" onClick={openAdd}>
               <Plus className="h-4 w-4" />
               Add Scorecard
             </Button>
@@ -522,10 +494,7 @@ export function ScorecardsClient({
                 >
                   Cancel
                 </Button>
-                <Button
-                  type="submit"
-                  className="bg-nmh-teal hover:bg-nmh-teal/90"
-                >
+                <Button type="submit" className="bg-nmh-teal hover:bg-nmh-teal/90">
                   Create Scorecard
                 </Button>
               </DialogFooter>
@@ -553,10 +522,7 @@ export function ScorecardsClient({
             </TableHeader>
             <TableBody>
               {scorecards.map((sc) => (
-                <TableRow
-                  key={sc.id}
-                  className={!sc.isActive ? "opacity-60" : undefined}
-                >
+                <TableRow key={sc.id} className={!sc.isActive ? "opacity-60" : undefined}>
                   <TableCell>
                     <div>
                       <span className="font-medium">{sc.name}</span>
@@ -584,9 +550,7 @@ export function ScorecardsClient({
                     ) : sc.regionNames.length <= 2 ? (
                       sc.regionNames.join(", ")
                     ) : (
-                      <span title={sc.regionNames.join(", ")}>
-                        {sc.regionNames.length} depts
-                      </span>
+                      <span title={sc.regionNames.join(", ")}>{sc.regionNames.length} depts</span>
                     )}
                   </TableCell>
                   <TableCell className="text-center">
@@ -611,11 +575,7 @@ export function ScorecardsClient({
                           <Eye className="h-3.5 w-3.5" />
                         )}
                       </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => openEdit(sc)}
-                      >
+                      <Button variant="outline" size="sm" onClick={() => openEdit(sc)}>
                         <Pencil className="h-3.5 w-3.5" />
                         Edit
                       </Button>
@@ -708,10 +668,7 @@ export function ScorecardsClient({
                 >
                   Cancel
                 </Button>
-                <Button
-                  type="submit"
-                  className="bg-nmh-teal hover:bg-nmh-teal/90"
-                >
+                <Button type="submit" className="bg-nmh-teal hover:bg-nmh-teal/90">
                   Save Changes
                 </Button>
               </DialogFooter>
@@ -721,17 +678,13 @@ export function ScorecardsClient({
       </Dialog>
 
       {/* Delete Confirmation */}
-      <Dialog
-        open={deleteTarget !== null}
-        onOpenChange={(open) => !open && setDeleteTarget(null)}
-      >
+      <Dialog open={deleteTarget !== null} onOpenChange={(open) => !open && setDeleteTarget(null)}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Delete Scorecard</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete &quot;{deleteTarget?.name}&quot;?
-              This will remove the scorecard and its{" "}
-              {deleteTarget?.metricCount ?? 0} metric associations. This action
+              Are you sure you want to delete &quot;{deleteTarget?.name}&quot;? This will remove the
+              scorecard and its {deleteTarget?.metricCount ?? 0} metric associations. This action
               cannot be undone.
             </DialogDescription>
           </DialogHeader>
@@ -846,8 +799,7 @@ function ScorecardFormFields({
         {/* Multi-select Division */}
         <div className="space-y-2">
           <Label>
-            Division{" "}
-            <span className="text-muted-foreground font-normal">(optional)</span>
+            Division <span className="text-muted-foreground font-normal">(optional)</span>
           </Label>
           <Popover open={divPopoverOpen} onOpenChange={setDivPopoverOpen}>
             <PopoverTrigger asChild>
@@ -860,8 +812,15 @@ function ScorecardFormFields({
                 <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-[280px] p-2" align="start" onWheel={(e) => e.stopPropagation()}>
-              <div className="space-y-1 max-h-[300px] overflow-y-auto" onWheel={(e) => e.stopPropagation()}>
+            <PopoverContent
+              className="w-[280px] p-2"
+              align="start"
+              onWheel={(e) => e.stopPropagation()}
+            >
+              <div
+                className="space-y-1 max-h-[300px] overflow-y-auto"
+                onWheel={(e) => e.stopPropagation()}
+              >
                 {divisions.map((div) => (
                   <label
                     key={div.id}
@@ -875,9 +834,7 @@ function ScorecardFormFields({
                   </label>
                 ))}
                 {divisions.length === 0 && (
-                  <p className="text-sm text-muted-foreground px-2 py-2">
-                    No divisions available.
-                  </p>
+                  <p className="text-sm text-muted-foreground px-2 py-2">No divisions available.</p>
                 )}
               </div>
             </PopoverContent>
@@ -887,8 +844,7 @@ function ScorecardFormFields({
         {/* Multi-select Department (Region in DB) */}
         <div className="space-y-2">
           <Label>
-            Department{" "}
-            <span className="text-muted-foreground font-normal">(optional)</span>
+            Department <span className="text-muted-foreground font-normal">(optional)</span>
           </Label>
           <Popover open={deptPopoverOpen} onOpenChange={setDeptPopoverOpen}>
             <PopoverTrigger asChild>
@@ -901,8 +857,15 @@ function ScorecardFormFields({
                 <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-[280px] p-2" align="start" onWheel={(e) => e.stopPropagation()}>
-              <div className="space-y-1 max-h-[300px] overflow-y-auto" onWheel={(e) => e.stopPropagation()}>
+            <PopoverContent
+              className="w-[280px] p-2"
+              align="start"
+              onWheel={(e) => e.stopPropagation()}
+            >
+              <div
+                className="space-y-1 max-h-[300px] overflow-y-auto"
+                onWheel={(e) => e.stopPropagation()}
+              >
                 {regions.map((reg) => (
                   <label
                     key={reg.id}
@@ -987,9 +950,7 @@ function ScorecardFormFields({
             <div className="max-h-[300px] overflow-y-auto space-y-0.5">
               {availableMetrics.length === 0 ? (
                 <p className="text-xs text-muted-foreground py-4 text-center">
-                  {searchQuery
-                    ? "No matching metrics."
-                    : "All metrics selected."}
+                  {searchQuery ? "No matching metrics." : "All metrics selected."}
                 </p>
               ) : (
                 availableMetrics.map((metric) => (
@@ -1001,9 +962,7 @@ function ScorecardFormFields({
                   >
                     <span className="text-sm truncate flex-1">
                       {metric.name}
-                      <span className="text-muted-foreground ml-1 capitalize">
-                        ({metric.unit})
-                      </span>
+                      <span className="text-muted-foreground ml-1 capitalize">({metric.unit})</span>
                     </span>
                     <ChevronRight className="h-3.5 w-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 shrink-0" />
                   </button>

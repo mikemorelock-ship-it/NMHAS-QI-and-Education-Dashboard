@@ -52,56 +52,62 @@ async function FtoDashboard({ userId, userRole }: { userId: string; userRole: st
     "manage_training_assignments"
   );
 
-  const [assignments, recentDors, draftCount, availableTrainees, pendingRequests, myPendingRequests] =
-    await Promise.all([
-      prisma.trainingAssignment.findMany({
-        where: { ftoId: userId, status: "active" },
-        include: {
-          trainee: {
-            select: { firstName: true, lastName: true, employeeId: true, traineeStatus: true },
+  const [
+    assignments,
+    recentDors,
+    draftCount,
+    availableTrainees,
+    pendingRequests,
+    myPendingRequests,
+  ] = await Promise.all([
+    prisma.trainingAssignment.findMany({
+      where: { ftoId: userId, status: "active" },
+      include: {
+        trainee: {
+          select: { firstName: true, lastName: true, employeeId: true, traineeStatus: true },
+        },
+      },
+    }),
+    prisma.dailyEvaluation.findMany({
+      where: { ftoId: userId },
+      orderBy: { date: "desc" },
+      take: 5,
+      include: {
+        trainee: { select: { firstName: true, lastName: true } },
+      },
+    }),
+    prisma.dailyEvaluation.count({
+      where: { ftoId: userId, status: "draft" },
+    }),
+    // Available trainees (not currently assigned to this FTO)
+    prisma.user.findMany({
+      where: {
+        role: "trainee",
+        isActive: true,
+        traineeStatus: { in: ["active", "remediation"] },
+      },
+      orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
+      select: { id: true, firstName: true, lastName: true, employeeId: true },
+    }),
+    // Pending requests for supervisors/managers to review
+    canManageAssignments
+      ? prisma.assignmentRequest.findMany({
+          where: { status: "pending" },
+          orderBy: { createdAt: "desc" },
+          include: {
+            requester: { select: { firstName: true, lastName: true } },
+            trainee: { select: { firstName: true, lastName: true, employeeId: true } },
           },
-        },
-      }),
-      prisma.dailyEvaluation.findMany({
-        where: { ftoId: userId },
-        orderBy: { date: "desc" },
-        take: 5,
-        include: {
-          trainee: { select: { firstName: true, lastName: true } },
-        },
-      }),
-      prisma.dailyEvaluation.count({
-        where: { ftoId: userId, status: "draft" },
-      }),
-      // Available trainees (not currently assigned to this FTO)
-      prisma.user.findMany({
-        where: {
-          role: "trainee",
-          isActive: true,
-          traineeStatus: { in: ["active", "remediation"] },
-        },
-        orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
-        select: { id: true, firstName: true, lastName: true, employeeId: true },
-      }),
-      // Pending requests for supervisors/managers to review
-      canManageAssignments
-        ? prisma.assignmentRequest.findMany({
-            where: { status: "pending" },
-            orderBy: { createdAt: "desc" },
-            include: {
-              requester: { select: { firstName: true, lastName: true } },
-              trainee: { select: { firstName: true, lastName: true, employeeId: true } },
-            },
-          })
-        : [],
-      // This FTO's own pending requests
-      prisma.assignmentRequest.findMany({
-        where: { requesterId: userId, status: "pending" },
-        include: {
-          trainee: { select: { firstName: true, lastName: true } },
-        },
-      }),
-    ]);
+        })
+      : [],
+    // This FTO's own pending requests
+    prisma.assignmentRequest.findMany({
+      where: { requesterId: userId, status: "pending" },
+      include: {
+        trainee: { select: { firstName: true, lastName: true } },
+      },
+    }),
+  ]);
 
   const pendingRequestData = pendingRequests.map((r) => ({
     id: r.id,
@@ -131,7 +137,7 @@ async function FtoDashboard({ userId, userRole }: { userId: string; userRole: st
           <RequestTraineeButton trainees={traineeOptions} />
           <Button asChild>
             <Link href="/fieldtraining/dors/new">
-              <Plus className="h-4 w-4 mr-2" />
+              <Plus className="h-4 w-4 mr-2" aria-hidden="true" />
               New DOR
             </Link>
           </Button>
@@ -148,14 +154,17 @@ async function FtoDashboard({ userId, userRole }: { userId: string; userRole: st
         <Card className="border-blue-200 bg-blue-50/50">
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
-              <Clock className="h-5 w-5 text-blue-600" />
+              <Clock className="h-5 w-5 text-blue-600" aria-hidden="true" />
               <div>
                 <p className="font-medium text-blue-800">
-                  {myPendingRequests.length} pending trainee request{myPendingRequests.length > 1 ? "s" : ""}
+                  {myPendingRequests.length} pending trainee request
+                  {myPendingRequests.length > 1 ? "s" : ""}
                 </p>
                 <p className="text-sm text-blue-700">
                   Awaiting supervisor/manager approval:{" "}
-                  {myPendingRequests.map((r) => `${r.trainee.firstName} ${r.trainee.lastName}`).join(", ")}
+                  {myPendingRequests
+                    .map((r) => `${r.trainee.firstName} ${r.trainee.lastName}`)
+                    .join(", ")}
                 </p>
               </div>
             </div>
@@ -169,7 +178,7 @@ async function FtoDashboard({ userId, userRole }: { userId: string; userRole: st
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-blue-100">
-                <Users className="h-5 w-5 text-blue-700" />
+                <Users className="h-5 w-5 text-blue-700" aria-hidden="true" />
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Assigned Trainees</p>
@@ -182,7 +191,7 @@ async function FtoDashboard({ userId, userRole }: { userId: string; userRole: st
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-purple-100">
-                <FileText className="h-5 w-5 text-purple-700" />
+                <FileText className="h-5 w-5 text-purple-700" aria-hidden="true" />
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Total DORs</p>
@@ -195,7 +204,7 @@ async function FtoDashboard({ userId, userRole }: { userId: string; userRole: st
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-orange-100">
-                <FilePenLine className="h-5 w-5 text-orange-700" />
+                <FilePenLine className="h-5 w-5 text-orange-700" aria-hidden="true" />
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Drafts</p>
@@ -217,10 +226,7 @@ async function FtoDashboard({ userId, userRole }: { userId: string; userRole: st
           ) : (
             <div className="space-y-2">
               {assignments.map((a) => (
-                <div
-                  key={a.id}
-                  className="flex items-center justify-between p-3 rounded-lg border"
-                >
+                <div key={a.id} className="flex items-center justify-between p-3 rounded-lg border">
                   <div>
                     <p className="font-medium">
                       {a.trainee.lastName}, {a.trainee.firstName}
@@ -295,34 +301,35 @@ async function TraineeDashboard({ userId }: { userId: string }) {
   });
   if (!user) redirect("/login");
 
-  const [dorCount, pendingAckCount, phases, skillStats, totalSkills, coachingStats] = await Promise.all([
-    prisma.dailyEvaluation.count({
-      where: { traineeId: userId, status: "submitted" },
-    }),
-    prisma.dailyEvaluation.count({
-      where: {
-        traineeId: userId,
-        status: "submitted",
-        traineeAcknowledged: false,
-      },
-    }),
-    prisma.traineePhase.findMany({
-      where: { traineeId: userId },
-      include: { phase: { select: { name: true, sortOrder: true } } },
-      orderBy: { phase: { sortOrder: "asc" } },
-    }),
-    prisma.skillSignoff.count({
-      where: { traineeId: userId },
-    }),
-    prisma.skill.count({
-      where: { isActive: true },
-    }),
-    prisma.traineeCoachingAssignment.groupBy({
-      by: ["status"],
-      where: { traineeId: userId },
-      _count: true,
-    }),
-  ]);
+  const [dorCount, pendingAckCount, phases, skillStats, totalSkills, coachingStats] =
+    await Promise.all([
+      prisma.dailyEvaluation.count({
+        where: { traineeId: userId, status: "submitted" },
+      }),
+      prisma.dailyEvaluation.count({
+        where: {
+          traineeId: userId,
+          status: "submitted",
+          traineeAcknowledged: false,
+        },
+      }),
+      prisma.traineePhase.findMany({
+        where: { traineeId: userId },
+        include: { phase: { select: { name: true, sortOrder: true } } },
+        orderBy: { phase: { sortOrder: "asc" } },
+      }),
+      prisma.skillSignoff.count({
+        where: { traineeId: userId },
+      }),
+      prisma.skill.count({
+        where: { isActive: true },
+      }),
+      prisma.traineeCoachingAssignment.groupBy({
+        by: ["status"],
+        where: { traineeId: userId },
+        _count: true,
+      }),
+    ]);
 
   const coachingCounts = Object.fromEntries(coachingStats.map((s) => [s.status, s._count]));
   const coachingActive = (coachingCounts["assigned"] || 0) + (coachingCounts["in_progress"] || 0);
@@ -349,7 +356,7 @@ async function TraineeDashboard({ userId }: { userId: string }) {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <AlertCircle className="h-5 w-5 text-orange-600" />
+                <AlertCircle className="h-5 w-5 text-orange-600" aria-hidden="true" />
                 <div>
                   <p className="font-medium text-orange-800">
                     {pendingAckCount} DOR{pendingAckCount > 1 ? "s" : ""} pending acknowledgment
@@ -373,7 +380,7 @@ async function TraineeDashboard({ userId }: { userId: string }) {
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-purple-100">
-                <FileText className="h-5 w-5 text-purple-700" />
+                <FileText className="h-5 w-5 text-purple-700" aria-hidden="true" />
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Total DORs</p>
@@ -386,7 +393,7 @@ async function TraineeDashboard({ userId }: { userId: string }) {
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-green-100">
-                <CheckCircle2 className="h-5 w-5 text-green-700" />
+                <CheckCircle2 className="h-5 w-5 text-green-700" aria-hidden="true" />
               </div>
               <div className="flex-1">
                 <p className="text-sm text-muted-foreground">Skills Completed</p>
@@ -397,9 +404,9 @@ async function TraineeDashboard({ userId }: { userId: string }) {
                   </span>
                 </p>
               </div>
-              <Button asChild variant="ghost" size="icon">
+              <Button asChild variant="ghost" size="icon" aria-label="View skills checklist">
                 <Link href="/fieldtraining/skills">
-                  <ArrowRight className="h-4 w-4" />
+                  <ArrowRight className="h-4 w-4" aria-hidden="true" />
                 </Link>
               </Button>
             </div>
@@ -409,7 +416,7 @@ async function TraineeDashboard({ userId }: { userId: string }) {
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-orange-100">
-                <Clock className="h-5 w-5 text-orange-700" />
+                <Clock className="h-5 w-5 text-orange-700" aria-hidden="true" />
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Pending Acknowledgment</p>
@@ -423,7 +430,7 @@ async function TraineeDashboard({ userId }: { userId: string }) {
             <CardContent className="pt-6">
               <div className="flex items-center gap-3">
                 <div className="p-2 rounded-lg bg-blue-100">
-                  <BookOpen className="h-5 w-5 text-blue-700" />
+                  <BookOpen className="h-5 w-5 text-blue-700" aria-hidden="true" />
                 </div>
                 <div className="flex-1">
                   <p className="text-sm text-muted-foreground">Coaching</p>
@@ -434,9 +441,9 @@ async function TraineeDashboard({ userId }: { userId: string }) {
                     </span>
                   </p>
                 </div>
-                <Button asChild variant="ghost" size="icon">
+                <Button asChild variant="ghost" size="icon" aria-label="View coaching activities">
                   <Link href="/fieldtraining/coaching">
-                    <ArrowRight className="h-4 w-4" />
+                    <ArrowRight className="h-4 w-4" aria-hidden="true" />
                   </Link>
                 </Button>
               </div>
@@ -461,17 +468,13 @@ async function TraineeDashboard({ userId }: { userId: string }) {
 
           {currentPhase && (
             <p className="text-sm">
-              Current Phase:{" "}
-              <span className="font-medium">{currentPhase.phase.name}</span>
+              Current Phase: <span className="font-medium">{currentPhase.phase.name}</span>
             </p>
           )}
 
           <div className="space-y-2 mt-4">
             {phases.map((p) => (
-              <div
-                key={p.id}
-                className="flex items-center justify-between p-2 rounded-lg border"
-              >
+              <div key={p.id} className="flex items-center justify-between p-2 rounded-lg border">
                 <span className="text-sm font-medium">{p.phase.name}</span>
                 <Badge
                   variant={

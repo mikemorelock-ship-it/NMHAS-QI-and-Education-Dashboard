@@ -16,7 +16,9 @@ export default async function PdsaCyclesPage() {
     prisma.pdsaCycle.findMany({
       orderBy: [{ updatedAt: "desc" }],
       include: {
-        driverDiagram: { select: { id: true, name: true, campaign: { select: { id: true, name: true } } } },
+        driverDiagram: {
+          select: { id: true, name: true, campaign: { select: { id: true, name: true } } },
+        },
         metricDefinition: { select: { id: true, name: true } },
         changeIdeaNode: { select: { id: true, text: true, driverDiagramId: true } },
       },

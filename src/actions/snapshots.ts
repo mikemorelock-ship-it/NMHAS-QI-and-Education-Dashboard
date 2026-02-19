@@ -30,9 +30,7 @@ export async function createTraineeSnapshot(
       where: { id: session.userId },
       select: { firstName: true, lastName: true },
     });
-    const creatorName = creator
-      ? `${creator.firstName} ${creator.lastName}`
-      : "System";
+    const creatorName = creator ? `${creator.firstName} ${creator.lastName}` : "System";
 
     const snapshotData = await buildTraineeSnapshot(traineeId, creatorName);
 
@@ -83,9 +81,7 @@ export async function createBulkSnapshots(
       where: { id: session.userId },
       select: { firstName: true, lastName: true },
     });
-    const creatorName = creator
-      ? `${creator.firstName} ${creator.lastName}`
-      : "System";
+    const creatorName = creator ? `${creator.firstName} ${creator.lastName}` : "System";
 
     const results: { traineeId: string; traineeName: string; token: string }[] = [];
 

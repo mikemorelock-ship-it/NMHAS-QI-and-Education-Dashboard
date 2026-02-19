@@ -70,9 +70,7 @@ export function DepartmentEditClient({
           </Link>
         </Button>
         <div>
-          <h1 className="text-2xl font-bold text-nmh-gray">
-            Edit Department
-          </h1>
+          <h1 className="text-2xl font-bold text-nmh-gray">Edit Department</h1>
           <p className="text-muted-foreground mt-1">
             Update department details and manage divisions.
           </p>
@@ -88,12 +86,7 @@ export function DepartmentEditClient({
           <form action={updateAction} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="name">Name</Label>
-              <Input
-                id="name"
-                name="name"
-                defaultValue={department.name}
-                required
-              />
+              <Input id="name" name="name" defaultValue={department.name} required />
             </div>
             <div className="space-y-2">
               <Label htmlFor="type">Type</Label>
@@ -133,18 +126,15 @@ export function DepartmentEditClient({
         <CardContent className="space-y-4">
           {/* Add Division Form */}
           <form
-            action={async (formData: FormData) => { await createDivision(formData); }}
+            action={async (formData: FormData) => {
+              await createDivision(formData);
+            }}
             className="flex items-end gap-3 p-4 bg-muted/50 rounded-lg"
           >
             <input type="hidden" name="departmentId" value={department.id} />
             <div className="flex-1 space-y-2">
               <Label htmlFor="divisionName">Add New Division</Label>
-              <Input
-                id="divisionName"
-                name="name"
-                placeholder="Division name"
-                required
-              />
+              <Input id="divisionName" name="name" placeholder="Division name" required />
             </div>
             <Button type="submit" size="sm" className="bg-nmh-teal hover:bg-nmh-teal/90">
               <Plus className="h-4 w-4" />
@@ -168,12 +158,8 @@ export function DepartmentEditClient({
               <TableBody>
                 {divisions.map((division) => (
                   <TableRow key={division.id}>
-                    <TableCell className="font-medium">
-                      {division.name}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {division.slug}
-                    </TableCell>
+                    <TableCell className="font-medium">{division.name}</TableCell>
+                    <TableCell className="text-muted-foreground">{division.slug}</TableCell>
                     <TableCell className="text-right">
                       <Button
                         variant="outline"
@@ -194,17 +180,13 @@ export function DepartmentEditClient({
       </Card>
 
       {/* Delete Division Confirmation */}
-      <Dialog
-        open={deleteTarget !== null}
-        onOpenChange={(open) => !open && setDeleteTarget(null)}
-      >
+      <Dialog open={deleteTarget !== null} onOpenChange={(open) => !open && setDeleteTarget(null)}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Delete Division</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete &quot;{deleteTarget?.name}&quot;?
-              This will also remove any associated data entries. This action
-              cannot be undone.
+              Are you sure you want to delete &quot;{deleteTarget?.name}&quot;? This will also
+              remove any associated data entries. This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

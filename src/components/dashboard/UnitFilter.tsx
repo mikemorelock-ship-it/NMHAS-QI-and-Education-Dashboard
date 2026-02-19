@@ -43,9 +43,7 @@ export function UnitFilter({
 
   return (
     <div className="space-y-2">
-      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-        {label}
-      </p>
+      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{label}</p>
       <div
         ref={scrollRef}
         className="flex overflow-x-auto scrollbar-hide gap-2 pb-1"

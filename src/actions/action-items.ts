@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { z } from "zod";
 import type { ActionResult } from "./metrics";
 import { requireAdmin } from "@/lib/require-auth";
+import { createAuditLog, computeChanges } from "@/lib/audit";
 
 // ---------------------------------------------------------------------------
 // Schema
@@ -143,11 +144,12 @@ export async function updateActionItem(id: string, formData: FormData): Promise<
     if (!existing) return { success: false, error: "Action item not found." };
 
     // Auto-set completedAt when marking complete
-    const completedAt = data.status === "completed" && existing.status !== "completed"
-      ? new Date()
-      : data.status !== "completed"
-        ? null
-        : existing.completedAt;
+    const completedAt =
+      data.status === "completed" && existing.status !== "completed"
+        ? new Date()
+        : data.status !== "completed"
+          ? null
+          : existing.completedAt;
 
     await prisma.actionItem.update({
       where: { id },
@@ -164,15 +166,31 @@ export async function updateActionItem(id: string, formData: FormData): Promise<
       },
     });
 
-    await prisma.auditLog.create({
-      data: {
-        action: "UPDATE",
-        entity: "ActionItem",
-        entityId: id,
-        details: `Updated action item "${data.title}"`,
-        actorId: session.userId,
-        actorType: "admin",
+    const changes = computeChanges(
+      {
+        title: existing.title,
+        status: existing.status,
+        priority: existing.priority,
+        assigneeId: existing.assigneeId,
+        dueDate: existing.dueDate?.toISOString() ?? null,
       },
+      {
+        title: data.title,
+        status: data.status,
+        priority: data.priority,
+        assigneeId: data.assigneeId || null,
+        dueDate: data.dueDate ?? null,
+      },
+    );
+
+    await createAuditLog({
+      action: "UPDATE",
+      entity: "ActionItem",
+      entityId: id,
+      details: `Updated action item "${data.title}"`,
+      changes: changes ?? undefined,
+      actorId: session.userId,
+      actorType: "user",
     });
   } catch (err) {
     console.error("updateActionItem error:", err);
@@ -235,15 +253,16 @@ export async function toggleActionItemStatus(id: string, status: string): Promis
       data: { status, completedAt },
     });
 
-    await prisma.auditLog.create({
-      data: {
-        action: "UPDATE",
-        entity: "ActionItem",
-        entityId: id,
-        details: `Changed action item "${item.title}" status to ${status}`,
-        actorId: session.userId,
-        actorType: "admin",
-      },
+    const changes = computeChanges({ status: item.status }, { status });
+
+    await createAuditLog({
+      action: "UPDATE",
+      entity: "ActionItem",
+      entityId: id,
+      details: `Changed action item "${item.title}" status to ${status}`,
+      changes: changes ?? undefined,
+      actorId: session.userId,
+      actorType: "user",
     });
   } catch (err) {
     console.error("toggleActionItemStatus error:", err);

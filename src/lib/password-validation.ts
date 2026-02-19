@@ -18,9 +18,7 @@ export interface PasswordStrengthResult {
  * - At least 1 number
  * - At least 1 special character
  */
-export function validatePasswordStrength(
-  password: string
-): PasswordStrengthResult {
+export function validatePasswordStrength(password: string): PasswordStrengthResult {
   const errors: string[] = [];
 
   if (password.length < 8) {

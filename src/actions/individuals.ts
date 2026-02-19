@@ -43,9 +43,7 @@ function revalidateAll() {
 // Actions
 // ---------------------------------------------------------------------------
 
-export async function createIndividual(
-  formData: FormData
-): Promise<ActionResult> {
+export async function createIndividual(formData: FormData): Promise<ActionResult> {
   let session;
   try {
     session = await requireAdmin("manage_departments");
@@ -107,10 +105,7 @@ export async function createIndividual(
   return { success: true };
 }
 
-export async function updateIndividual(
-  id: string,
-  formData: FormData
-): Promise<ActionResult> {
+export async function updateIndividual(id: string, formData: FormData): Promise<ActionResult> {
   let session;
   try {
     session = await requireAdmin("manage_departments");
@@ -172,10 +167,7 @@ export async function updateIndividual(
   return { success: true };
 }
 
-export async function toggleIndividualActive(
-  id: string,
-  isActive: boolean
-): Promise<ActionResult> {
+export async function toggleIndividualActive(id: string, isActive: boolean): Promise<ActionResult> {
   let session;
   try {
     session = await requireAdmin("manage_departments");

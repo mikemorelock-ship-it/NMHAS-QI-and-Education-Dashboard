@@ -36,17 +36,18 @@ export default async function CampaignDetailPage({
 
   // Get PDSA cycles through the campaign's diagrams
   const diagramIds = campaign.driverDiagrams.map((d) => d.id);
-  const pdsaCycles = diagramIds.length > 0
-    ? await prisma.pdsaCycle.findMany({
-        where: { driverDiagramId: { in: diagramIds } },
-        orderBy: { updatedAt: "desc" },
-        include: {
-          driverDiagram: { select: { name: true, slug: true } },
-          metricDefinition: { select: { name: true } },
-          changeIdeaNode: { select: { text: true } },
-        },
-      })
-    : [];
+  const pdsaCycles =
+    diagramIds.length > 0
+      ? await prisma.pdsaCycle.findMany({
+          where: { driverDiagramId: { in: diagramIds } },
+          orderBy: { updatedAt: "desc" },
+          include: {
+            driverDiagram: { select: { name: true, slug: true } },
+            metricDefinition: { select: { name: true } },
+            changeIdeaNode: { select: { text: true } },
+          },
+        })
+      : [];
 
   return (
     <CampaignDetailView
@@ -55,9 +56,7 @@ export default async function CampaignDetailPage({
         description: campaign.description,
         goals: campaign.goals,
         status: campaign.status,
-        ownerName: campaign.owner
-          ? `${campaign.owner.firstName} ${campaign.owner.lastName}`
-          : null,
+        ownerName: campaign.owner ? `${campaign.owner.firstName} ${campaign.owner.lastName}` : null,
         startDate: campaign.startDate?.toISOString().split("T")[0] ?? null,
         endDate: campaign.endDate?.toISOString().split("T")[0] ?? null,
       }}
@@ -87,9 +86,7 @@ export default async function CampaignDetailPage({
         status: a.status,
         priority: a.priority,
         dueDate: a.dueDate?.toISOString().split("T")[0] ?? null,
-        assigneeName: a.assignee
-          ? `${a.assignee.firstName} ${a.assignee.lastName}`
-          : null,
+        assigneeName: a.assignee ? `${a.assignee.firstName} ${a.assignee.lastName}` : null,
       }))}
     />
   );

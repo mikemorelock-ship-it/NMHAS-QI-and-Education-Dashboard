@@ -36,14 +36,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Plus, Pencil, Trash2, FastForward, RefreshCcw, ChevronLeft, ChevronRight, Copy } from "lucide-react";
+import {
+  Plus,
+  Pencil,
+  Trash2,
+  FastForward,
+  RefreshCcw,
+  ChevronLeft,
+  ChevronRight,
+  Copy,
+} from "lucide-react";
 import Link from "next/link";
 
 // ---------------------------------------------------------------------------
@@ -168,8 +172,7 @@ export function PdsaCyclesClient({
   const filteredCycles = useMemo(() => {
     return cycles.filter((c) => {
       if (filterStatus !== "__all__" && c.status !== filterStatus) return false;
-      if (filterDiagram !== "__all__" && c.driverDiagramId !== filterDiagram)
-        return false;
+      if (filterDiagram !== "__all__" && c.driverDiagramId !== filterDiagram) return false;
       return true;
     });
   }, [cycles, filterStatus, filterDiagram]);
@@ -240,9 +243,7 @@ export function PdsaCyclesClient({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-nmh-gray">PDSA Cycles</h1>
-          <p className="text-muted-foreground mt-1">
-            Manage Plan-Do-Study-Act improvement cycles.
-          </p>
+          <p className="text-muted-foreground mt-1">Manage Plan-Do-Study-Act improvement cycles.</p>
         </div>
         <Button
           className="bg-nmh-teal hover:bg-nmh-teal/90 shrink-0 self-start sm:self-auto"
@@ -331,9 +332,7 @@ export function PdsaCyclesClient({
                 <TableBody>
                   {filteredCycles.map((cycle) => (
                     <TableRow key={cycle.id}>
-                      <TableCell className="font-medium">
-                        {cycle.title}
-                      </TableCell>
+                      <TableCell className="font-medium">{cycle.title}</TableCell>
                       <TableCell className="text-center">
                         {cycle.cycleNumber}
                         {cycle.changeIdeaNodeId &&
@@ -350,9 +349,7 @@ export function PdsaCyclesClient({
                       </TableCell>
                       <TableCell>
                         <Badge
-                          className={
-                            statusColors[cycle.status] ?? "bg-muted text-muted-foreground"
-                          }
+                          className={statusColors[cycle.status] ?? "bg-muted text-muted-foreground"}
                         >
                           {statusLabels[cycle.status] ?? cycle.status}
                         </Badge>
@@ -361,16 +358,13 @@ export function PdsaCyclesClient({
                         {cycle.outcome ? (
                           <Badge
                             className={
-                              outcomeColors[cycle.outcome] ??
-                              "bg-muted text-muted-foreground"
+                              outcomeColors[cycle.outcome] ?? "bg-muted text-muted-foreground"
                             }
                           >
                             {outcomeLabels[cycle.outcome] ?? cycle.outcome}
                           </Badge>
                         ) : (
-                          <span className="text-muted-foreground text-sm">
-                            --
-                          </span>
+                          <span className="text-muted-foreground text-sm">--</span>
                         )}
                       </TableCell>
                       <TableCell>
@@ -382,16 +376,12 @@ export function PdsaCyclesClient({
                       </TableCell>
                       <TableCell>
                         {cycle.driverDiagramName ?? (
-                          <span className="text-muted-foreground text-sm">
-                            --
-                          </span>
+                          <span className="text-muted-foreground text-sm">--</span>
                         )}
                       </TableCell>
                       <TableCell>
                         {cycle.metricName ?? (
-                          <span className="text-muted-foreground text-sm">
-                            --
-                          </span>
+                          <span className="text-muted-foreground text-sm">--</span>
                         )}
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
@@ -399,23 +389,18 @@ export function PdsaCyclesClient({
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1">
-                          {cycle.status !== "completed" &&
-                            cycle.status !== "abandoned" && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                title="Advance to next phase"
-                                disabled={isPending}
-                                onClick={() => handleAdvance(cycle)}
-                              >
-                                <FastForward className="h-3.5 w-3.5" />
-                              </Button>
-                            )}
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => openEdit(cycle)}
-                          >
+                          {cycle.status !== "completed" && cycle.status !== "abandoned" && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              title="Advance to next phase"
+                              disabled={isPending}
+                              onClick={() => handleAdvance(cycle)}
+                            >
+                              <FastForward className="h-3.5 w-3.5" />
+                            </Button>
+                          )}
+                          <Button variant="outline" size="sm" onClick={() => openEdit(cycle)}>
                             <Pencil className="h-3.5 w-3.5" />
                           </Button>
                           <Button
@@ -454,9 +439,7 @@ export function PdsaCyclesClient({
                 {/* Cards */}
                 <div className="space-y-2 min-h-[200px] rounded-lg border border-dashed border-muted-foreground/20 p-2 bg-muted/30">
                   {cyclesByStatus[status].length === 0 ? (
-                    <p className="text-xs text-muted-foreground text-center py-8">
-                      No cycles
-                    </p>
+                    <p className="text-xs text-muted-foreground text-center py-8">No cycles</p>
                   ) : (
                     cyclesByStatus[status].map((cycle) => (
                       <Card
@@ -483,8 +466,7 @@ export function PdsaCyclesClient({
                           {cycle.outcome && (
                             <Badge
                               className={`text-xs ${
-                                outcomeColors[cycle.outcome] ??
-                                "bg-muted text-muted-foreground"
+                                outcomeColors[cycle.outcome] ?? "bg-muted text-muted-foreground"
                               }`}
                             >
                               {outcomeLabels[cycle.outcome] ?? cycle.outcome}
@@ -506,9 +488,7 @@ export function PdsaCyclesClient({
         <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Add PDSA Cycle</DialogTitle>
-            <DialogDescription>
-              Create a new Plan-Do-Study-Act cycle.
-            </DialogDescription>
+            <DialogDescription>Create a new Plan-Do-Study-Act cycle.</DialogDescription>
           </DialogHeader>
           <form
             action={async (formData) => {
@@ -597,8 +577,7 @@ export function PdsaCyclesClient({
                     variant="ghost"
                     size="sm"
                     disabled={
-                      editTarget.cycleNumber >=
-                      siblingCycles[siblingCycles.length - 1].cycleNumber
+                      editTarget.cycleNumber >= siblingCycles[siblingCycles.length - 1].cycleNumber
                     }
                     onClick={() => {
                       const next = siblingCycles.find(
@@ -617,8 +596,7 @@ export function PdsaCyclesClient({
               )}
 
               {/* Start Next Cycle button for completed/acting cycles */}
-              {(editTarget.status === "completed" ||
-                editTarget.status === "acting") &&
+              {(editTarget.status === "completed" || editTarget.status === "acting") &&
                 editTarget.changeIdeaNodeId && (
                   <div className="flex justify-end mb-3">
                     <Button
@@ -630,9 +608,7 @@ export function PdsaCyclesClient({
                           if (result.success) {
                             setEditTarget(null);
                           } else {
-                            setFormError(
-                              result.error ?? "Failed to create next iteration."
-                            );
+                            setFormError(result.error ?? "Failed to create next iteration.");
                           }
                         });
                       }}
@@ -644,66 +620,60 @@ export function PdsaCyclesClient({
                   </div>
                 )}
 
-            <form
-              key={editTarget.id}
-              action={async (formData) => {
-                setFormError(null);
-                const result = await updatePdsaCycle(editTarget.id, formData);
-                if (result.success) {
-                  setEditTarget(null);
-                } else {
-                  setFormError(result.error || "Failed to update cycle.");
-                }
-              }}
-            >
-              {formError && (
-                <div className="rounded-md bg-destructive/10 border border-destructive/30 p-3 mb-3">
-                  <p className="text-sm text-destructive">{formError}</p>
-                </div>
-              )}
-              <CycleFormFields
-                diagrams={diagrams}
-                metrics={metrics}
-                changeIdeas={filteredChangeIdeas}
-                formDiagramId={formDiagramId}
-                onDiagramChange={setFormDiagramId}
-                defaultValues={editTarget}
-              />
-              <DialogFooter className="mt-4">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
+              <form
+                key={editTarget.id}
+                action={async (formData) => {
+                  setFormError(null);
+                  const result = await updatePdsaCycle(editTarget.id, formData);
+                  if (result.success) {
                     setEditTarget(null);
-                    setFormError(null);
-                  }}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  className="bg-nmh-teal hover:bg-nmh-teal/90"
-                >
-                  Save Changes
-                </Button>
-              </DialogFooter>
-            </form>
+                  } else {
+                    setFormError(result.error || "Failed to update cycle.");
+                  }
+                }}
+              >
+                {formError && (
+                  <div className="rounded-md bg-destructive/10 border border-destructive/30 p-3 mb-3">
+                    <p className="text-sm text-destructive">{formError}</p>
+                  </div>
+                )}
+                <CycleFormFields
+                  diagrams={diagrams}
+                  metrics={metrics}
+                  changeIdeas={filteredChangeIdeas}
+                  formDiagramId={formDiagramId}
+                  onDiagramChange={setFormDiagramId}
+                  defaultValues={editTarget}
+                />
+                <DialogFooter className="mt-4">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      setEditTarget(null);
+                      setFormError(null);
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                  <Button type="submit" className="bg-nmh-teal hover:bg-nmh-teal/90">
+                    Save Changes
+                  </Button>
+                </DialogFooter>
+              </form>
             </div>
           )}
         </DialogContent>
       </Dialog>
 
       {/* Delete Confirmation */}
-      <Dialog
-        open={deleteTarget !== null}
-        onOpenChange={(open) => !open && setDeleteTarget(null)}
-      >
+      <Dialog open={deleteTarget !== null} onOpenChange={(open) => !open && setDeleteTarget(null)}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Delete PDSA Cycle</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete &quot;{deleteTarget?.title}&quot;
-              (Cycle #{deleteTarget?.cycleNumber})? This action cannot be undone.
+              Are you sure you want to delete &quot;{deleteTarget?.title}&quot; (Cycle #
+              {deleteTarget?.cycleNumber})? This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -779,10 +749,7 @@ function CycleFormFields({
         {/* Status */}
         <div className="space-y-2">
           <Label htmlFor="status">Status</Label>
-          <Select
-            name="status"
-            defaultValue={defaultValues?.status ?? "planning"}
-          >
+          <Select name="status" defaultValue={defaultValues?.status ?? "planning"}>
             <SelectTrigger>
               <SelectValue placeholder="Select status" />
             </SelectTrigger>
@@ -799,10 +766,7 @@ function CycleFormFields({
         {/* Outcome */}
         <div className="space-y-2">
           <Label htmlFor="outcome">Outcome</Label>
-          <Select
-            name="outcome"
-            defaultValue={defaultValues?.outcome ?? "__none__"}
-          >
+          <Select name="outcome" defaultValue={defaultValues?.outcome ?? "__none__"}>
             <SelectTrigger>
               <SelectValue placeholder="Select outcome" />
             </SelectTrigger>

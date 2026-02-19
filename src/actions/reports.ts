@@ -152,9 +152,7 @@ function parseDateFilter(s: string | undefined): Date | undefined {
 // 1. Export Metric Data
 // ---------------------------------------------------------------------------
 
-export async function exportMetricData(
-  filters: MetricDataFilters
-): Promise<MetricDataRow[]> {
+export async function exportMetricData(filters: MetricDataFilters): Promise<MetricDataRow[]> {
   await requireAdmin("export_reports");
 
   const startDate = parseDateFilter(filters.startDate);
@@ -203,9 +201,7 @@ export async function exportMetricData(
 // 2. Export DOR Data
 // ---------------------------------------------------------------------------
 
-export async function exportDorData(
-  filters: DorDataFilters
-): Promise<DorDataRow[]> {
+export async function exportDorData(filters: DorDataFilters): Promise<DorDataRow[]> {
   await requireAdmin("export_reports");
 
   const startDate = parseDateFilter(filters.startDate);
@@ -216,9 +212,7 @@ export async function exportDorData(
       ...(filters.traineeIds && filters.traineeIds.length > 0
         ? { traineeId: { in: filters.traineeIds } }
         : {}),
-      ...(filters.ftoIds && filters.ftoIds.length > 0
-        ? { ftoId: { in: filters.ftoIds } }
-        : {}),
+      ...(filters.ftoIds && filters.ftoIds.length > 0 ? { ftoId: { in: filters.ftoIds } } : {}),
       ...(filters.phaseId ? { phaseId: filters.phaseId } : {}),
       ...(startDate || endDate
         ? {
@@ -320,19 +314,12 @@ export async function exportTrainingProgress(
     const dorCount = t.traineeDailyEvals.length;
     const avgRating =
       dorCount > 0
-        ? (
-            t.traineeDailyEvals.reduce((sum, d) => sum + d.overallRating, 0) /
-            dorCount
-          ).toFixed(2)
+        ? (t.traineeDailyEvals.reduce((sum, d) => sum + d.overallRating, 0) / dorCount).toFixed(2)
         : "";
     const skillsCompleted = t.traineeSkillSignoffs.length;
-    const phasesCompleted = t.traineePhases.filter(
-      (p) => p.status === "completed"
-    ).length;
+    const phasesCompleted = t.traineePhases.filter((p) => p.status === "completed").length;
     const coachingAssigned = t.coachingAssignments.length;
-    const coachingCompleted = t.coachingAssignments.filter(
-      (c) => c.status === "completed"
-    ).length;
+    const coachingCompleted = t.coachingAssignments.filter((c) => c.status === "completed").length;
     const currentFto = t.traineeAssignments
       .map((a) => `${a.fto.firstName} ${a.fto.lastName}`)
       .join(", ");
@@ -351,9 +338,7 @@ export async function exportTrainingProgress(
       skillsCompleted,
       totalSkills,
       skillsPercent:
-        totalSkills > 0
-          ? ((skillsCompleted / totalSkills) * 100).toFixed(1) + "%"
-          : "0%",
+        totalSkills > 0 ? ((skillsCompleted / totalSkills) * 100).toFixed(1) + "%" : "0%",
       phasesCompleted,
       totalPhases,
       coachingAssigned,
@@ -367,9 +352,7 @@ export async function exportTrainingProgress(
 // 4. Export Audit Log
 // ---------------------------------------------------------------------------
 
-export async function exportAuditLog(
-  filters: AuditLogFilters
-): Promise<AuditLogRow[]> {
+export async function exportAuditLog(filters: AuditLogFilters): Promise<AuditLogRow[]> {
   await requireAdmin("export_reports");
 
   const startDate = parseDateFilter(filters.startDate);
@@ -407,9 +390,7 @@ export async function exportAuditLog(
 // 5. Export User Roster
 // ---------------------------------------------------------------------------
 
-export async function exportUserRoster(
-  filters: UserRosterFilters
-): Promise<UserRosterRow[]> {
+export async function exportUserRoster(filters: UserRosterFilters): Promise<UserRosterRow[]> {
   await requireAdmin("export_reports");
 
   const users = await prisma.user.findMany({

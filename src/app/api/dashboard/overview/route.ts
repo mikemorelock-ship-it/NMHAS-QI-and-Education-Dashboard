@@ -36,22 +36,23 @@ export async function GET() {
 
     // BULK FETCH: all department-level entries for all KPI metrics in one query
     // This replaces 2*N individual queries with 1 bulk query.
-    const allEntries = allKpiMetricIds.length > 0
-      ? await prisma.metricEntry.findMany({
-          where: {
-            metricDefinitionId: { in: allKpiMetricIds },
-            divisionId: null,
-            regionId: null,
-          },
-          orderBy: { periodStart: "asc" },
-          select: {
-            metricDefinitionId: true,
-            departmentId: true,
-            periodStart: true,
-            value: true,
-          },
-        })
-      : [];
+    const allEntries =
+      allKpiMetricIds.length > 0
+        ? await prisma.metricEntry.findMany({
+            where: {
+              metricDefinitionId: { in: allKpiMetricIds },
+              divisionId: null,
+              regionId: null,
+            },
+            orderBy: { periodStart: "asc" },
+            select: {
+              metricDefinitionId: true,
+              departmentId: true,
+              periodStart: true,
+              value: true,
+            },
+          })
+        : [];
 
     // Index entries by (metricId, deptId) for fast lookup
     const entryIndex = new Map<string, Array<{ periodStart: Date; value: number }>>();
@@ -76,8 +77,7 @@ export async function GET() {
         // Calculate trend
         let trend = 0;
         if (previousValue !== 0) {
-          trend =
-            ((currentValue - previousValue) / Math.abs(previousValue)) * 100;
+          trend = ((currentValue - previousValue) / Math.abs(previousValue)) * 100;
         }
 
         // Sparkline: last 6 data points
@@ -111,9 +111,6 @@ export async function GET() {
     return NextResponse.json({ departments: result });
   } catch (error) {
     console.error("Dashboard overview error:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch dashboard overview" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to fetch dashboard overview" }, { status: 500 });
   }
 }

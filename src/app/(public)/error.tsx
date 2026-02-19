@@ -27,12 +27,9 @@ export default function PublicError({
         <AlertTriangle className="h-8 w-8 text-destructive" />
       </div>
       <div className="space-y-2">
-        <h2 className="text-xl font-semibold text-foreground">
-          Something went wrong
-        </h2>
+        <h2 className="text-xl font-semibold text-foreground">Something went wrong</h2>
         <p className="text-muted-foreground max-w-md">
-          An unexpected error occurred while loading the dashboard.
-          Try refreshing the page.
+          An unexpected error occurred while loading the dashboard. Try refreshing the page.
         </p>
       </div>
       <Button onClick={reset} variant="default">

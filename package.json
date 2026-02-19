@@ -7,6 +7,11 @@
     "build": "prisma generate && next build",
     "start": "next start",
     "lint": "eslint",
+    "lint:fix": "eslint --fix",
+    "format": "prettier --write \"src/**/*.{ts,tsx}\" \"__tests__/**/*.ts\"",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx}\" \"__tests__/**/*.ts\"",
+    "typecheck": "tsc --noEmit",
+    "prepare": "husky",
     "db:migrate": "prisma migrate dev",
     "db:seed": "node --import tsx prisma/seed.mjs",
     "db:reset": "prisma migrate reset --force",
@@ -15,6 +20,15 @@
     "test:coverage": "vitest run --coverage",
     "security:audit": "npm audit --omit=dev",
     "security:audit:all": "npm audit"
+  },
+  "lint-staged": {
+    "*.{ts,tsx}": [
+      "prettier --write",
+      "eslint --fix --no-warn-ignored"
+    ],
+    "*.{json,md,css,mjs}": [
+      "prettier --write"
+    ]
   },
   "prisma": {
     "seed": "node --import tsx prisma/seed.mjs"
@@ -49,6 +63,8 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@commitlint/cli": "^20.4.1",
+    "@commitlint/config-conventional": "^20.4.1",
     "@tailwindcss/postcss": "^4",
     "@types/bcryptjs": "^2.4.6",
     "@types/better-sqlite3": "^7.6.13",
@@ -60,6 +76,10 @@
     "@vitest/coverage-v8": "^4.0.18",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
+    "eslint-config-prettier": "^10.1.8",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.7",
+    "prettier": "^3.8.1",
     "prisma": "^7.4.0",
     "shadcn": "^3.8.4",
     "tailwindcss": "^4",

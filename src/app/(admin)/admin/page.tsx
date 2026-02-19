@@ -67,7 +67,9 @@ export default async function AdminOverviewPage() {
       take: 10,
       orderBy: { createdAt: "desc" },
       include: {
-        metricDefinition: { select: { name: true, unit: true, rateMultiplier: true, rateSuffix: true } },
+        metricDefinition: {
+          select: { name: true, unit: true, rateMultiplier: true, rateSuffix: true },
+        },
         department: { select: { name: true } },
         division: { select: { name: true } },
       },
@@ -147,10 +149,7 @@ export default async function AdminOverviewPage() {
       icon: PenLine,
       href: "/admin/data-entry",
       color: "text-nmh-orange",
-      subtitle:
-        entriesLastMonth > 0
-          ? `${entriesLastMonth} last month`
-          : undefined,
+      subtitle: entriesLastMonth > 0 ? `${entriesLastMonth} last month` : undefined,
     },
   ];
 
@@ -158,9 +157,7 @@ export default async function AdminOverviewPage() {
     <div className="space-y-8">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-nmh-gray">
-          Dashboard Administration
-        </h1>
+        <h1 className="text-2xl font-bold text-nmh-gray">Dashboard Administration</h1>
         <p className="text-muted-foreground mt-1">
           Manage departments, metrics, and data entries for the EMS Dashboard.
         </p>
@@ -178,7 +175,12 @@ export default async function AdminOverviewPage() {
               Review pending account requests to grant dashboard access.
             </p>
           </div>
-          <Button variant="outline" size="sm" asChild className="border-nmh-orange text-nmh-orange hover:bg-nmh-orange/10">
+          <Button
+            variant="outline"
+            size="sm"
+            asChild
+            className="border-nmh-orange text-nmh-orange hover:bg-nmh-orange/10"
+          >
             <Link href="/admin/users">Review</Link>
           </Button>
         </div>
@@ -200,9 +202,7 @@ export default async function AdminOverviewPage() {
                   {stat.value.toLocaleString()}
                 </div>
                 {stat.subtitle && (
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {stat.subtitle}
-                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">{stat.subtitle}</p>
                 )}
               </CardContent>
             </Card>
@@ -214,9 +214,7 @@ export default async function AdminOverviewPage() {
         {/* Department Overview - takes 1 column */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-nmh-gray text-base">
-              Departments
-            </CardTitle>
+            <CardTitle className="text-nmh-gray text-base">Departments</CardTitle>
             <Button variant="ghost" size="sm" asChild>
               <Link href="/admin/departments">
                 View all
@@ -226,16 +224,11 @@ export default async function AdminOverviewPage() {
           </CardHeader>
           <CardContent>
             {departments.length === 0 ? (
-              <p className="text-muted-foreground text-sm text-center py-4">
-                No departments yet.
-              </p>
+              <p className="text-muted-foreground text-sm text-center py-4">No departments yet.</p>
             ) : (
               <div className="space-y-3">
                 {departments.map((dept) => (
-                  <div
-                    key={dept.id}
-                    className="flex items-center justify-between py-1.5"
-                  >
+                  <div key={dept.id} className="flex items-center justify-between py-1.5">
                     <div className="flex items-center gap-2">
                       <span className="font-medium text-sm">{dept.name}</span>
                       <Badge
@@ -260,8 +253,8 @@ export default async function AdminOverviewPage() {
                       </Badge>
                     </div>
                     <span className="text-xs text-muted-foreground">
-                      {dept._count.metricDefinitions} metrics &middot;{" "}
-                      {dept._count.metricEntries} entries
+                      {dept._count.metricDefinitions} metrics &middot; {dept._count.metricEntries}{" "}
+                      entries
                     </span>
                   </div>
                 ))}
@@ -273,9 +266,7 @@ export default async function AdminOverviewPage() {
         {/* Recent Entries - takes 2 columns */}
         <Card className="lg:col-span-2">
           <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-nmh-gray text-base">
-              Recent Data Entries
-            </CardTitle>
+            <CardTitle className="text-nmh-gray text-base">Recent Data Entries</CardTitle>
             <Button variant="ghost" size="sm" asChild>
               <Link href="/admin/data-entry">
                 Add entry
@@ -302,14 +293,10 @@ export default async function AdminOverviewPage() {
                 <TableBody>
                   {recentEntries.map((entry) => (
                     <TableRow key={entry.id}>
-                      <TableCell className="font-medium">
-                        {entry.metricDefinition.name}
-                      </TableCell>
+                      <TableCell className="font-medium">{entry.metricDefinition.name}</TableCell>
                       <TableCell>{entry.department.name}</TableCell>
                       <TableCell>
-                        {entry.division?.name ?? (
-                          <span className="text-muted-foreground">--</span>
-                        )}
+                        {entry.division?.name ?? <span className="text-muted-foreground">--</span>}
                       </TableCell>
                       <TableCell>{formatPeriod(entry.periodStart)}</TableCell>
                       <TableCell className="text-right font-mono">
@@ -339,9 +326,7 @@ export default async function AdminOverviewPage() {
         </CardHeader>
         <CardContent>
           {recentAuditLogs.length === 0 ? (
-            <p className="text-muted-foreground text-sm py-4 text-center">
-              No activity yet.
-            </p>
+            <p className="text-muted-foreground text-sm py-4 text-center">No activity yet.</p>
           ) : (
             <div className="space-y-3">
               {recentAuditLogs.map((log) => (
@@ -417,13 +402,9 @@ export default async function AdminOverviewPage() {
                         <XCircle className="h-4 w-4 text-red-500" />
                       )}
                     </TableCell>
-                    <TableCell className="font-mono text-sm">
-                      {attempt.identifier}
-                    </TableCell>
+                    <TableCell className="font-mono text-sm">{attempt.identifier}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">
-                      {attempt.success
-                        ? "success"
-                        : attempt.reason ?? "failed"}
+                      {attempt.success ? "success" : (attempt.reason ?? "failed")}
                     </TableCell>
                     <TableCell className="text-xs text-muted-foreground font-mono">
                       {attempt.ipAddress ?? "--"}

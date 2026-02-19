@@ -29,10 +29,7 @@ export interface GlossaryTerm {
 // Portal metadata (used for page titles / descriptions)
 // ---------------------------------------------------------------------------
 
-export const PORTAL_META: Record<
-  PortalId,
-  { title: string; description: string }
-> = {
+export const PORTAL_META: Record<PortalId, { title: string; description: string }> = {
   public: {
     title: "Dashboard Help & Guide",
     description:
@@ -202,9 +199,7 @@ export const HELP_FEATURES: HelpFeature[] = [
     description:
       "Configure which metrics appear on scorecards and manage scorecard display settings. Scorecards provide a monthly summary view of performance against targets.",
     path: "/admin/scorecards",
-    tips: [
-      "Preset metric configurations let you quickly set up standard scorecard layouts.",
-    ],
+    tips: ["Preset metric configurations let you quickly set up standard scorecard layouts."],
   },
   {
     id: "admin-qi-workflow",
@@ -340,6 +335,22 @@ export const HELP_FEATURES: HelpFeature[] = [
       "Each snapshot gets a unique shareable link — send it to directors, medical directors, or educators.",
       "Snapshots are frozen at creation time and won't change if the trainee's data updates later.",
       "Deactivate a snapshot to revoke access to the shared link.",
+    ],
+  },
+  {
+    id: "admin-audit-log",
+    portals: ["admin"],
+    title: "Audit Log",
+    icon: "ScrollText",
+    description:
+      "Browse the complete history of every action taken in the system — creates, updates, deletes, logins, and more. Filter by action type, entity, actor, or date range. Expandable rows show structured before/after diffs so you can see exactly what changed.",
+    path: "/admin/audit-log",
+    tips: [
+      "Use the Action filter to focus on specific operations like UPDATE or DELETE.",
+      "Click any row with a changes indicator to expand it and see the before/after field diffs.",
+      "Use the date range filters to narrow results to a specific time window.",
+      "Search by entity ID to find all changes to a specific record.",
+      "Only admin users can access the audit log.",
     ],
   },
   {
@@ -565,6 +576,13 @@ export const HELP_FEATURES: HelpFeature[] = [
 // ---------------------------------------------------------------------------
 
 export const GLOSSARY_TERMS: GlossaryTerm[] = [
+  {
+    term: "Audit Log",
+    definition:
+      "A chronological record of every action performed in the system — creating, updating, or deleting records, user logins, and security events. Each entry captures who performed the action, what entity was affected, and (for updates) the before/after values of changed fields. Used for accountability, troubleshooting, and compliance.",
+    portals: ["admin"],
+    relatedTerms: ["KPI", "Metric", "Campaign"],
+  },
   {
     term: "DOR",
     definition:

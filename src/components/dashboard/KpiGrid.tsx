@@ -11,11 +11,7 @@ interface KpiGridProps {
 
 export function KpiGrid({ kpis, departmentSlug, divisionSlug }: KpiGridProps) {
   if (kpis.length === 0) {
-    return (
-      <div className="text-center py-12 text-muted-foreground">
-        No KPI data available.
-      </div>
-    );
+    return <div className="text-center py-12 text-muted-foreground">No KPI data available.</div>;
   }
 
   return (

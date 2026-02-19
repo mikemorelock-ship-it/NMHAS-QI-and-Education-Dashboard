@@ -1,6 +1,7 @@
 import { redirect, notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { verifySession } from "@/lib/auth";
+import { hasPermission } from "@/lib/permissions";
 import { FtoDorViewClient } from "./fto-dor-view-client";
 import { DorDetailClient } from "./dor-detail-client";
 
@@ -27,6 +28,9 @@ export default async function FieldTrainingDorViewPage({
 // ---------------------------------------------------------------------------
 
 async function FtoDorView({ dorId, userId }: { dorId: string; userId: string }) {
+  const session = await verifySession();
+  const canReviewAll = session && hasPermission(session.role, "review_approve_dors");
+
   const dor = await prisma.dailyEvaluation.findUnique({
     where: { id: dorId },
     include: {
@@ -46,8 +50,8 @@ async function FtoDorView({ dorId, userId }: { dorId: string; userId: string }) 
   if (dor.status === "draft" && dor.ftoId === userId) {
     redirect(`/fieldtraining/dors/${dorId}/edit`);
   }
-  // Draft from another FTO → not viewable
-  if (dor.status === "draft") notFound();
+  // Draft from another FTO → supervisors/managers/admins can view, others cannot
+  if (dor.status === "draft" && !canReviewAll) notFound();
 
   return (
     <FtoDorViewClient

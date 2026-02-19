@@ -43,11 +43,7 @@ import {
   ChevronDown,
   AlertTriangle,
 } from "lucide-react";
-import {
-  createAssignment,
-  endAssignment,
-  reviewAssignmentRequest,
-} from "@/actions/field-training";
+import { createAssignment, endAssignment, reviewAssignmentRequest } from "@/actions/field-training";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -64,7 +60,7 @@ interface TraineeRow {
   firstName: string;
   lastName: string;
   status: string;
-  division: string | null;
+  department: string | null;
   currentAssignments: TraineeAssignment[];
   currentPhase: string | null;
   completedPhases: number;
@@ -94,7 +90,7 @@ interface AllTraineesClientProps {
   canManageAssignments: boolean;
   ftos: FtoOption[];
   pendingRequests: PendingRequest[];
-  divisions: string[];
+  departments: string[];
   phases: string[];
 }
 
@@ -109,14 +105,7 @@ const STATUS_COLORS: Record<string, string> = {
   remediation: "bg-orange-100 text-orange-700",
 };
 
-type SortField =
-  | "name"
-  | "division"
-  | "status"
-  | "phase"
-  | "progress"
-  | "dorCount"
-  | "avgRating";
+type SortField = "name" | "department" | "status" | "phase" | "progress" | "dorCount" | "avgRating";
 type SortDir = "asc" | "desc";
 
 // ---------------------------------------------------------------------------
@@ -128,13 +117,13 @@ export function AllTraineesClient({
   canManageAssignments,
   ftos,
   pendingRequests: initialPendingRequests,
-  divisions,
+  departments,
   phases,
 }: AllTraineesClientProps) {
   // Filters
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("active");
-  const [divisionFilter, setDivisionFilter] = useState<string>("all");
+  const [departmentFilter, setDepartmentFilter] = useState<string>("all");
   const [phaseFilter, setPhaseFilter] = useState<string>("all");
   const [ftoFilter, setFtoFilter] = useState<string>("all"); // all | assigned | unassigned
 
@@ -145,9 +134,7 @@ export function AllTraineesClient({
   // Assign FTO dialog
   const [assignTrainee, setAssignTrainee] = useState<TraineeRow | null>(null);
   const [assignFtoId, setAssignFtoId] = useState("");
-  const [assignDate, setAssignDate] = useState(
-    new Date().toISOString().slice(0, 10)
-  );
+  const [assignDate, setAssignDate] = useState(new Date().toISOString().slice(0, 10));
   const [assignError, setAssignError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -159,9 +146,7 @@ export function AllTraineesClient({
   } | null>(null);
 
   // Pending requests
-  const [pendingRequests, setPendingRequests] = useState(
-    initialPendingRequests
-  );
+  const [pendingRequests, setPendingRequests] = useState(initialPendingRequests);
   const [reviewingRequest, setReviewingRequest] = useState<string | null>(null);
   const [reviewNotes, setReviewNotes] = useState("");
 
@@ -172,29 +157,17 @@ export function AllTraineesClient({
   const filtered = useMemo(() => {
     return trainees.filter((t) => {
       const matchesSearch =
-        !search ||
-        `${t.firstName} ${t.lastName}`
-          .toLowerCase()
-          .includes(search.toLowerCase());
-      const matchesStatus =
-        statusFilter === "all" || t.status === statusFilter;
-      const matchesDivision =
-        divisionFilter === "all" || t.division === divisionFilter;
-      const matchesPhase =
-        phaseFilter === "all" || t.currentPhase === phaseFilter;
+        !search || `${t.firstName} ${t.lastName}`.toLowerCase().includes(search.toLowerCase());
+      const matchesStatus = statusFilter === "all" || t.status === statusFilter;
+      const matchesDepartment = departmentFilter === "all" || t.department === departmentFilter;
+      const matchesPhase = phaseFilter === "all" || t.currentPhase === phaseFilter;
       const matchesFto =
         ftoFilter === "all" ||
         (ftoFilter === "assigned" && t.currentAssignments.length > 0) ||
         (ftoFilter === "unassigned" && t.currentAssignments.length === 0);
-      return (
-        matchesSearch &&
-        matchesStatus &&
-        matchesDivision &&
-        matchesPhase &&
-        matchesFto
-      );
+      return matchesSearch && matchesStatus && matchesDepartment && matchesPhase && matchesFto;
     });
-  }, [trainees, search, statusFilter, divisionFilter, phaseFilter, ftoFilter]);
+  }, [trainees, search, statusFilter, departmentFilter, phaseFilter, ftoFilter]);
 
   // -------------------------------------------------------------------------
   // Sorting
@@ -206,12 +179,10 @@ export function AllTraineesClient({
       let cmp = 0;
       switch (sortField) {
         case "name":
-          cmp = `${a.lastName}, ${a.firstName}`.localeCompare(
-            `${b.lastName}, ${b.firstName}`
-          );
+          cmp = `${a.lastName}, ${a.firstName}`.localeCompare(`${b.lastName}, ${b.firstName}`);
           break;
-        case "division":
-          cmp = (a.division ?? "").localeCompare(b.division ?? "");
+        case "department":
+          cmp = (a.department ?? "").localeCompare(b.department ?? "");
           break;
         case "status":
           cmp = a.status.localeCompare(b.status);
@@ -243,13 +214,10 @@ export function AllTraineesClient({
 
   const activeCount = trainees.filter((t) => t.status === "active").length;
   const remCount = trainees.filter((t) => t.status === "remediation").length;
-  const completedCount = trainees.filter(
-    (t) => t.status === "completed"
-  ).length;
+  const completedCount = trainees.filter((t) => t.status === "completed").length;
   const unassignedCount = trainees.filter(
     (t) =>
-      t.currentAssignments.length === 0 &&
-      (t.status === "active" || t.status === "remediation")
+      t.currentAssignments.length === 0 && (t.status === "active" || t.status === "remediation")
   ).length;
 
   // -------------------------------------------------------------------------
@@ -282,11 +250,7 @@ export function AllTraineesClient({
       return;
     }
     startTransition(async () => {
-      const result = await createAssignment(
-        assignTrainee.id,
-        assignFtoId,
-        assignDate
-      );
+      const result = await createAssignment(assignTrainee.id, assignFtoId, assignDate);
       if (result.success) {
         setAssignTrainee(null);
         setAssignFtoId("");
@@ -306,16 +270,9 @@ export function AllTraineesClient({
     });
   }
 
-  function handleReviewRequest(
-    requestId: string,
-    decision: "approved" | "denied"
-  ) {
+  function handleReviewRequest(requestId: string, decision: "approved" | "denied") {
     startTransition(async () => {
-      const result = await reviewAssignmentRequest(
-        requestId,
-        decision,
-        reviewNotes || undefined
-      );
+      const result = await reviewAssignmentRequest(requestId, decision, reviewNotes || undefined);
       if (result.success) {
         setPendingRequests((prev) => prev.filter((r) => r.id !== requestId));
         setReviewingRequest(null);
@@ -341,9 +298,7 @@ export function AllTraineesClient({
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-gray-900">All Trainees</h1>
-        <p className="text-muted-foreground mt-1">
-          Overview of all trainees across the program
-        </p>
+        <p className="text-muted-foreground mt-1">Overview of all trainees across the program</p>
       </div>
 
       {/* Pending Assignment Requests */}
@@ -364,9 +319,8 @@ export function AllTraineesClient({
                 >
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium">
-                      <span className="text-amber-700">{req.requesterName}</span>{" "}
-                      requested assignment to{" "}
-                      <span className="font-semibold">{req.traineeName}</span>
+                      <span className="text-amber-700">{req.requesterName}</span> requested
+                      assignment to <span className="font-semibold">{req.traineeName}</span>
                       {req.traineeEmployeeId && (
                         <span className="text-muted-foreground ml-1">
                           ({req.traineeEmployeeId})
@@ -399,9 +353,7 @@ export function AllTraineesClient({
                       <div className="flex gap-2">
                         <Button
                           size="sm"
-                          onClick={() =>
-                            handleReviewRequest(req.id, "approved")
-                          }
+                          onClick={() => handleReviewRequest(req.id, "approved")}
                           disabled={isPending}
                           className="flex-1"
                         >
@@ -410,9 +362,7 @@ export function AllTraineesClient({
                         <Button
                           size="sm"
                           variant="destructive"
-                          onClick={() =>
-                            handleReviewRequest(req.id, "denied")
-                          }
+                          onClick={() => handleReviewRequest(req.id, "denied")}
                           disabled={isPending}
                           className="flex-1"
                         >
@@ -432,11 +382,7 @@ export function AllTraineesClient({
                       </div>
                     </div>
                   ) : (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setReviewingRequest(req.id)}
-                    >
+                    <Button size="sm" variant="outline" onClick={() => setReviewingRequest(req.id)}>
                       Review
                     </Button>
                   )}
@@ -457,31 +403,27 @@ export function AllTraineesClient({
         </Card>
         <Card>
           <CardContent className="pt-4 pb-3">
-            <div className="text-2xl font-bold text-green-600">
-              {activeCount}
-            </div>
+            <div className="text-2xl font-bold text-green-600">{activeCount}</div>
             <div className="text-xs text-muted-foreground">Active</div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-4 pb-3">
-            <div className="text-2xl font-bold text-orange-600">
-              {remCount}
-            </div>
+            <div className="text-2xl font-bold text-orange-600">{remCount}</div>
             <div className="text-xs text-muted-foreground">Remediation</div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-4 pb-3">
-            <div className="text-2xl font-bold text-blue-600">
-              {completedCount}
-            </div>
+            <div className="text-2xl font-bold text-blue-600">{completedCount}</div>
             <div className="text-xs text-muted-foreground">Completed</div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-4 pb-3">
-            <div className={`text-2xl font-bold ${unassignedCount > 0 ? "text-red-600" : "text-gray-400"}`}>
+            <div
+              className={`text-2xl font-bold ${unassignedCount > 0 ? "text-red-600" : "text-gray-400"}`}
+            >
               {unassignedCount}
             </div>
             <div className="text-xs text-muted-foreground">Unassigned</div>
@@ -524,12 +466,12 @@ export function AllTraineesClient({
               </select>
 
               <select
-                value={divisionFilter}
-                onChange={(e) => setDivisionFilter(e.target.value)}
+                value={departmentFilter}
+                onChange={(e) => setDepartmentFilter(e.target.value)}
                 className="h-9 rounded-md border border-input bg-background px-3 text-sm"
               >
-                <option value="all">All Divisions</option>
-                {divisions.map((d) => (
+                <option value="all">All Departments</option>
+                {departments.map((d) => (
                   <option key={d} value={d}>
                     {d}
                   </option>
@@ -567,9 +509,7 @@ export function AllTraineesClient({
         </CardHeader>
         <CardContent>
           {sorted.length === 0 ? (
-            <p className="text-center text-muted-foreground py-8">
-              No trainees found.
-            </p>
+            <p className="text-center text-muted-foreground py-8">No trainees found.</p>
           ) : (
             <div className="overflow-x-auto">
               <Table>
@@ -588,11 +528,11 @@ export function AllTraineesClient({
                     <TableHead>
                       <button
                         type="button"
-                        onClick={() => toggleSort("division")}
+                        onClick={() => toggleSort("department")}
                         className="flex items-center hover:text-foreground"
                       >
-                        Division
-                        <SortIcon field="division" />
+                        Department
+                        <SortIcon field="department" />
                       </button>
                     </TableHead>
                     <TableHead>
@@ -646,19 +586,13 @@ export function AllTraineesClient({
                         <SortIcon field="avgRating" />
                       </button>
                     </TableHead>
-                    {canManageAssignments && (
-                      <TableHead className="text-right">Actions</TableHead>
-                    )}
+                    {canManageAssignments && <TableHead className="text-right">Actions</TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {sorted.map((t) => {
                     const progressPct =
-                      t.totalPhases > 0
-                        ? Math.round(
-                            (t.completedPhases / t.totalPhases) * 100
-                          )
-                        : 0;
+                      t.totalPhases > 0 ? Math.round((t.completedPhases / t.totalPhases) * 100) : 0;
                     return (
                       <TableRow key={t.id}>
                         {/* Name — clickable link to detail page */}
@@ -671,21 +605,14 @@ export function AllTraineesClient({
                           </Link>
                         </TableCell>
 
-                        {/* Division */}
+                        {/* Department */}
                         <TableCell className="text-sm">
-                          {t.division || (
-                            <span className="text-muted-foreground">—</span>
-                          )}
+                          {t.department || <span className="text-muted-foreground">—</span>}
                         </TableCell>
 
                         {/* Status */}
                         <TableCell>
-                          <Badge
-                            className={
-                              STATUS_COLORS[t.status] ||
-                              "bg-gray-100 text-gray-700"
-                            }
-                          >
+                          <Badge className={STATUS_COLORS[t.status] || "bg-gray-100 text-gray-700"}>
                             {t.status}
                           </Badge>
                         </TableCell>
@@ -731,18 +658,13 @@ export function AllTraineesClient({
 
                         {/* Phase */}
                         <TableCell className="text-sm">
-                          {t.currentPhase || (
-                            <span className="text-muted-foreground">—</span>
-                          )}
+                          {t.currentPhase || <span className="text-muted-foreground">—</span>}
                         </TableCell>
 
                         {/* Progress */}
                         <TableCell>
                           <div className="flex items-center gap-2 min-w-[120px]">
-                            <Progress
-                              value={progressPct}
-                              className="h-2 flex-1"
-                            />
+                            <Progress value={progressPct} className="h-2 flex-1" />
                             <span className="text-xs text-muted-foreground whitespace-nowrap">
                               {t.completedPhases}/{t.totalPhases}
                             </span>
@@ -750,16 +672,12 @@ export function AllTraineesClient({
                         </TableCell>
 
                         {/* DOR Count */}
-                        <TableCell className="text-center">
-                          {t.dorCount}
-                        </TableCell>
+                        <TableCell className="text-center">{t.dorCount}</TableCell>
 
                         {/* Avg Rating */}
                         <TableCell className="text-center">
                           <span className={ratingColor(t.avgRating)}>
-                            {t.avgRating !== null
-                              ? `${t.avgRating}/7`
-                              : "—"}
+                            {t.avgRating !== null ? `${t.avgRating}/7` : "—"}
                           </span>
                         </TableCell>
 
@@ -772,9 +690,7 @@ export function AllTraineesClient({
                               onClick={() => {
                                 setAssignTrainee(t);
                                 setAssignFtoId("");
-                                setAssignDate(
-                                  new Date().toISOString().slice(0, 10)
-                                );
+                                setAssignDate(new Date().toISOString().slice(0, 10));
                                 setAssignError(null);
                               }}
                             >
@@ -820,9 +736,7 @@ export function AllTraineesClient({
                       {" "}
                       Currently assigned to:{" "}
                       <strong>
-                        {assignTrainee.currentAssignments
-                          .map((a) => a.ftoName)
-                          .join(", ")}
+                        {assignTrainee.currentAssignments.map((a) => a.ftoName).join(", ")}
                       </strong>
                       .
                     </>
@@ -848,8 +762,7 @@ export function AllTraineesClient({
                 <SelectContent>
                   {ftos.map((f) => (
                     <SelectItem key={f.id} value={f.id}>
-                      {f.name} ({f.employeeId})
-                      {f.role === "supervisor" ? " [Sup]" : ""}
+                      {f.name} ({f.employeeId}){f.role === "supervisor" ? " [Sup]" : ""}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -867,11 +780,7 @@ export function AllTraineesClient({
           </div>
 
           <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setAssignTrainee(null)}
-              disabled={isPending}
-            >
+            <Button variant="outline" onClick={() => setAssignTrainee(null)} disabled={isPending}>
               Cancel
             </Button>
             <Button onClick={handleAssign} disabled={isPending}>
@@ -894,10 +803,9 @@ export function AllTraineesClient({
             <DialogDescription>
               {removeAssignment && (
                 <>
-                  Are you sure you want to remove{" "}
-                  <strong>{removeAssignment.ftoName}</strong> from{" "}
-                  <strong>{removeAssignment.traineeName}</strong>?
-                  This will end the active assignment.
+                  Are you sure you want to remove <strong>{removeAssignment.ftoName}</strong> from{" "}
+                  <strong>{removeAssignment.traineeName}</strong>? This will end the active
+                  assignment.
                 </>
               )}
             </DialogDescription>
@@ -910,11 +818,7 @@ export function AllTraineesClient({
             >
               Cancel
             </Button>
-            <Button
-              variant="destructive"
-              onClick={handleRemoveFto}
-              disabled={isPending}
-            >
+            <Button variant="destructive" onClick={handleRemoveFto} disabled={isPending}>
               {isPending ? "Removing..." : "Remove FTO"}
             </Button>
           </DialogFooter>

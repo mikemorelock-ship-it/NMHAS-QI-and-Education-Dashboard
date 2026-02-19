@@ -110,12 +110,16 @@ export function SettingsClient({
   return (
     <div className="space-y-8">
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" asChild>
-          <Link href="/admin/field-training"><ArrowLeft className="h-4 w-4" /></Link>
+        <Button variant="ghost" size="icon" asChild aria-label="Go back">
+          <Link href="/admin/field-training">
+            <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+          </Link>
         </Button>
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Field Training Settings</h1>
-          <p className="text-muted-foreground">Manage training phases and DOR performance categories.</p>
+          <p className="text-muted-foreground">
+            Manage training phases and DOR performance categories.
+          </p>
         </div>
       </div>
 
@@ -124,38 +128,71 @@ export function SettingsClient({
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
             <CardTitle>Training Phases</CardTitle>
-            <CardDescription>Define the phases trainees progress through during field training.</CardDescription>
+            <CardDescription>
+              Define the phases trainees progress through during field training.
+            </CardDescription>
           </div>
-          <Dialog open={phaseDialogOpen} onOpenChange={(open) => { setPhaseDialogOpen(open); if (!open) { setEditingPhase(null); setError(null); } }}>
+          <Dialog
+            open={phaseDialogOpen}
+            onOpenChange={(open) => {
+              setPhaseDialogOpen(open);
+              if (!open) {
+                setEditingPhase(null);
+                setError(null);
+              }
+            }}
+          >
             <DialogTrigger asChild>
-              <Button size="sm"><Plus className="h-4 w-4 mr-2" />Add Phase</Button>
+              <Button size="sm">
+                <Plus className="h-4 w-4 mr-2" />
+                Add Phase
+              </Button>
             </DialogTrigger>
             <DialogContent>
               <form action={handlePhaseSubmit}>
                 <DialogHeader>
                   <DialogTitle>{editingPhase ? "Edit Phase" : "Add Phase"}</DialogTitle>
                   <DialogDescription>
-                    {editingPhase ? "Update the training phase details." : "Create a new training phase."}
+                    {editingPhase
+                      ? "Update the training phase details."
+                      : "Create a new training phase."}
                   </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 py-4">
-                  {error && <p className="text-sm text-destructive">{error}</p>}
+                  <div aria-live="polite">
+                    {error && <p className="text-sm text-destructive" role="alert">{error}</p>}
+                  </div>
                   <div className="space-y-2">
                     <Label htmlFor="name">Name</Label>
                     <Input id="name" name="name" defaultValue={editingPhase?.name} required />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="description">Description</Label>
-                    <Textarea id="description" name="description" defaultValue={editingPhase?.description ?? ""} />
+                    <Textarea
+                      id="description"
+                      name="description"
+                      defaultValue={editingPhase?.description ?? ""}
+                    />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="sortOrder">Sort Order</Label>
-                      <Input id="sortOrder" name="sortOrder" type="number" defaultValue={editingPhase?.sortOrder ?? 0} />
+                      <Input
+                        id="sortOrder"
+                        name="sortOrder"
+                        type="number"
+                        defaultValue={editingPhase?.sortOrder ?? 0}
+                      />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="minDays">Min Days</Label>
-                      <Input id="minDays" name="minDays" type="number" defaultValue={editingPhase?.minDays ?? ""} placeholder="Optional" />
+                      <Input
+                        id="minDays"
+                        name="minDays"
+                        type="number"
+                        defaultValue={editingPhase?.minDays ?? ""}
+                        placeholder="Optional"
+                      />
                     </div>
                   </div>
                 </div>
@@ -190,18 +227,27 @@ export function SettingsClient({
                     </div>
                   </TableCell>
                   <TableCell>{phase.minDays ?? "—"}</TableCell>
-                  <TableCell><Badge variant="secondary">{phase.usageCount}</Badge></TableCell>
+                  <TableCell>
+                    <Badge variant="secondary">{phase.usageCount}</Badge>
+                  </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1">
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => { setEditingPhase(phase); setPhaseDialogOpen(true); }}
+                        onClick={() => {
+                          setEditingPhase(phase);
+                          setPhaseDialogOpen(true);
+                        }}
                       >
                         <Pencil className="h-4 w-4" />
                       </Button>
                       {phase.usageCount === 0 && (
-                        <Button variant="ghost" size="icon" onClick={() => handleDeletePhase(phase.id)}>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleDeletePhase(phase.id)}
+                        >
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       )}
@@ -226,33 +272,60 @@ export function SettingsClient({
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
             <CardTitle>DOR Performance Categories</CardTitle>
-            <CardDescription>Categories used for rating trainees on daily evaluations.</CardDescription>
+            <CardDescription>
+              Categories used for rating trainees on daily evaluations.
+            </CardDescription>
           </div>
-          <Dialog open={catDialogOpen} onOpenChange={(open) => { setCatDialogOpen(open); if (!open) { setEditingCat(null); setError(null); } }}>
+          <Dialog
+            open={catDialogOpen}
+            onOpenChange={(open) => {
+              setCatDialogOpen(open);
+              if (!open) {
+                setEditingCat(null);
+                setError(null);
+              }
+            }}
+          >
             <DialogTrigger asChild>
-              <Button size="sm"><Plus className="h-4 w-4 mr-2" />Add Category</Button>
+              <Button size="sm">
+                <Plus className="h-4 w-4 mr-2" />
+                Add Category
+              </Button>
             </DialogTrigger>
             <DialogContent>
               <form action={handleCatSubmit}>
                 <DialogHeader>
                   <DialogTitle>{editingCat ? "Edit Category" : "Add Category"}</DialogTitle>
                   <DialogDescription>
-                    {editingCat ? "Update the DOR performance category." : "Create a new DOR performance category."}
+                    {editingCat
+                      ? "Update the DOR performance category."
+                      : "Create a new DOR performance category."}
                   </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 py-4">
-                  {error && <p className="text-sm text-destructive">{error}</p>}
+                  <div aria-live="polite">
+                    {error && <p className="text-sm text-destructive" role="alert">{error}</p>}
+                  </div>
                   <div className="space-y-2">
                     <Label htmlFor="cat-name">Name</Label>
                     <Input id="cat-name" name="name" defaultValue={editingCat?.name} required />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="cat-description">Description</Label>
-                    <Textarea id="cat-description" name="description" defaultValue={editingCat?.description ?? ""} />
+                    <Textarea
+                      id="cat-description"
+                      name="description"
+                      defaultValue={editingCat?.description ?? ""}
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="cat-sortOrder">Sort Order</Label>
-                    <Input id="cat-sortOrder" name="sortOrder" type="number" defaultValue={editingCat?.sortOrder ?? 0} />
+                    <Input
+                      id="cat-sortOrder"
+                      name="sortOrder"
+                      type="number"
+                      defaultValue={editingCat?.sortOrder ?? 0}
+                    />
                   </div>
                 </div>
                 <DialogFooter>
@@ -284,13 +357,18 @@ export function SettingsClient({
                       )}
                     </div>
                   </TableCell>
-                  <TableCell><Badge variant="secondary">{cat.usageCount}</Badge></TableCell>
+                  <TableCell>
+                    <Badge variant="secondary">{cat.usageCount}</Badge>
+                  </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1">
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => { setEditingCat(cat); setCatDialogOpen(true); }}
+                        onClick={() => {
+                          setEditingCat(cat);
+                          setCatDialogOpen(true);
+                        }}
                       >
                         <Pencil className="h-4 w-4" />
                       </Button>

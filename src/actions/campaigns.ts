@@ -6,6 +6,7 @@ import { slugify } from "@/lib/utils";
 import { z } from "zod";
 import type { ActionResult } from "./metrics";
 import { requireAdmin } from "@/lib/require-auth";
+import { createAuditLog, computeChanges } from "@/lib/audit";
 
 // ---------------------------------------------------------------------------
 // Schema
@@ -119,10 +120,16 @@ export async function createCampaign(formData: FormData): Promise<ActionResult<{
     const msg = err instanceof Error ? err.message : String(err);
     // Surface useful constraint messages to the user
     if (msg.includes("Foreign key constraint") || msg.includes("foreign key")) {
-      return { success: false, error: "Invalid owner selected. Please choose a valid user or leave unassigned." };
+      return {
+        success: false,
+        error: "Invalid owner selected. Please choose a valid user or leave unassigned.",
+      };
     }
     if (msg.includes("Unique constraint") || msg.includes("unique")) {
-      return { success: false, error: "A campaign with this name already exists. Please choose a different name." };
+      return {
+        success: false,
+        error: "A campaign with this name already exists. Please choose a different name.",
+      };
     }
     return { success: false, error: `Failed to create campaign: ${msg.slice(0, 200)}` };
   }
@@ -156,9 +163,18 @@ export async function updateCampaign(id: string, formData: FormData): Promise<Ac
   const slug = slugify(data.name);
 
   try {
-    const existing = await prisma.campaign.findUnique({ where: { slug } });
-    if (existing && existing.id !== id) {
-      return { success: false, error: `Another campaign already uses the slug "${slug}".` };
+    // Fetch current state for change tracking
+    const current = await prisma.campaign.findUnique({ where: { id } });
+    if (!current) {
+      return { success: false, error: "Campaign not found." };
+    }
+
+    // Check slug conflict
+    if (slug !== current.slug) {
+      const existing = await prisma.campaign.findUnique({ where: { slug } });
+      if (existing && existing.id !== id) {
+        return { success: false, error: `Another campaign already uses the slug "${slug}".` };
+      }
     }
 
     await prisma.campaign.update({
@@ -176,21 +192,40 @@ export async function updateCampaign(id: string, formData: FormData): Promise<Ac
       },
     });
 
-    await prisma.auditLog.create({
-      data: {
-        action: "UPDATE",
-        entity: "Campaign",
-        entityId: id,
-        details: `Updated campaign "${data.name}"`,
-        actorId: session.userId,
-        actorType: "admin",
+    const changes = computeChanges(
+      {
+        name: current.name,
+        status: current.status,
+        goals: current.goals,
+        ownerId: current.ownerId,
+        description: current.description,
       },
+      {
+        name: data.name,
+        status: data.status,
+        goals: data.goals ?? null,
+        ownerId: data.ownerId || null,
+        description: data.description ?? null,
+      },
+    );
+
+    await createAuditLog({
+      action: "UPDATE",
+      entity: "Campaign",
+      entityId: id,
+      details: `Updated campaign "${data.name}"`,
+      changes: changes ?? undefined,
+      actorId: session.userId,
+      actorType: "user",
     });
   } catch (err) {
     console.error("updateCampaign error:", err);
     const msg = err instanceof Error ? err.message : String(err);
     if (msg.includes("Foreign key constraint") || msg.includes("foreign key")) {
-      return { success: false, error: "Invalid owner selected. Please choose a valid user or leave unassigned." };
+      return {
+        success: false,
+        error: "Invalid owner selected. Please choose a valid user or leave unassigned.",
+      };
     }
     return { success: false, error: `Failed to update campaign: ${msg.slice(0, 200)}` };
   }

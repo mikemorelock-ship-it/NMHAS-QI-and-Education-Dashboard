@@ -21,7 +21,13 @@ export default async function FieldTrainingSkillsPage() {
           _count: { select: { skillSignoffs: true } },
           steps: {
             orderBy: { stepNumber: "asc" },
-            select: { id: true, stepNumber: true, description: true, isRequired: true, sortOrder: true },
+            select: {
+              id: true,
+              stepNumber: true,
+              description: true,
+              isRequired: true,
+              sortOrder: true,
+            },
           },
         },
       },

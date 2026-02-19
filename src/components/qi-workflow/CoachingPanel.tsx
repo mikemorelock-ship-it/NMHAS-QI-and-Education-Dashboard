@@ -30,9 +30,7 @@ export function CoachingPanel({ step, defaultExpanded = true }: CoachingPanelPro
       >
         <div className="flex items-center gap-2">
           <Lightbulb className="h-4 w-4 text-nmh-teal shrink-0" />
-          <CardTitle className="text-sm font-semibold text-nmh-teal flex-1">
-            QI Coaching
-          </CardTitle>
+          <CardTitle className="text-sm font-semibold text-nmh-teal flex-1">QI Coaching</CardTitle>
           <Badge variant="outline" className="text-xs border-nmh-teal/30 text-nmh-teal">
             IHI
           </Badge>
@@ -65,7 +63,10 @@ export function CoachingPanel({ step, defaultExpanded = true }: CoachingPanelPro
 
           {/* Guiding Questions */}
           {step.guidingQuestions.length > 0 && (
-            <CoachingSection icon={<HelpCircle className="h-3.5 w-3.5" />} title="Guiding Questions">
+            <CoachingSection
+              icon={<HelpCircle className="h-3.5 w-3.5" />}
+              title="Guiding Questions"
+            >
               <ul className="space-y-1.5">
                 {step.guidingQuestions.map((q, i) => (
                   <li key={i} className="text-muted-foreground leading-snug flex gap-2">

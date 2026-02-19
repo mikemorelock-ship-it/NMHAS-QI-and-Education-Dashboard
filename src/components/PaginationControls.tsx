@@ -36,7 +36,9 @@ export function PaginationControls({
     if (totalItems > 0) {
       return (
         <div className="flex items-center justify-between text-sm text-muted-foreground px-1 py-2">
-          <span>Showing {totalItems} {totalItems === 1 ? "item" : "items"}</span>
+          <span>
+            Showing {totalItems} {totalItems === 1 ? "item" : "items"}
+          </span>
         </div>
       );
     }
@@ -87,12 +89,12 @@ export function PaginationControls({
         {hasPreviousPage ? (
           <Button variant="outline" size="icon" className="h-8 w-8" asChild>
             <Link href={buildUrl(1)} aria-label="First page">
-              <ChevronsLeft className="h-4 w-4" />
+              <ChevronsLeft className="h-4 w-4" aria-hidden="true" />
             </Link>
           </Button>
         ) : (
-          <Button variant="outline" size="icon" className="h-8 w-8" disabled>
-            <ChevronsLeft className="h-4 w-4" />
+          <Button variant="outline" size="icon" className="h-8 w-8" disabled aria-label="First page">
+            <ChevronsLeft className="h-4 w-4" aria-hidden="true" />
           </Button>
         )}
 
@@ -100,19 +102,17 @@ export function PaginationControls({
         {hasPreviousPage ? (
           <Button variant="outline" size="icon" className="h-8 w-8" asChild>
             <Link href={buildUrl(page - 1)} aria-label="Previous page">
-              <ChevronLeft className="h-4 w-4" />
+              <ChevronLeft className="h-4 w-4" aria-hidden="true" />
             </Link>
           </Button>
         ) : (
-          <Button variant="outline" size="icon" className="h-8 w-8" disabled>
-            <ChevronLeft className="h-4 w-4" />
+          <Button variant="outline" size="icon" className="h-8 w-8" disabled aria-label="Previous page">
+            <ChevronLeft className="h-4 w-4" aria-hidden="true" />
           </Button>
         )}
 
         {/* Page numbers */}
-        {start > 1 && (
-          <span className="px-1 text-muted-foreground">...</span>
-        )}
+        {start > 1 && <span className="px-1 text-muted-foreground">...</span>}
         {pageNumbers.map((p) => (
           <Button
             key={p}
@@ -121,27 +121,21 @@ export function PaginationControls({
             className="h-8 w-8"
             asChild={p !== page}
           >
-            {p === page ? (
-              <span>{p}</span>
-            ) : (
-              <Link href={buildUrl(p)}>{p}</Link>
-            )}
+            {p === page ? <span>{p}</span> : <Link href={buildUrl(p)}>{p}</Link>}
           </Button>
         ))}
-        {end < totalPages && (
-          <span className="px-1 text-muted-foreground">...</span>
-        )}
+        {end < totalPages && <span className="px-1 text-muted-foreground">...</span>}
 
         {/* Next page */}
         {hasNextPage ? (
           <Button variant="outline" size="icon" className="h-8 w-8" asChild>
             <Link href={buildUrl(page + 1)} aria-label="Next page">
-              <ChevronRight className="h-4 w-4" />
+              <ChevronRight className="h-4 w-4" aria-hidden="true" />
             </Link>
           </Button>
         ) : (
-          <Button variant="outline" size="icon" className="h-8 w-8" disabled>
-            <ChevronRight className="h-4 w-4" />
+          <Button variant="outline" size="icon" className="h-8 w-8" disabled aria-label="Next page">
+            <ChevronRight className="h-4 w-4" aria-hidden="true" />
           </Button>
         )}
 
@@ -149,12 +143,12 @@ export function PaginationControls({
         {hasNextPage ? (
           <Button variant="outline" size="icon" className="h-8 w-8" asChild>
             <Link href={buildUrl(totalPages)} aria-label="Last page">
-              <ChevronsRight className="h-4 w-4" />
+              <ChevronsRight className="h-4 w-4" aria-hidden="true" />
             </Link>
           </Button>
         ) : (
-          <Button variant="outline" size="icon" className="h-8 w-8" disabled>
-            <ChevronsRight className="h-4 w-4" />
+          <Button variant="outline" size="icon" className="h-8 w-8" disabled aria-label="Last page">
+            <ChevronsRight className="h-4 w-4" aria-hidden="true" />
           </Button>
         )}
       </div>

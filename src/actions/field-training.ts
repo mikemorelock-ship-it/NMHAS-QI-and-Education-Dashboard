@@ -170,7 +170,9 @@ const DailyObservationReportSchema = z.object({
   narrative: z.string().max(5000).optional().nullable(),
   mostSatisfactory: z.string().max(200).optional().nullable(),
   leastSatisfactory: z.string().max(200).optional().nullable(),
-  recommendAction: z.enum(["continue", "advance", "extend", "remediate", "nrt", "release", "terminate"]).default("continue"),
+  recommendAction: z
+    .enum(["continue", "advance", "extend", "remediate", "nrt", "release", "terminate"])
+    .default("continue"),
   nrtFlag: z.coerce.boolean().default(false),
   remFlag: z.coerce.boolean().default(false),
   traineeAcknowledged: z.coerce.boolean().default(false),
@@ -205,7 +207,10 @@ export async function createTrainee(formData: FormData): Promise<ActionResult> {
       where: { employeeId: parsed.data.employeeId },
     });
     if (existing) {
-      return { success: false, error: `A user with employee ID "${parsed.data.employeeId}" already exists.` };
+      return {
+        success: false,
+        error: `A user with employee ID "${parsed.data.employeeId}" already exists.`,
+      };
     }
 
     const emailTaken = await prisma.user.findUnique({ where: { email: parsed.data.email } });
@@ -232,7 +237,10 @@ export async function createTrainee(formData: FormData): Promise<ActionResult> {
     });
 
     // Auto-create TraineePhase records for all active phases
-    const phases = await prisma.trainingPhase.findMany({ where: { isActive: true }, orderBy: { sortOrder: "asc" } });
+    const phases = await prisma.trainingPhase.findMany({
+      where: { isActive: true },
+      orderBy: { sortOrder: "asc" },
+    });
     if (phases.length > 0) {
       await prisma.traineePhase.createMany({
         data: phases.map((phase, i) => ({
@@ -287,7 +295,10 @@ export async function updateTrainee(id: string, formData: FormData): Promise<Act
       where: { employeeId: parsed.data.employeeId },
     });
     if (existing && existing.id !== id) {
-      return { success: false, error: `Another user already uses employee ID "${parsed.data.employeeId}".` };
+      return {
+        success: false,
+        error: `Another user already uses employee ID "${parsed.data.employeeId}".`,
+      };
     }
 
     const emailTaken = await prisma.user.findUnique({ where: { email: parsed.data.email } });
@@ -387,7 +398,10 @@ export async function createFto(formData: FormData): Promise<ActionResult> {
       where: { employeeId: parsed.data.employeeId },
     });
     if (existing) {
-      return { success: false, error: `A user with employee ID "${parsed.data.employeeId}" already exists.` };
+      return {
+        success: false,
+        error: `A user with employee ID "${parsed.data.employeeId}" already exists.`,
+      };
     }
 
     const emailTaken = await prisma.user.findUnique({ where: { email: parsed.data.email } });
@@ -451,7 +465,10 @@ export async function updateFto(id: string, formData: FormData): Promise<ActionR
       where: { employeeId: parsed.data.employeeId },
     });
     if (existing && existing.id !== id) {
-      return { success: false, error: `Another user already uses employee ID "${parsed.data.employeeId}".` };
+      return {
+        success: false,
+        error: `Another user already uses employee ID "${parsed.data.employeeId}".`,
+      };
     }
 
     const emailTaken = await prisma.user.findUnique({ where: { email: parsed.data.email } });
@@ -757,7 +774,13 @@ export async function deletePhase(id: string): Promise<ActionResult> {
 
 export async function updateTraineePhase(
   id: string,
-  data: { status?: string; startDate?: string; endDate?: string; ftoSignoffId?: string; notes?: string }
+  data: {
+    status?: string;
+    startDate?: string;
+    endDate?: string;
+    ftoSignoffId?: string;
+    notes?: string;
+  }
 ): Promise<ActionResult> {
   const session = await requirePermission("manage_ftos_trainees");
   try {
@@ -770,7 +793,9 @@ export async function updateTraineePhase(
       if (!signoffUser) {
         return { success: false, error: "Selected user not found." };
       }
-      if (!hasPermission(signoffUser.role as Parameters<typeof hasPermission>[0], "signoff_phases")) {
+      if (
+        !hasPermission(signoffUser.role as Parameters<typeof hasPermission>[0], "signoff_phases")
+      ) {
         return {
           success: false,
           error: `${signoffUser.firstName} ${signoffUser.lastName} is a ${signoffUser.role} and cannot sign off phases. Only supervisors, managers, and admins can sign off phases.`,
@@ -854,7 +879,10 @@ export async function createEvaluationCategory(formData: FormData): Promise<Acti
   return { success: true };
 }
 
-export async function updateEvaluationCategory(id: string, formData: FormData): Promise<ActionResult> {
+export async function updateEvaluationCategory(
+  id: string,
+  formData: FormData
+): Promise<ActionResult> {
   const session = await requirePermission("manage_dors_skills");
   const raw = formDataToObject(formData);
   const parsed = EvaluationCategorySchema.safeParse({
@@ -899,7 +927,10 @@ export async function updateEvaluationCategory(id: string, formData: FormData): 
 export async function deleteEvaluationCategory(id: string): Promise<ActionResult> {
   const session = await requirePermission("manage_dors_skills");
   try {
-    const cat = await prisma.evaluationCategory.findUnique({ where: { id }, select: { name: true } });
+    const cat = await prisma.evaluationCategory.findUnique({
+      where: { id },
+      select: { name: true },
+    });
     if (!cat) return { success: false, error: "Category not found." };
 
     await prisma.evaluationCategory.delete({ where: { id } });
@@ -1064,7 +1095,10 @@ export async function createSkill(formData: FormData): Promise<ActionResult> {
       where: { categoryId_slug: { categoryId: parsed.data.categoryId, slug } },
     });
     if (existing) {
-      return { success: false, error: `A skill with the slug "${slug}" already exists in this category.` };
+      return {
+        success: false,
+        error: `A skill with the slug "${slug}" already exists in this category.`,
+      };
     }
 
     const skill = await prisma.skill.create({ data: { ...parsed.data, slug } });
@@ -1110,7 +1144,10 @@ export async function updateSkill(id: string, formData: FormData): Promise<Actio
       where: { categoryId_slug: { categoryId: parsed.data.categoryId, slug } },
     });
     if (existing && existing.id !== id) {
-      return { success: false, error: `Another skill already uses the slug "${slug}" in this category.` };
+      return {
+        success: false,
+        error: `Another skill already uses the slug "${slug}" in this category.`,
+      };
     }
 
     await prisma.skill.update({ where: { id }, data: { ...parsed.data, slug } });
@@ -1335,7 +1372,11 @@ export async function signoffSkill(
 
 const SkillStepSchema = z.object({
   skillId: z.string().min(1, "Skill is required"),
-  stepNumber: z.coerce.number().int().min(1, "Step number must be at least 1").max(20, "Maximum 20 steps"),
+  stepNumber: z.coerce
+    .number()
+    .int()
+    .min(1, "Step number must be at least 1")
+    .max(20, "Maximum 20 steps"),
   description: z.string().min(1, "Description is required").max(500),
   isRequired: z.coerce.boolean().default(true),
   sortOrder: z.coerce.number().int().min(0).default(0),
@@ -1348,7 +1389,8 @@ export async function createSkillStep(formData: FormData): Promise<ActionResult>
     skillId: raw.skillId,
     stepNumber: raw.stepNumber,
     description: raw.description,
-    isRequired: raw.isRequired === "true" || raw.isRequired === "on" || raw.isRequired === undefined,
+    isRequired:
+      raw.isRequired === "true" || raw.isRequired === "on" || raw.isRequired === undefined,
     sortOrder: raw.sortOrder || 0,
   });
 
@@ -1358,10 +1400,15 @@ export async function createSkillStep(formData: FormData): Promise<ActionResult>
 
   try {
     const existing = await prisma.skillStep.findUnique({
-      where: { skillId_stepNumber: { skillId: parsed.data.skillId, stepNumber: parsed.data.stepNumber } },
+      where: {
+        skillId_stepNumber: { skillId: parsed.data.skillId, stepNumber: parsed.data.stepNumber },
+      },
     });
     if (existing) {
-      return { success: false, error: `Step #${parsed.data.stepNumber} already exists for this skill.` };
+      return {
+        success: false,
+        error: `Step #${parsed.data.stepNumber} already exists for this skill.`,
+      };
     }
 
     const stepCount = await prisma.skillStep.count({ where: { skillId: parsed.data.skillId } });
@@ -1397,7 +1444,8 @@ export async function updateSkillStep(id: string, formData: FormData): Promise<A
     skillId: raw.skillId,
     stepNumber: raw.stepNumber,
     description: raw.description,
-    isRequired: raw.isRequired === "true" || raw.isRequired === "on" || raw.isRequired === undefined,
+    isRequired:
+      raw.isRequired === "true" || raw.isRequired === "on" || raw.isRequired === undefined,
     sortOrder: raw.sortOrder || 0,
   });
 
@@ -1407,10 +1455,15 @@ export async function updateSkillStep(id: string, formData: FormData): Promise<A
 
   try {
     const existing = await prisma.skillStep.findUnique({
-      where: { skillId_stepNumber: { skillId: parsed.data.skillId, stepNumber: parsed.data.stepNumber } },
+      where: {
+        skillId_stepNumber: { skillId: parsed.data.skillId, stepNumber: parsed.data.stepNumber },
+      },
     });
     if (existing && existing.id !== id) {
-      return { success: false, error: `Step #${parsed.data.stepNumber} already exists for this skill.` };
+      return {
+        success: false,
+        error: `Step #${parsed.data.stepNumber} already exists for this skill.`,
+      };
     }
 
     await prisma.skillStep.update({ where: { id }, data: parsed.data });
@@ -1437,7 +1490,10 @@ export async function updateSkillStep(id: string, formData: FormData): Promise<A
 export async function deleteSkillStep(id: string): Promise<ActionResult> {
   const session = await requirePermission("manage_dors_skills");
   try {
-    const step = await prisma.skillStep.findUnique({ where: { id }, select: { stepNumber: true, skillId: true } });
+    const step = await prisma.skillStep.findUnique({
+      where: { id },
+      select: { stepNumber: true, skillId: true },
+    });
     if (!step) return { success: false, error: "Step not found." };
 
     await prisma.skillStep.delete({ where: { id } });
@@ -1547,7 +1603,8 @@ export async function updateDorDraft(
       select: { status: true, ftoId: true },
     });
     if (!existing) return { success: false, error: "DOR not found." };
-    if (existing.status !== "draft") return { success: false, error: "Only draft DORs can be edited." };
+    if (existing.status !== "draft")
+      return { success: false, error: "Only draft DORs can be edited." };
 
     const d = parsed.data;
     await prisma.$transaction(async (tx) => {
@@ -1611,7 +1668,8 @@ export async function submitDor(id: string): Promise<ActionResult> {
       select: { status: true },
     });
     if (!existing) return { success: false, error: "DOR not found." };
-    if (existing.status !== "draft") return { success: false, error: "This DOR has already been submitted." };
+    if (existing.status !== "draft")
+      return { success: false, error: "This DOR has already been submitted." };
 
     await prisma.dailyEvaluation.update({
       where: { id },
@@ -1648,9 +1706,12 @@ export async function acknowledgeDor(dorId: string, traineeId: string): Promise<
       select: { traineeId: true, traineeAcknowledged: true, status: true },
     });
     if (!dor) return { success: false, error: "DOR not found." };
-    if (dor.traineeId !== traineeId) return { success: false, error: "You can only acknowledge your own DORs." };
-    if (dor.status !== "submitted") return { success: false, error: "Only submitted DORs can be acknowledged." };
-    if (dor.traineeAcknowledged) return { success: false, error: "This DOR has already been acknowledged." };
+    if (dor.traineeId !== traineeId)
+      return { success: false, error: "You can only acknowledge your own DORs." };
+    if (dor.status !== "submitted")
+      return { success: false, error: "Only submitted DORs can be acknowledged." };
+    if (dor.traineeAcknowledged)
+      return { success: false, error: "This DOR has already been acknowledged." };
 
     await prisma.dailyEvaluation.update({
       where: { id: dorId },
@@ -1684,10 +1745,7 @@ export async function acknowledgeDor(dorId: string, traineeId: string): Promise<
 // ---------------------------------------------------------------------------
 
 /** Add a new timestamped supervisor note to a DOR */
-export async function addSupervisorNote(
-  dorId: string,
-  text: string
-): Promise<ActionResult> {
+export async function addSupervisorNote(dorId: string, text: string): Promise<ActionResult> {
   const session = await requirePermission("review_approve_dors");
   if (!text.trim()) {
     return { success: false, error: "Note text cannot be empty." };
@@ -1776,7 +1834,10 @@ export async function updateSupervisorNotes(dorId: string, notes: string): Promi
   return addSupervisorNote(dorId, notes);
 }
 
-export async function removeSkillSignoff(traineeId: string, skillId: string): Promise<ActionResult> {
+export async function removeSkillSignoff(
+  traineeId: string,
+  skillId: string
+): Promise<ActionResult> {
   const session = await requirePermission("manage_dors_skills");
   try {
     await prisma.skillSignoff.delete({

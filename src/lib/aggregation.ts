@@ -30,10 +30,7 @@ export interface WeightedEntry {
  *
  * Results are rounded to 6 decimal places.
  */
-export function aggregateValues(
-  values: number[],
-  aggregationType: AggregationType
-): number | null {
+export function aggregateValues(values: number[], aggregationType: AggregationType): number | null {
   if (values.length === 0) return null;
 
   switch (aggregationType) {
@@ -59,9 +56,7 @@ export function aggregateValues(
  *
  * Returns a sorted array of { periodStart, value } objects.
  */
-export function aggregateByPeriod<
-  T extends { periodStart: Date; value: number }
->(
+export function aggregateByPeriod<T extends { periodStart: Date; value: number }>(
   entries: T[],
   aggregationType: AggregationType
 ): { periodStart: Date; value: number }[] {
@@ -187,7 +182,10 @@ export function aggregateValuesWeighted(
 
   // For continuous metrics, use standard aggregation
   if (dataType === "continuous") {
-    return aggregateValues(entries.map((e) => e.value), aggregationType);
+    return aggregateValues(
+      entries.map((e) => e.value),
+      aggregationType
+    );
   }
 
   // Try weighted aggregation with N/D data
@@ -210,7 +208,10 @@ export function aggregateValuesWeighted(
   }
 
   // Fallback: standard aggregation on pre-computed values
-  return aggregateValues(entries.map((e) => e.value), aggregationType);
+  return aggregateValues(
+    entries.map((e) => e.value),
+    aggregationType
+  );
 }
 
 /**

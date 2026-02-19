@@ -6,11 +6,7 @@ import { CampaignDetailClient } from "./campaign-detail-client";
 
 export const dynamic = "force-dynamic";
 
-export default async function CampaignDetailPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
+export default async function CampaignDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const session = await verifySession();
   if (!session || !hasAdminPermission(session.role, "manage_campaigns")) {
     notFound();
@@ -28,7 +24,15 @@ export default async function CampaignDetailPage({
   if (!campaign) notFound();
 
   // Get diagrams belonging to this campaign + unassigned diagrams
-  const [campaignDiagrams, unassignedDiagrams, pdsaCycles, actionItems, users, allCampaigns, allCycles] = await Promise.all([
+  const [
+    campaignDiagrams,
+    unassignedDiagrams,
+    pdsaCycles,
+    actionItems,
+    users,
+    allCampaigns,
+    allCycles,
+  ] = await Promise.all([
     prisma.driverDiagram.findMany({
       where: { campaignId: id },
       orderBy: [{ sortOrder: "asc" }, { name: "asc" }],

@@ -88,20 +88,14 @@ describe("aggregateByPeriod", () => {
   });
 
   it("groups entries with the same periodStart", () => {
-    const entries = [
-      makeEntry("2025-01-01T00:00:00Z", 10),
-      makeEntry("2025-01-01T00:00:00Z", 20),
-    ];
+    const entries = [makeEntry("2025-01-01T00:00:00Z", 10), makeEntry("2025-01-01T00:00:00Z", 20)];
     const result = aggregateByPeriod(entries, "sum");
     expect(result).toHaveLength(1);
     expect(result[0].value).toBe(30);
   });
 
   it("averages entries within the same period", () => {
-    const entries = [
-      makeEntry("2025-01-01T00:00:00Z", 10),
-      makeEntry("2025-01-01T00:00:00Z", 20),
-    ];
+    const entries = [makeEntry("2025-01-01T00:00:00Z", 10), makeEntry("2025-01-01T00:00:00Z", 20)];
     const result = aggregateByPeriod(entries, "average");
     expect(result).toHaveLength(1);
     expect(result[0].value).toBe(15);
@@ -176,7 +170,7 @@ describe("aggregateByPeriodWeighted", () => {
   it("calculates weighted rate (raw, no ×100)", () => {
     const entries = [
       makeWeighted("2025-01-01T00:00:00Z", 0.05, 5, 100),
-      makeWeighted("2025-01-01T00:00:00Z", 0.10, 10, 100),
+      makeWeighted("2025-01-01T00:00:00Z", 0.1, 10, 100),
     ];
     const result = aggregateByPeriodWeighted(entries, "rate", "average");
     expect(result).toHaveLength(1);
@@ -227,11 +221,11 @@ describe("aggregateByPeriodWeighted", () => {
 // ---------------------------------------------------------------------------
 
 describe("aggregateValuesWeighted", () => {
-  const makeEntry = (
-    value: number,
-    numerator: number | null,
-    denominator: number | null
-  ) => ({ value, numerator, denominator });
+  const makeEntry = (value: number, numerator: number | null, denominator: number | null) => ({
+    value,
+    numerator,
+    denominator,
+  });
 
   it("returns null for empty entries", () => {
     expect(aggregateValuesWeighted([], "proportion", "average")).toBeNull();
@@ -251,7 +245,7 @@ describe("aggregateValuesWeighted", () => {
   });
 
   it("calculates weighted rate", () => {
-    const entries = [makeEntry(0.05, 5, 100), makeEntry(0.10, 10, 100)];
+    const entries = [makeEntry(0.05, 5, 100), makeEntry(0.1, 10, 100)];
     const result = aggregateValuesWeighted(entries, "rate", "average");
     // (5+10)/(100+100) = 0.075
     expect(result).toBe(0.075);
@@ -271,7 +265,7 @@ describe("aggregateValuesWeighted", () => {
 
   it("handles mixed N/D (some null, some not)", () => {
     const entries = [
-      makeEntry(50, 5, 10),   // has N/D
+      makeEntry(50, 5, 10), // has N/D
       makeEntry(80, null, null), // no N/D — value still collected for fallback
     ];
     const result = aggregateValuesWeighted(entries, "proportion", "average");

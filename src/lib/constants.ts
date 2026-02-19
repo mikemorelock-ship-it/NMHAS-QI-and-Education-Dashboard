@@ -29,7 +29,14 @@ export const UNIT_LABELS: Record<string, string> = {
   rate: "rate",
 };
 
-export const PERIOD_TYPES = ["daily", "weekly", "bi-weekly", "monthly", "quarterly", "annual"] as const;
+export const PERIOD_TYPES = [
+  "daily",
+  "weekly",
+  "bi-weekly",
+  "monthly",
+  "quarterly",
+  "annual",
+] as const;
 
 export const DEPARTMENT_TYPES = ["quality", "clinical", "education", "operations"] as const;
 
@@ -123,7 +130,14 @@ export const DRIVER_NODE_TYPE_COLORS: Record<string, string> = {
 // PDSA Cycle Constants
 // ---------------------------------------------------------------------------
 
-export const PDSA_STATUSES = ["planning", "doing", "studying", "acting", "completed", "abandoned"] as const;
+export const PDSA_STATUSES = [
+  "planning",
+  "doing",
+  "studying",
+  "acting",
+  "completed",
+  "abandoned",
+] as const;
 
 export const PDSA_STATUS_LABELS: Record<string, string> = {
   planning: "Plan",

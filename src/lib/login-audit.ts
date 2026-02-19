@@ -16,9 +16,7 @@ export async function logLoginAttempt(input: LoginAttemptInput): Promise<void> {
   try {
     const hdrs = await headers();
     const ipAddress =
-      hdrs.get("x-forwarded-for")?.split(",")[0]?.trim() ??
-      hdrs.get("x-real-ip") ??
-      null;
+      hdrs.get("x-forwarded-for")?.split(",")[0]?.trim() ?? hdrs.get("x-real-ip") ?? null;
     const userAgent = hdrs.get("user-agent") ?? null;
 
     await prisma.loginAttempt.create({

@@ -11,11 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScorecardTable } from "@/components/dashboard/ScorecardTable";
 import type { ScorecardData, FilterOptions, ScorecardPresetData } from "@/types";
@@ -43,16 +39,10 @@ export default function ScorecardsPage() {
 
   // Filter state
   const [filters, setFilters] = useState<FilterOptions | null>(null);
-  const [selectedDivisionIds, setSelectedDivisionIds] = useState<Set<string>>(
-    new Set()
-  );
-  const [selectedRegionIds, setSelectedRegionIds] = useState<Set<string>>(
-    new Set()
-  );
+  const [selectedDivisionIds, setSelectedDivisionIds] = useState<Set<string>>(new Set());
+  const [selectedRegionIds, setSelectedRegionIds] = useState<Set<string>>(new Set());
   const [kpiOnly, setKpiOnly] = useState(false);
-  const [selectedMetricIds, setSelectedMetricIds] = useState<Set<string>>(
-    new Set()
-  );
+  const [selectedMetricIds, setSelectedMetricIds] = useState<Set<string>>(new Set());
 
   // Track active scorecard ID for per-scorecard sort order + groupName
   const [activeScorecardId, setActiveScorecardId] = useState<string | null>(null);
@@ -119,10 +109,7 @@ export default function ScorecardsPage() {
   }, [fetchScorecards]);
 
   // Year options: current year down to 2024
-  const yearOptions = Array.from(
-    { length: currentYear - 2023 },
-    (_, i) => currentYear - i
-  );
+  const yearOptions = Array.from({ length: currentYear - 2023 }, (_, i) => currentYear - i);
 
   function toggleDivision(divId: string) {
     setActiveScorecardId(null); // Manual filter change clears preset sort/group
@@ -185,21 +172,20 @@ export default function ScorecardsPage() {
   }
 
   const hasFilters =
-    selectedDivisionIds.size > 0 || selectedRegionIds.size > 0 || kpiOnly || selectedMetricIds.size > 0;
+    selectedDivisionIds.size > 0 ||
+    selectedRegionIds.size > 0 ||
+    kpiOnly ||
+    selectedMetricIds.size > 0;
 
   // Get display names for selected items
   function getSelectedDivisionNames(): string[] {
     if (!filters) return [];
-    return filters.divisions
-      .filter((d) => selectedDivisionIds.has(d.id))
-      .map((d) => d.name);
+    return filters.divisions.filter((d) => selectedDivisionIds.has(d.id)).map((d) => d.name);
   }
 
   function getSelectedRegionNames(): string[] {
     if (!filters) return [];
-    return filters.regions
-      .filter((r) => selectedRegionIds.has(r.id))
-      .map((r) => r.name);
+    return filters.regions.filter((r) => selectedRegionIds.has(r.id)).map((r) => r.name);
   }
 
   const selectedDivNames = getSelectedDivisionNames();
@@ -225,10 +211,7 @@ export default function ScorecardsPage() {
         <Filter className="h-4 w-4 text-muted-foreground shrink-0" />
 
         {/* Year */}
-        <Select
-          value={String(year)}
-          onValueChange={(v) => setYear(parseInt(v))}
-        >
+        <Select value={String(year)} onValueChange={(v) => setYear(parseInt(v))}>
           <SelectTrigger className="w-[100px]">
             <SelectValue />
           </SelectTrigger>
@@ -244,10 +227,7 @@ export default function ScorecardsPage() {
         {/* Multi-select Division */}
         <Popover open={divPopoverOpen} onOpenChange={setDivPopoverOpen}>
           <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              className="w-[200px] justify-between font-normal"
-            >
+            <Button variant="outline" className="w-[200px] justify-between font-normal">
               <span className="truncate">
                 {selectedDivisionIds.size === 0
                   ? "All Divisions"
@@ -258,8 +238,15 @@ export default function ScorecardsPage() {
               <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-[240px] p-2" align="start" onWheel={(e) => e.stopPropagation()}>
-            <div className="space-y-1 max-h-[300px] overflow-y-auto" onWheel={(e) => e.stopPropagation()}>
+          <PopoverContent
+            className="w-[240px] p-2"
+            align="start"
+            onWheel={(e) => e.stopPropagation()}
+          >
+            <div
+              className="space-y-1 max-h-[300px] overflow-y-auto"
+              onWheel={(e) => e.stopPropagation()}
+            >
               {(filters?.divisions ?? []).map((div) => (
                 <label
                   key={div.id}
@@ -294,8 +281,15 @@ export default function ScorecardsPage() {
               <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-[240px] p-2" align="start" onWheel={(e) => e.stopPropagation()}>
-            <div className="space-y-1 max-h-[300px] overflow-y-auto" onWheel={(e) => e.stopPropagation()}>
+          <PopoverContent
+            className="w-[240px] p-2"
+            align="start"
+            onWheel={(e) => e.stopPropagation()}
+          >
+            <div
+              className="space-y-1 max-h-[300px] overflow-y-auto"
+              onWheel={(e) => e.stopPropagation()}
+            >
               {filteredRegions.map((reg) => (
                 <label
                   key={reg.id}
@@ -309,9 +303,7 @@ export default function ScorecardsPage() {
                 </label>
               ))}
               {filteredRegions.length === 0 && (
-                <p className="text-sm text-muted-foreground px-2 py-2">
-                  Select a division first.
-                </p>
+                <p className="text-sm text-muted-foreground px-2 py-2">Select a division first.</p>
               )}
             </div>
           </PopoverContent>
@@ -322,9 +314,7 @@ export default function ScorecardsPage() {
           variant={kpiOnly ? "default" : "outline"}
           size="sm"
           onClick={() => setKpiOnly(!kpiOnly)}
-          className={
-            kpiOnly ? "bg-nmh-teal hover:bg-nmh-teal/90 text-white" : ""
-          }
+          className={kpiOnly ? "bg-nmh-teal hover:bg-nmh-teal/90 text-white" : ""}
         >
           KPIs Only
         </Button>
@@ -370,9 +360,7 @@ export default function ScorecardsPage() {
       {/* Preset Chips */}
       {allPresets.length > 0 && (
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-xs font-medium text-muted-foreground mr-1">
-            Quick Filters:
-          </span>
+          <span className="text-xs font-medium text-muted-foreground mr-1">Quick Filters:</span>
           {allPresets.map((preset) => (
             <Button
               key={preset.id}

@@ -11,13 +11,13 @@ import {
   ClipboardCheck,
   BookOpen,
   Camera,
+  Settings,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { NMH_COLORS } from "@/lib/constants";
 import { logoutAction } from "@/actions/auth";
 import { hasPermission } from "@/lib/permissions";
 import type { Session } from "@/lib/auth";
-import { DivisionChangeDialog } from "./DivisionChangeDialog";
 
 interface FieldTrainingNavbarProps {
   session: Session;
@@ -31,7 +31,7 @@ export function FieldTrainingNavbar({ session, userName }: FieldTrainingNavbarPr
   const isTrainee = session.role === "trainee";
   const canReviewDors = isFto && hasPermission(session.role, "review_approve_dors");
   const canViewAllTrainees = isFto && hasPermission(session.role, "view_all_trainees");
-  const canRequestDivisionChange = hasPermission(session.role, "create_edit_own_dors");
+  const showAdmin = ["admin", "manager", "data_entry"].includes(session.role);
 
   return (
     <header
@@ -41,13 +41,12 @@ export function FieldTrainingNavbar({ session, userName }: FieldTrainingNavbarPr
       <div className="flex items-center gap-3">
         <span className="text-white font-bold text-lg tracking-tight">NMH</span>
         <span className="text-white/70 text-sm font-medium">Field Training</span>
-        <span className="hidden md:inline text-white/50 text-xs">
-          {userName}
-        </span>
+        <span className="hidden md:inline text-white/50 text-xs">{userName}</span>
       </div>
       <div className="flex items-center gap-2">
         <Link
           href="/fieldtraining"
+          aria-current={pathname === "/fieldtraining" ? "page" : undefined}
           className={
             "inline-flex items-center gap-1.5 min-h-9 px-3 rounded-lg text-sm font-medium transition-colors " +
             (pathname === "/fieldtraining"
@@ -55,11 +54,12 @@ export function FieldTrainingNavbar({ session, userName }: FieldTrainingNavbarPr
               : "text-white/80 hover:text-white hover:bg-white/15")
           }
         >
-          <LayoutDashboard className="size-4" />
+          <LayoutDashboard className="size-4" aria-hidden="true" />
           <span className="hidden sm:inline">Dashboard</span>
         </Link>
         <Link
           href="/fieldtraining/dors"
+          aria-current={pathname.startsWith("/fieldtraining/dors") ? "page" : undefined}
           className={
             "inline-flex items-center gap-1.5 min-h-9 px-3 rounded-lg text-sm font-medium transition-colors " +
             (pathname.startsWith("/fieldtraining/dors")
@@ -67,7 +67,7 @@ export function FieldTrainingNavbar({ session, userName }: FieldTrainingNavbarPr
               : "text-white/80 hover:text-white hover:bg-white/15")
           }
         >
-          <FileText className="size-4" />
+          <FileText className="size-4" aria-hidden="true" />
           <span className="hidden sm:inline">My DORs</span>
         </Link>
 
@@ -75,6 +75,7 @@ export function FieldTrainingNavbar({ session, userName }: FieldTrainingNavbarPr
         {isTrainee && (
           <Link
             href="/fieldtraining/skills"
+            aria-current={pathname.startsWith("/fieldtraining/skills") ? "page" : undefined}
             className={
               "inline-flex items-center gap-1.5 min-h-9 px-3 rounded-lg text-sm font-medium transition-colors " +
               (pathname.startsWith("/fieldtraining/skills")
@@ -82,7 +83,7 @@ export function FieldTrainingNavbar({ session, userName }: FieldTrainingNavbarPr
                 : "text-white/80 hover:text-white hover:bg-white/15")
             }
           >
-            <ClipboardCheck className="size-4" />
+            <ClipboardCheck className="size-4" aria-hidden="true" />
             <span className="hidden sm:inline">My Skills</span>
           </Link>
         )}
@@ -91,6 +92,7 @@ export function FieldTrainingNavbar({ session, userName }: FieldTrainingNavbarPr
         {isTrainee && (
           <Link
             href="/fieldtraining/coaching"
+            aria-current={pathname.startsWith("/fieldtraining/coaching") ? "page" : undefined}
             className={
               "inline-flex items-center gap-1.5 min-h-9 px-3 rounded-lg text-sm font-medium transition-colors " +
               (pathname.startsWith("/fieldtraining/coaching")
@@ -98,7 +100,7 @@ export function FieldTrainingNavbar({ session, userName }: FieldTrainingNavbarPr
                 : "text-white/80 hover:text-white hover:bg-white/15")
             }
           >
-            <BookOpen className="size-4" />
+            <BookOpen className="size-4" aria-hidden="true" />
             <span className="hidden sm:inline">Coaching</span>
           </Link>
         )}
@@ -107,6 +109,7 @@ export function FieldTrainingNavbar({ session, userName }: FieldTrainingNavbarPr
         {canReviewDors && (
           <Link
             href="/fieldtraining/team-dors"
+            aria-current={pathname.startsWith("/fieldtraining/team-dors") ? "page" : undefined}
             className={
               "inline-flex items-center gap-1.5 min-h-9 px-3 rounded-lg text-sm font-medium transition-colors " +
               (pathname.startsWith("/fieldtraining/team-dors")
@@ -114,7 +117,7 @@ export function FieldTrainingNavbar({ session, userName }: FieldTrainingNavbarPr
                 : "text-white/80 hover:text-white hover:bg-white/15")
             }
           >
-            <ClipboardCheck className="size-4" />
+            <ClipboardCheck className="size-4" aria-hidden="true" />
             <span className="hidden sm:inline">Team DORs</span>
           </Link>
         )}
@@ -123,6 +126,7 @@ export function FieldTrainingNavbar({ session, userName }: FieldTrainingNavbarPr
         {canViewAllTrainees && (
           <Link
             href="/fieldtraining/trainees"
+            aria-current={pathname.startsWith("/fieldtraining/trainees") ? "page" : undefined}
             className={
               "inline-flex items-center gap-1.5 min-h-9 px-3 rounded-lg text-sm font-medium transition-colors " +
               (pathname.startsWith("/fieldtraining/trainees")
@@ -130,7 +134,7 @@ export function FieldTrainingNavbar({ session, userName }: FieldTrainingNavbarPr
                 : "text-white/80 hover:text-white hover:bg-white/15")
             }
           >
-            <Users className="size-4" />
+            <Users className="size-4" aria-hidden="true" />
             <span className="hidden sm:inline">All Trainees</span>
           </Link>
         )}
@@ -139,6 +143,7 @@ export function FieldTrainingNavbar({ session, userName }: FieldTrainingNavbarPr
         {canViewAllTrainees && (
           <Link
             href="/fieldtraining/snapshots"
+            aria-current={pathname.startsWith("/fieldtraining/snapshots") ? "page" : undefined}
             className={
               "inline-flex items-center gap-1.5 min-h-9 px-3 rounded-lg text-sm font-medium transition-colors " +
               (pathname.startsWith("/fieldtraining/snapshots")
@@ -146,13 +151,14 @@ export function FieldTrainingNavbar({ session, userName }: FieldTrainingNavbarPr
                 : "text-white/80 hover:text-white hover:bg-white/15")
             }
           >
-            <Camera className="size-4" />
+            <Camera className="size-4" aria-hidden="true" />
             <span className="hidden sm:inline">Snapshots</span>
           </Link>
         )}
 
         <Link
           href="/fieldtraining/help"
+          aria-current={pathname === "/fieldtraining/help" ? "page" : undefined}
           className={
             "inline-flex items-center gap-1.5 min-h-9 px-3 rounded-lg text-sm font-medium transition-colors " +
             (pathname === "/fieldtraining/help"
@@ -160,13 +166,20 @@ export function FieldTrainingNavbar({ session, userName }: FieldTrainingNavbarPr
               : "text-white/80 hover:text-white hover:bg-white/15")
           }
         >
-          <HelpCircle className="size-4" />
+          <HelpCircle className="size-4" aria-hidden="true" />
           <span className="hidden sm:inline">Help</span>
         </Link>
-        {/* FTO/Supervisor/Manager: Request Division Change */}
-        {canRequestDivisionChange && <DivisionChangeDialog />}
-
-        <div className="w-px h-5 bg-white/20 mx-1" />
+        {showAdmin && (
+          <Link
+            href="/admin"
+            className="inline-flex items-center gap-1.5 min-h-9 px-3 rounded-lg text-sm font-medium text-white/80 hover:text-white hover:bg-white/15 transition-colors"
+            title="Admin Portal"
+          >
+            <Settings className="size-4" aria-hidden="true" />
+            <span className="hidden md:inline">Admin</span>
+          </Link>
+        )}
+        <div className="w-px h-5 bg-white/20 mx-1" aria-hidden="true" />
         <form action={logoutAction}>
           <Button
             type="submit"
@@ -174,7 +187,7 @@ export function FieldTrainingNavbar({ session, userName }: FieldTrainingNavbarPr
             size="sm"
             className="text-white/80 hover:text-white hover:bg-white/15"
           >
-            <LogOut className="size-4" />
+            <LogOut className="size-4" aria-hidden="true" />
             <span className="hidden sm:inline ml-1.5">Sign Out</span>
           </Button>
         </form>

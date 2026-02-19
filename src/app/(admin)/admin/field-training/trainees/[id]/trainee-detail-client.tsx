@@ -46,7 +46,16 @@ import {
   Send,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { updateTraineePhase, signoffSkill, removeSkillSignoff, updateTrainee, setTraineePin, addSupervisorNote, deleteSupervisorNote } from "@/actions/field-training";
+import { RatingBadge } from "@/components/field-training/RatingBadge";
+import {
+  updateTraineePhase,
+  signoffSkill,
+  removeSkillSignoff,
+  updateTrainee,
+  setTraineePin,
+  addSupervisorNote,
+  deleteSupervisorNote,
+} from "@/actions/field-training";
 import { FTO_ROLE_LABELS, PHASE_SIGNOFF_ROLES } from "@/lib/constants";
 
 type Trainee = {
@@ -142,9 +151,9 @@ const statusColors: Record<string, string> = {
 };
 
 const phaseStatusIcons: Record<string, React.ReactNode> = {
-  not_started: <Circle className="h-5 w-5 text-muted-foreground" />,
-  in_progress: <Clock className="h-5 w-5 text-nmh-teal" />,
-  completed: <CheckCircle2 className="h-5 w-5 text-green-600" />,
+  not_started: <Circle className="h-5 w-5 text-muted-foreground" aria-hidden="true" />,
+  in_progress: <Clock className="h-5 w-5 text-nmh-teal" aria-hidden="true" />,
+  completed: <CheckCircle2 className="h-5 w-5 text-green-600" aria-hidden="true" />,
 };
 
 const actionLabels: Record<string, string> = {
@@ -158,20 +167,14 @@ const actionLabels: Record<string, string> = {
 };
 
 function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  return new Date(iso).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
 }
 
-function RatingBadge({ rating }: { rating: number }) {
-  const color =
-    rating === 1 ? "bg-red-200 text-red-900" :
-    rating === 2 ? "bg-red-100 text-red-800" :
-    rating === 3 ? "bg-orange-100 text-orange-800" :
-    rating === 4 ? "bg-gray-100 text-gray-800" :
-    rating === 5 ? "bg-green-100 text-green-800" :
-    rating === 6 ? "bg-green-200 text-green-900" :
-    "bg-emerald-200 text-emerald-900";
-  return <Badge className={cn("font-mono text-xs", color)}>{rating}/7</Badge>;
-}
+// RatingBadge imported from shared component
 
 export function TraineeDetailClient({
   trainee,
@@ -196,7 +199,9 @@ export function TraineeDetailClient({
 }) {
   const [expandedDor, setExpandedDor] = useState<string | null>(null);
   const [expandedSkill, setExpandedSkill] = useState<string | null>(null);
-  const [signoffDialog, setSignoffDialog] = useState<{ skillId: string; skillName: string } | null>(null);
+  const [signoffDialog, setSignoffDialog] = useState<{ skillId: string; skillName: string } | null>(
+    null
+  );
   const [phaseDialog, setPhaseDialog] = useState<Phase | null>(null);
   const [phaseError, setPhaseError] = useState<string | null>(null);
   const [pinDialogOpen, setPinDialogOpen] = useState(false);
@@ -303,8 +308,10 @@ export function TraineeDetailClient({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" asChild>
-            <Link href={backUrl}><ArrowLeft className="h-4 w-4" /></Link>
+          <Button variant="ghost" size="icon" asChild aria-label="Go back">
+            <Link href={backUrl}>
+              <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+            </Link>
           </Button>
           <div>
             <h1 className="text-2xl font-bold tracking-tight">
@@ -333,20 +340,20 @@ export function TraineeDetailClient({
               setPinDialogOpen(true);
             }}
           >
-            <KeyRound className="h-4 w-4 mr-1" />
+            <KeyRound className="h-4 w-4 mr-1" aria-hidden="true" />
             {trainee.hasPin ? "Change PIN" : "Set PIN"}
           </Button>
-        <Select value={trainee.status} onValueChange={handleStatusChange}>
-          <SelectTrigger className="w-[160px]">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="active">Active</SelectItem>
-            <SelectItem value="completed">Completed</SelectItem>
-            <SelectItem value="remediation">Remediation</SelectItem>
-            <SelectItem value="separated">Separated</SelectItem>
-          </SelectContent>
-        </Select>
+          <Select value={trainee.status} onValueChange={handleStatusChange}>
+            <SelectTrigger className="w-[160px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="active">Active</SelectItem>
+              <SelectItem value="completed">Completed</SelectItem>
+              <SelectItem value="remediation">Remediation</SelectItem>
+              <SelectItem value="separated">Separated</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
@@ -402,41 +409,55 @@ export function TraineeDetailClient({
             <CardContent>
               <div className="space-y-4">
                 {phases.map((phase, i) => (
-                  <div
+                  <button
+                    type="button"
                     key={phase.id}
-                    className="flex items-start gap-4 cursor-pointer hover:bg-muted/50 p-3 rounded-lg transition-colors"
+                    className="flex items-start gap-4 w-full text-left cursor-pointer hover:bg-muted/50 p-3 rounded-lg transition-colors"
                     onClick={() => setPhaseDialog(phase)}
+                    aria-label={`Update phase: ${phase.phaseName} — ${phase.status.replace("_", " ")}`}
                   >
                     <div className="flex flex-col items-center">
-                      {phaseStatusIcons[phase.status]}
+                      <span aria-hidden="true">{phaseStatusIcons[phase.status]}</span>
                       {i < phases.length - 1 && (
-                        <div className={cn(
-                          "w-0.5 h-8 mt-1",
-                          phase.status === "completed" ? "bg-green-300" : "bg-muted-foreground/20"
-                        )} />
+                        <div
+                          aria-hidden="true"
+                          className={cn(
+                            "w-0.5 h-8 mt-1",
+                            phase.status === "completed" ? "bg-green-300" : "bg-muted-foreground/20"
+                          )}
+                        />
                       )}
                     </div>
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
                         <span className="font-medium">{phase.phaseName}</span>
-                        <Badge variant={
-                          phase.status === "completed" ? "default" :
-                          phase.status === "in_progress" ? "secondary" : "outline"
-                        }>
+                        <Badge
+                          variant={
+                            phase.status === "completed"
+                              ? "default"
+                              : phase.status === "in_progress"
+                                ? "secondary"
+                                : "outline"
+                          }
+                        >
                           {phase.status.replace("_", " ")}
                         </Badge>
                         {phase.minDays && (
-                          <span className="text-xs text-muted-foreground">Min {phase.minDays} days</span>
+                          <span className="text-xs text-muted-foreground">
+                            Min {phase.minDays} days
+                          </span>
                         )}
                       </div>
                       <div className="text-sm text-muted-foreground mt-1">
                         {phase.startDate && <span>Started {formatDate(phase.startDate)}</span>}
                         {phase.endDate && <span> · Ended {formatDate(phase.endDate)}</span>}
-                        {phase.ftoSignoffName && <span> · Signed off by {phase.ftoSignoffName}</span>}
+                        {phase.ftoSignoffName && (
+                          <span> · Signed off by {phase.ftoSignoffName}</span>
+                        )}
                       </div>
                       {phase.notes && <p className="text-sm mt-1">{phase.notes}</p>}
                     </div>
-                  </div>
+                  </button>
                 ))}
               </div>
             </CardContent>
@@ -449,7 +470,9 @@ export function TraineeDetailClient({
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
                 <CardTitle>Daily Observation Reports</CardTitle>
-                <CardDescription>{dors.length} DOR{dors.length !== 1 ? "s" : ""} recorded</CardDescription>
+                <CardDescription>
+                  {dors.length} DOR{dors.length !== 1 ? "s" : ""} recorded
+                </CardDescription>
               </div>
               <Button asChild>
                 <Link href={dorNewUrl || `/admin/field-training/dors/new?traineeId=${trainee.id}`}>
@@ -464,35 +487,57 @@ export function TraineeDetailClient({
                 <div className="space-y-2">
                   {dors.map((dor) => (
                     <div key={dor.id} className="border rounded-lg">
-                      <div
-                        className="flex items-center justify-between p-4 cursor-pointer hover:bg-muted/50"
+                      <button
+                        type="button"
+                        className="flex items-center justify-between p-4 w-full text-left cursor-pointer hover:bg-muted/50"
                         onClick={() => setExpandedDor(expandedDor === dor.id ? null : dor.id)}
+                        aria-expanded={expandedDor === dor.id}
+                        aria-label={`DOR ${formatDate(dor.date)} by ${dor.ftoName} — overall rating ${dor.overallRating}`}
                       >
                         <div className="flex items-center gap-4">
-                          {expandedDor === dor.id ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                          {expandedDor === dor.id ? (
+                            <ChevronDown className="h-4 w-4" aria-hidden="true" />
+                          ) : (
+                            <ChevronRight className="h-4 w-4" aria-hidden="true" />
+                          )}
                           <div>
                             <span className="font-medium">{formatDate(dor.date)}</span>
-                            <span className="text-sm text-muted-foreground ml-2">by {dor.ftoName}</span>
-                            {dor.phaseName && <Badge variant="outline" className="ml-2">{dor.phaseName}</Badge>}
+                            <span className="text-sm text-muted-foreground ml-2">
+                              by {dor.ftoName}
+                            </span>
+                            {dor.phaseName && (
+                              <Badge variant="outline" className="ml-2">
+                                {dor.phaseName}
+                              </Badge>
+                            )}
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
                           {dor.nrtFlag && (
                             <Badge className="bg-red-100 text-red-800">
-                              <AlertTriangle className="h-3 w-3 mr-1" />NRT
+                              <AlertTriangle className="h-3 w-3 mr-1" aria-hidden="true" />
+                              NRT
                             </Badge>
                           )}
                           {dor.remFlag && (
                             <Badge className="bg-orange-100 text-orange-800">REM</Badge>
                           )}
                           {dor.status === "draft" && (
-                            <Badge variant="outline" className="border-orange-400 text-orange-700">Draft</Badge>
+                            <Badge variant="outline" className="border-orange-400 text-orange-700">
+                              Draft
+                            </Badge>
                           )}
                           <RatingBadge rating={dor.overallRating} />
-                          <Badge variant={
-                            dor.recommendAction === "continue" || dor.recommendAction === "advance" ? "secondary" :
-                            dor.recommendAction === "release" ? "default" : "destructive"
-                          }>
+                          <Badge
+                            variant={
+                              dor.recommendAction === "continue" ||
+                              dor.recommendAction === "advance"
+                                ? "secondary"
+                                : dor.recommendAction === "release"
+                                  ? "default"
+                                  : "destructive"
+                            }
+                          >
                             {actionLabels[dor.recommendAction] ?? dor.recommendAction}
                           </Badge>
                           {dor.status === "submitted" && (
@@ -504,20 +549,24 @@ export function TraineeDetailClient({
                             </Badge>
                           )}
                         </div>
-                      </div>
+                      </button>
                       {expandedDor === dor.id && (
                         <div className="border-t p-4 space-y-3">
                           {/* Most/Least Satisfactory */}
                           <div className="grid grid-cols-2 gap-4">
                             {dor.mostSatisfactory && (
                               <div className="p-3 rounded-lg bg-green-50 border border-green-200">
-                                <p className="text-xs font-medium text-green-700 uppercase tracking-wide mb-1">Most Satisfactory</p>
+                                <p className="text-xs font-medium text-green-700 uppercase tracking-wide mb-1">
+                                  Most Satisfactory
+                                </p>
                                 <p className="text-sm">{dor.mostSatisfactory}</p>
                               </div>
                             )}
                             {dor.leastSatisfactory && (
                               <div className="p-3 rounded-lg bg-orange-50 border border-orange-200">
-                                <p className="text-xs font-medium text-orange-700 uppercase tracking-wide mb-1">Least Satisfactory</p>
+                                <p className="text-xs font-medium text-orange-700 uppercase tracking-wide mb-1">
+                                  Least Satisfactory
+                                </p>
                                 <p className="text-sm">{dor.leastSatisfactory}</p>
                               </div>
                             )}
@@ -535,20 +584,29 @@ export function TraineeDetailClient({
                               {dor.ratings.map((r) => (
                                 <TableRow key={r.categoryName}>
                                   <TableCell className="font-medium">{r.categoryName}</TableCell>
-                                  <TableCell><RatingBadge rating={r.rating} /></TableCell>
-                                  <TableCell className="text-sm text-muted-foreground">{r.comments ?? "—"}</TableCell>
+                                  <TableCell>
+                                    <RatingBadge rating={r.rating} />
+                                  </TableCell>
+                                  <TableCell className="text-sm text-muted-foreground">
+                                    {r.comments ?? "—"}
+                                  </TableCell>
                                 </TableRow>
                               ))}
                             </TableBody>
                           </Table>
                           {/* Acknowledgment */}
                           <div className="p-3 rounded-lg border mt-3">
-                            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Acknowledgment</p>
+                            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">
+                              Acknowledgment
+                            </p>
                             {dor.traineeAcknowledged ? (
                               <div className="flex items-center gap-2">
-                                <CheckCircle2 className="h-4 w-4 text-green-600" />
+                                <CheckCircle2 className="h-4 w-4 text-green-600" aria-hidden="true" />
                                 <span className="text-sm text-green-800">
-                                  Acknowledged{dor.acknowledgedAt ? ` on ${formatDate(dor.acknowledgedAt)}` : ""}
+                                  Acknowledged
+                                  {dor.acknowledgedAt
+                                    ? ` on ${formatDate(dor.acknowledgedAt)}`
+                                    : ""}
                                 </span>
                               </div>
                             ) : (
@@ -563,7 +621,9 @@ export function TraineeDetailClient({
                             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
                               Supervisor Notes
                               {dor.noteEntries.length > 0 && (
-                                <span className="ml-1 text-nmh-teal">({dor.noteEntries.length})</span>
+                                <span className="ml-1 text-nmh-teal">
+                                  ({dor.noteEntries.length})
+                                </span>
                               )}
                             </p>
 
@@ -571,14 +631,24 @@ export function TraineeDetailClient({
                             {dor.noteEntries.length > 0 && (
                               <div className="space-y-2 mb-3 max-h-48 overflow-y-auto">
                                 {dor.noteEntries.map((note) => (
-                                  <div key={note.id} className="rounded border bg-muted/30 p-2 space-y-0.5">
+                                  <div
+                                    key={note.id}
+                                    className="rounded border bg-muted/30 p-2 space-y-0.5"
+                                  >
                                     <div className="flex items-start justify-between gap-2">
                                       <div className="text-xs">
                                         <span className="font-medium">{note.authorName}</span>
                                         <span className="text-muted-foreground ml-1.5">
-                                          {new Date(note.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                                          {new Date(note.createdAt).toLocaleDateString("en-US", {
+                                            month: "short",
+                                            day: "numeric",
+                                            year: "numeric",
+                                          })}
                                           {" at "}
-                                          {new Date(note.createdAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
+                                          {new Date(note.createdAt).toLocaleTimeString("en-US", {
+                                            hour: "numeric",
+                                            minute: "2-digit",
+                                          })}
                                         </span>
                                       </div>
                                       {note.authorId === currentUserId && (
@@ -588,9 +658,9 @@ export function TraineeDetailClient({
                                           className="h-5 w-5 text-muted-foreground hover:text-destructive"
                                           onClick={() => handleDeleteNote(note.id)}
                                           disabled={savingNote}
-                                          title="Delete note"
+                                          aria-label="Delete note"
                                         >
-                                          <Trash2 className="h-3 w-3" />
+                                          <Trash2 className="h-3 w-3" aria-hidden="true" />
                                         </Button>
                                       )}
                                     </div>
@@ -604,7 +674,9 @@ export function TraineeDetailClient({
                             <div className="flex gap-2">
                               <Textarea
                                 value={noteText[dor.id] ?? ""}
-                                onChange={(e) => setNoteText((prev) => ({ ...prev, [dor.id]: e.target.value }))}
+                                onChange={(e) =>
+                                  setNoteText((prev) => ({ ...prev, [dor.id]: e.target.value }))
+                                }
                                 placeholder="Add a note..."
                                 rows={2}
                                 className="text-sm flex-1"
@@ -613,9 +685,9 @@ export function TraineeDetailClient({
                                 size="sm"
                                 className="self-end"
                                 onClick={() => handleAddNote(dor.id)}
-                                disabled={savingNote || !(noteText[dor.id]?.trim())}
+                                disabled={savingNote || !noteText[dor.id]?.trim()}
                               >
-                                <Send className="h-3 w-3 mr-1" />
+                                <Send className="h-3 w-3 mr-1" aria-hidden="true" />
                                 Add
                               </Button>
                             </div>
@@ -637,7 +709,9 @@ export function TraineeDetailClient({
               <CardContent className="pt-6">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm font-medium">Overall Skills Progress</span>
-                  <span className="text-sm text-muted-foreground">{completedSkills}/{totalSkills} ({skillPct}%)</span>
+                  <span className="text-sm text-muted-foreground">
+                    {completedSkills}/{totalSkills} ({skillPct}%)
+                  </span>
                 </div>
                 <Progress value={skillPct} className="h-3" />
               </CardContent>
@@ -645,7 +719,8 @@ export function TraineeDetailClient({
 
             {skillCategories.map((cat) => {
               const catCompleted = cat.skills.filter((s) => s.signedOff).length;
-              const catPct = cat.skills.length > 0 ? Math.round((catCompleted / cat.skills.length) * 100) : 0;
+              const catPct =
+                cat.skills.length > 0 ? Math.round((catCompleted / cat.skills.length) * 100) : 0;
               return (
                 <Card key={cat.id}>
                   <CardHeader>
@@ -665,9 +740,9 @@ export function TraineeDetailClient({
                             <TableRow>
                               <TableCell className="w-8">
                                 {skill.signedOff ? (
-                                  <CheckCircle2 className="h-5 w-5 text-green-600" />
+                                  <CheckCircle2 className="h-5 w-5 text-green-600" aria-hidden="true" />
                                 ) : (
-                                  <Circle className="h-5 w-5 text-muted-foreground/40" />
+                                  <Circle className="h-5 w-5 text-muted-foreground/40" aria-hidden="true" />
                                 )}
                               </TableCell>
                               <TableCell>
@@ -676,43 +751,70 @@ export function TraineeDetailClient({
                                     <button
                                       type="button"
                                       className="p-0.5 hover:bg-muted rounded"
-                                      onClick={() => setExpandedSkill(expandedSkill === skill.id ? null : skill.id)}
+                                      onClick={() =>
+                                        setExpandedSkill(
+                                          expandedSkill === skill.id ? null : skill.id
+                                        )
+                                      }
+                                      aria-expanded={expandedSkill === skill.id}
+                                      aria-label={`${expandedSkill === skill.id ? "Collapse" : "Expand"} steps for ${skill.name}`}
                                     >
-                                      {expandedSkill === skill.id
-                                        ? <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                                        : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
+                                      {expandedSkill === skill.id ? (
+                                        <ChevronDown className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+                                      ) : (
+                                        <ChevronRight className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+                                      )}
                                     </button>
                                   )}
-                                  <span className={cn("font-medium", skill.signedOff && "text-muted-foreground line-through")}>
+                                  <span
+                                    className={cn(
+                                      "font-medium",
+                                      skill.signedOff && "text-muted-foreground line-through"
+                                    )}
+                                  >
                                     {skill.name}
                                   </span>
                                   {skill.isCritical && (
-                                    <Badge variant="destructive" className="text-[10px] px-1.5 py-0">
-                                      <AlertTriangle className="h-3 w-3 mr-0.5" />Critical
+                                    <Badge
+                                      variant="destructive"
+                                      className="text-[10px] px-1.5 py-0"
+                                    >
+                                      <AlertTriangle className="h-3 w-3 mr-0.5" aria-hidden="true" />
+                                      Critical
                                     </Badge>
                                   )}
                                   {skill.steps.length > 0 && (
-                                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-muted-foreground">
+                                    <Badge
+                                      variant="outline"
+                                      className="text-[10px] px-1.5 py-0 text-muted-foreground"
+                                    >
                                       {skill.steps.length} step{skill.steps.length !== 1 ? "s" : ""}
                                     </Badge>
                                   )}
                                 </div>
                                 {skill.signedOff && skill.signoffFto && (
                                   <p className="text-xs text-muted-foreground">
-                                    Signed off by {skill.signoffFto} on {formatDate(skill.signoffDate!)}
+                                    Signed off by {skill.signoffFto} on{" "}
+                                    {formatDate(skill.signoffDate!)}
                                   </p>
                                 )}
                               </TableCell>
                               <TableCell className="text-right">
                                 {skill.signedOff ? (
-                                  <Button variant="ghost" size="sm" onClick={() => handleRemoveSignoff(skill.id)}>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleRemoveSignoff(skill.id)}
+                                  >
                                     Remove
                                   </Button>
                                 ) : (
                                   <Button
                                     variant="outline"
                                     size="sm"
-                                    onClick={() => setSignoffDialog({ skillId: skill.id, skillName: skill.name })}
+                                    onClick={() =>
+                                      setSignoffDialog({ skillId: skill.id, skillName: skill.name })
+                                    }
                                   >
                                     Sign Off
                                   </Button>
@@ -725,10 +827,17 @@ export function TraineeDetailClient({
                                   <ol className="space-y-1.5">
                                     {skill.steps.map((step) => (
                                       <li key={step.id} className="flex items-start gap-2 text-sm">
-                                        <span className="font-mono text-xs text-muted-foreground w-6 shrink-0 pt-0.5">{step.stepNumber}.</span>
+                                        <span className="font-mono text-xs text-muted-foreground w-6 shrink-0 pt-0.5">
+                                          {step.stepNumber}.
+                                        </span>
                                         <span>{step.description}</span>
                                         {!step.isRequired && (
-                                          <Badge variant="outline" className="text-[10px] px-1 py-0 shrink-0">optional</Badge>
+                                          <Badge
+                                            variant="outline"
+                                            className="text-[10px] px-1 py-0 shrink-0"
+                                          >
+                                            optional
+                                          </Badge>
                                         )}
                                       </li>
                                     ))}
@@ -772,7 +881,9 @@ export function TraineeDetailClient({
                       <TableCell>{formatDate(a.startDate)}</TableCell>
                       <TableCell>{a.endDate ? formatDate(a.endDate) : "—"}</TableCell>
                       <TableCell>
-                        <Badge variant={a.status === "active" ? "default" : "secondary"}>{a.status}</Badge>
+                        <Badge variant={a.status === "active" ? "default" : "secondary"}>
+                          {a.status}
+                        </Badge>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -791,7 +902,12 @@ export function TraineeDetailClient({
       </Tabs>
 
       {/* Skill Signoff Dialog */}
-      <Dialog open={!!signoffDialog} onOpenChange={(open) => { if (!open) setSignoffDialog(null); }}>
+      <Dialog
+        open={!!signoffDialog}
+        onOpenChange={(open) => {
+          if (!open) setSignoffDialog(null);
+        }}
+      >
         <DialogContent>
           <form action={handleSignoff}>
             <DialogHeader>
@@ -804,7 +920,7 @@ export function TraineeDetailClient({
               <div className="space-y-2">
                 <Label htmlFor="signoff-fto">Signed Off By</Label>
                 <Select name="ftoId" required>
-                  <SelectTrigger>
+                  <SelectTrigger id="signoff-fto">
                     <SelectValue placeholder="Select FTO..." />
                   </SelectTrigger>
                   <SelectContent>
@@ -818,7 +934,13 @@ export function TraineeDetailClient({
               </div>
               <div className="space-y-2">
                 <Label htmlFor="signoff-date">Date</Label>
-                <Input id="signoff-date" name="date" type="date" defaultValue={new Date().toISOString().split("T")[0]} required />
+                <Input
+                  id="signoff-date"
+                  name="date"
+                  type="date"
+                  defaultValue={new Date().toISOString().split("T")[0]}
+                  required
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="signoff-notes">Notes</Label>
@@ -844,14 +966,18 @@ export function TraineeDetailClient({
           <DialogHeader>
             <DialogTitle>Set Portal PIN</DialogTitle>
             <DialogDescription>
-              Set a 6-8 digit PIN for {trainee.firstName} {trainee.lastName} to access the Trainee Portal.
+              Set a 6-8 digit PIN for {trainee.firstName} {trainee.lastName} to access the Trainee
+              Portal.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
-            {pinError && <p className="text-sm text-destructive">{pinError}</p>}
+            <div aria-live="polite">
+              {pinError && <p className="text-sm text-destructive" role="alert">{pinError}</p>}
+            </div>
             <div className="space-y-2">
-              <Label>PIN (6-8 digits)</Label>
+              <Label htmlFor="pin-input">PIN (6-8 digits)</Label>
               <Input
+                id="pin-input"
                 type="password"
                 inputMode="numeric"
                 maxLength={8}
@@ -861,8 +987,9 @@ export function TraineeDetailClient({
               />
             </div>
             <div className="space-y-2">
-              <Label>Confirm PIN</Label>
+              <Label htmlFor="pin-confirm-input">Confirm PIN</Label>
               <Input
+                id="pin-confirm-input"
                 type="password"
                 inputMode="numeric"
                 maxLength={8}
@@ -873,28 +1000,40 @@ export function TraineeDetailClient({
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setPinDialogOpen(false)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setPinDialogOpen(false)}>
+              Cancel
+            </Button>
             <Button onClick={handleSetPin}>Set PIN</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* Phase Update Dialog */}
-      <Dialog open={!!phaseDialog} onOpenChange={(open) => { if (!open) { setPhaseDialog(null); setPhaseError(null); } }}>
+      <Dialog
+        open={!!phaseDialog}
+        onOpenChange={(open) => {
+          if (!open) {
+            setPhaseDialog(null);
+            setPhaseError(null);
+          }
+        }}
+      >
         <DialogContent>
           <form action={handlePhaseUpdate}>
             <DialogHeader>
               <DialogTitle>Update Phase: {phaseDialog?.phaseName}</DialogTitle>
-              <DialogDescription>Update the status and dates for this training phase.</DialogDescription>
+              <DialogDescription>
+                Update the status and dates for this training phase.
+              </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
-              {phaseError && (
-                <p className="text-sm text-destructive">{phaseError}</p>
-              )}
+              <div aria-live="polite">
+                {phaseError && <p className="text-sm text-destructive" role="alert">{phaseError}</p>}
+              </div>
               <div className="space-y-2">
-                <Label>Status</Label>
+                <Label htmlFor="phase-status">Status</Label>
                 <Select name="status" defaultValue={phaseDialog?.status}>
-                  <SelectTrigger>
+                  <SelectTrigger id="phase-status">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -906,24 +1045,35 @@ export function TraineeDetailClient({
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Start Date</Label>
-                  <Input name="startDate" type="date" defaultValue={phaseDialog?.startDate?.split("T")[0] ?? ""} />
+                  <Label htmlFor="phase-start-date">Start Date</Label>
+                  <Input
+                    id="phase-start-date"
+                    name="startDate"
+                    type="date"
+                    defaultValue={phaseDialog?.startDate?.split("T")[0] ?? ""}
+                  />
                 </div>
                 <div className="space-y-2">
-                  <Label>End Date</Label>
-                  <Input name="endDate" type="date" defaultValue={phaseDialog?.endDate?.split("T")[0] ?? ""} />
+                  <Label htmlFor="phase-end-date">End Date</Label>
+                  <Input
+                    id="phase-end-date"
+                    name="endDate"
+                    type="date"
+                    defaultValue={phaseDialog?.endDate?.split("T")[0] ?? ""}
+                  />
                 </div>
               </div>
               <div className="space-y-2">
-                <Label>Signed Off By</Label>
+                <Label htmlFor="phase-signoff-by">Signed Off By</Label>
                 {phaseSignoffFtos.length === 0 ? (
                   <p className="text-sm text-muted-foreground py-2">
-                    No supervisors or managers available. Add an FTO with a supervisor or manager role to enable phase signoffs.
+                    No supervisors or managers available. Add an FTO with a supervisor or manager
+                    role to enable phase signoffs.
                   </p>
                 ) : (
                   <>
                     <Select name="ftoSignoffId" defaultValue={undefined}>
-                      <SelectTrigger>
+                      <SelectTrigger id="phase-signoff-by">
                         <SelectValue placeholder="Select supervisor/manager..." />
                       </SelectTrigger>
                       <SelectContent>
@@ -934,13 +1084,15 @@ export function TraineeDetailClient({
                         ))}
                       </SelectContent>
                     </Select>
-                    <p className="text-xs text-muted-foreground">Only supervisors and managers can sign off phases.</p>
+                    <p className="text-xs text-muted-foreground">
+                      Only supervisors and managers can sign off phases.
+                    </p>
                   </>
                 )}
               </div>
               <div className="space-y-2">
-                <Label>Notes</Label>
-                <Textarea name="notes" defaultValue={phaseDialog?.notes ?? ""} />
+                <Label htmlFor="phase-notes">Notes</Label>
+                <Textarea id="phase-notes" name="notes" defaultValue={phaseDialog?.notes ?? ""} />
               </div>
             </div>
             <DialogFooter>

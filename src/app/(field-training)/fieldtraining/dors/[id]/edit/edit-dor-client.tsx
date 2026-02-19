@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -25,9 +25,27 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ArrowLeft, ExternalLink } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  ArrowLeft,
+  ExternalLink,
+  Lightbulb,
+  Save,
+  Loader2,
+  MessageSquare,
+  AlertCircle,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { updateDorDraft, submitDor, getTraineeDorHistory } from "@/actions/field-training";
+import { useDorAutosave, type DorDraftData } from "@/hooks/use-dor-autosave";
+import { getTraineeFocusAreas } from "@/actions/focus-areas";
+import type { FocusArea } from "@/lib/focus-areas";
 
 type Props = {
   dorId: string;
@@ -133,7 +151,21 @@ type DorHistoryItem = {
   recommendAction: string;
 };
 
-export function EditDorClient({ dorId, fto, trainees, phases, dorCategories, traineePhaseMap, existingData }: Props) {
+const SEVERITY_COLORS: Record<string, { border: string; bg: string; text: string }> = {
+  high: { border: "border-l-red-500", bg: "bg-red-50", text: "text-red-700" },
+  medium: { border: "border-l-orange-500", bg: "bg-orange-50", text: "text-orange-700" },
+  low: { border: "border-l-blue-500", bg: "bg-blue-50", text: "text-blue-700" },
+};
+
+export function EditDorClient({
+  dorId,
+  fto,
+  trainees,
+  phases,
+  dorCategories,
+  traineePhaseMap,
+  existingData,
+}: Props) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [overallRating, setOverallRating] = useState(existingData.overallRating);
@@ -151,37 +183,117 @@ export function EditDorClient({ dorId, fto, trainees, phases, dorCategories, tra
   const [remFlag, setRemFlag] = useState(existingData.remFlag);
   const [submitting, setSubmitting] = useState(false);
 
+  // Performance summary — auto-derived from ratings, manually overridable
+  const [mostSatisfactory, setMostSatisfactory] = useState(existingData.mostSatisfactory || "");
+  const [leastSatisfactory, setLeastSatisfactory] = useState(existingData.leastSatisfactory || "");
+  const [mostManuallySet, setMostManuallySet] = useState(!!existingData.mostSatisfactory);
+  const [leastManuallySet, setLeastManuallySet] = useState(!!existingData.leastSatisfactory);
+
+  // Auto-fill most/least satisfactory from category ratings
+  useEffect(() => {
+    const entries = dorCategories.map((c) => ({
+      name: c.name,
+      rating: categoryRatings[c.id]?.rating ?? 4,
+    }));
+    if (entries.length === 0) return;
+
+    // Find highest-rated category (first one wins ties)
+    const best = entries.reduce((a, b) => (b.rating > a.rating ? b : a));
+    // Find lowest-rated category (first one wins ties)
+    const worst = entries.reduce((a, b) => (b.rating < a.rating ? b : a));
+
+    if (!mostManuallySet) {
+      setMostSatisfactory(best.name);
+    }
+    if (!leastManuallySet) {
+      setLeastSatisfactory(worst.name);
+    }
+  }, [categoryRatings, dorCategories, mostManuallySet, leastManuallySet]);
+
+  // Comment dialog state
+  const [commentDialog, setCommentDialog] = useState<{ catId: string; catName: string } | null>(
+    null
+  );
+  const [commentDraft, setCommentDraft] = useState("");
+
   // Trainee selection state
   const [selectedTraineeId, setSelectedTraineeId] = useState<string>(existingData.traineeId);
   const [dorHistory, setDorHistory] = useState<DorHistoryItem[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
 
+  // Focus areas state
+  const [focusAreas, setFocusAreas] = useState<FocusArea[]>([]);
+  const [loadingFocusAreas, setLoadingFocusAreas] = useState(false);
+  const [focusAreasExpanded, setFocusAreasExpanded] = useState(true);
+
+  // Autosave
+  const { saveDraft, clearDraft, lastSavedAt } = useDorAutosave({ dorId });
+  const narrativeRef = useRef<HTMLTextAreaElement>(null);
+
+  // Autosave effect: debounce save on form state changes
+  useEffect(() => {
+    const draftData: DorDraftData = {
+      traineeId: selectedTraineeId,
+      overallRating,
+      categoryRatings,
+      narrative: narrativeRef.current?.value || undefined,
+      nrtFlag,
+      remFlag,
+      savedAt: new Date().toISOString(),
+    };
+    saveDraft(draftData);
+  }, [selectedTraineeId, overallRating, categoryRatings, nrtFlag, remFlag, saveDraft]);
+
   // Derived auto-phase
   const autoPhaseId = traineePhaseMap[selectedTraineeId] || null;
   const autoPhaseName = autoPhaseId ? phases.find((p) => p.id === autoPhaseId)?.name || null : null;
 
-  // Load DOR history on mount for the existing trainee
+  // Load DOR history and focus areas on mount for the existing trainee
   useEffect(() => {
-    async function loadHistory() {
+    async function loadData() {
       setLoadingHistory(true);
-      const result = await getTraineeDorHistory(selectedTraineeId);
+      setLoadingFocusAreas(true);
+
+      const [historyResult, focusResult] = await Promise.all([
+        getTraineeDorHistory(selectedTraineeId),
+        getTraineeFocusAreas(selectedTraineeId),
+      ]);
+
       setLoadingHistory(false);
-      if (result.success && result.dors) {
-        setDorHistory(result.dors);
+      setLoadingFocusAreas(false);
+
+      if (historyResult.success && historyResult.dors) {
+        setDorHistory(historyResult.dors);
+      }
+      if (focusResult.success) {
+        setFocusAreas(focusResult.focusAreas);
       }
     }
-    loadHistory();
+    loadData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function handleTraineeChange(traineeId: string) {
     setSelectedTraineeId(traineeId);
     setDorHistory([]);
+    setFocusAreas([]);
     setLoadingHistory(true);
-    const result = await getTraineeDorHistory(traineeId);
+    setLoadingFocusAreas(true);
+
+    const [historyResult, focusResult] = await Promise.all([
+      getTraineeDorHistory(traineeId),
+      getTraineeFocusAreas(traineeId),
+    ]);
+
     setLoadingHistory(false);
-    if (result.success && result.dors) {
-      setDorHistory(result.dors);
+    setLoadingFocusAreas(false);
+
+    if (historyResult.success && historyResult.dors) {
+      setDorHistory(historyResult.dors);
+    }
+    if (focusResult.success) {
+      setFocusAreas(focusResult.focusAreas);
+      setFocusAreasExpanded(true);
     }
   }
 
@@ -211,6 +323,7 @@ export function EditDorClient({ dorId, fto, trainees, phases, dorCategories, tra
       setError(result.error || "Failed to save draft.");
       return;
     }
+    clearDraft();
     router.push("/fieldtraining/dors");
   }
 
@@ -231,15 +344,16 @@ export function EditDorClient({ dorId, fto, trainees, phases, dorCategories, tra
       setError(submitResult.error || "Failed to submit DOR.");
       return;
     }
+    clearDraft();
     router.push("/fieldtraining/dors");
   }
 
   return (
     <div className="space-y-6 max-w-3xl mx-auto">
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" asChild>
+        <Button variant="ghost" size="icon" asChild aria-label="Go back">
           <Link href="/fieldtraining/dors">
-            <ArrowLeft className="h-4 w-4" />
+            <ArrowLeft className="h-4 w-4" aria-hidden="true" />
           </Link>
         </Button>
         <div>
@@ -248,19 +362,29 @@ export function EditDorClient({ dorId, fto, trainees, phases, dorCategories, tra
         </div>
       </div>
 
+      {/* Autosave status */}
+      {lastSavedAt && (
+        <p className="text-xs text-muted-foreground text-right flex items-center justify-end gap-1">
+          <Save className="h-3 w-3" />
+          Draft saved {new Date(lastSavedAt).toLocaleTimeString()}
+        </p>
+      )}
+
       <form
         onSubmit={(e) => {
           e.preventDefault();
           handleSubmitDor(e.currentTarget);
         }}
       >
-        {error && (
-          <Card className="border-destructive mb-4">
-            <CardContent className="pt-6">
-              <p className="text-sm text-destructive">{error}</p>
-            </CardContent>
-          </Card>
-        )}
+        <div aria-live="polite">
+          {error && (
+            <Card className="border-destructive mb-4">
+              <CardContent className="pt-6">
+                <p className="text-sm text-destructive" role="alert">{error}</p>
+              </CardContent>
+            </Card>
+          )}
+        </div>
 
         <Card>
           <CardHeader>
@@ -270,7 +394,12 @@ export function EditDorClient({ dorId, fto, trainees, phases, dorCategories, tra
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Trainee</Label>
-                <Select name="traineeId" defaultValue={existingData.traineeId} required onValueChange={handleTraineeChange}>
+                <Select
+                  name="traineeId"
+                  defaultValue={existingData.traineeId}
+                  required
+                  onValueChange={handleTraineeChange}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Select trainee..." />
                   </SelectTrigger>
@@ -296,11 +425,7 @@ export function EditDorClient({ dorId, fto, trainees, phases, dorCategories, tra
               <div className="space-y-2">
                 <Label>Training Phase</Label>
                 <input type="hidden" name="phaseId" value={autoPhaseId || ""} />
-                <Input
-                  value={autoPhaseName || "No active phase"}
-                  disabled
-                  className="bg-muted"
-                />
+                <Input value={autoPhaseName || "No active phase"} disabled className="bg-muted" />
                 {!autoPhaseId && (
                   <p className="text-xs text-orange-600">
                     This trainee has no in-progress training phase.
@@ -308,6 +433,62 @@ export function EditDorClient({ dorId, fto, trainees, phases, dorCategories, tra
                 )}
               </div>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* AI Focus Areas */}
+        <Card className="mt-4 border-violet-200">
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Lightbulb className="h-5 w-5 text-violet-600" />
+                Recommended Focus Areas
+              </CardTitle>
+              {focusAreas.length > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-xs text-muted-foreground"
+                  onClick={() => setFocusAreasExpanded(!focusAreasExpanded)}
+                >
+                  {focusAreasExpanded ? "Collapse" : "Expand"}
+                </Button>
+              )}
+            </div>
+          </CardHeader>
+          <CardContent>
+            {loadingFocusAreas ? (
+              <div className="flex items-center justify-center gap-2 py-4 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Analyzing trainee history...
+              </div>
+            ) : focusAreas.length === 0 ? (
+              <p className="text-sm text-muted-foreground py-2">
+                No specific focus areas identified. Continue with standard evaluation.
+              </p>
+            ) : focusAreasExpanded ? (
+              <div className="space-y-2">
+                {focusAreas.map((area, i) => {
+                  const colors = SEVERITY_COLORS[area.severity];
+                  return (
+                    <div
+                      key={i}
+                      className={cn("rounded-md border-l-4 p-3", colors.border, colors.bg)}
+                    >
+                      <p className={cn("text-sm font-medium", colors.text)}>{area.title}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">{area.detail}</p>
+                    </div>
+                  );
+                })}
+                <p className="text-[11px] text-muted-foreground italic mt-2">
+                  These suggestions are based on training history and are advisory only.
+                </p>
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                {focusAreas.length} focus area{focusAreas.length === 1 ? "" : "s"} identified.
+              </p>
+            )}
           </CardContent>
         </Card>
 
@@ -321,9 +502,7 @@ export function EditDorClient({ dorId, fto, trainees, phases, dorCategories, tra
           </CardHeader>
           <CardContent>
             {loadingHistory ? (
-              <p className="text-sm text-muted-foreground py-4 text-center">
-                Loading history...
-              </p>
+              <p className="text-sm text-muted-foreground py-4 text-center">Loading history...</p>
             ) : dorHistory.length === 0 ? (
               <p className="text-sm text-muted-foreground py-4 text-center">
                 No previous DORs found.
@@ -373,7 +552,7 @@ export function EditDorClient({ dorId, fto, trainees, phases, dorCategories, tra
 
         <Card className="mt-4">
           <CardHeader>
-            <CardTitle>Performance Ratings</CardTitle>
+            <CardTitle className="text-xl">Daily Observation Report</CardTitle>
             <CardDescription>
               1-2 = Not Acceptable &middot; 3 = Below Standard &middot; 4 = Acceptable &middot; 5 =
               Above Standard &middot; 6-7 = Superior
@@ -381,50 +560,77 @@ export function EditDorClient({ dorId, fto, trainees, phases, dorCategories, tra
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {dorCategories.map((cat) => (
-                <div key={cat.id} className="p-3 rounded-lg border">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1 min-w-0">
-                      <Label className="text-sm font-medium">{cat.name}</Label>
-                      {cat.description && (
-                        <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
-                          {cat.description}
-                        </p>
-                      )}
-                      <div className="mt-2">
-                        <RatingInput
-                          value={categoryRatings[cat.id]?.rating ?? 4}
-                          onChange={(v) =>
-                            setCategoryRatings((prev) => ({
-                              ...prev,
-                              [cat.id]: { ...prev[cat.id], rating: v },
-                            }))
-                          }
-                        />
+              {dorCategories.map((cat) => {
+                const rating = categoryRatings[cat.id]?.rating;
+                const comments = categoryRatings[cat.id]?.comments || "";
+                const hasComment = !!comments.trim();
+                const isLowRating = rating !== null && rating !== undefined && rating < 4;
+                const needsComment = isLowRating && !hasComment;
+
+                return (
+                  <div
+                    key={cat.id}
+                    className={cn(
+                      "p-3 rounded-lg border transition-colors",
+                      needsComment && "border-amber-400 bg-amber-50/50"
+                    )}
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <Label className="text-sm font-medium">{cat.name}</Label>
+                        {cat.description && (
+                          <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
+                            {cat.description}
+                          </p>
+                        )}
+                        <div className="mt-2">
+                          <RatingInput
+                            value={rating ?? 4}
+                            onChange={(v) =>
+                              setCategoryRatings((prev) => ({
+                                ...prev,
+                                [cat.id]: { ...prev[cat.id], rating: v },
+                              }))
+                            }
+                          />
+                        </div>
                       </div>
-                    </div>
-                    <div className="flex-1">
-                      <Input
-                        placeholder="Comments (optional)"
-                        value={categoryRatings[cat.id]?.comments ?? ""}
-                        onChange={(e) =>
-                          setCategoryRatings((prev) => ({
-                            ...prev,
-                            [cat.id]: { ...prev[cat.id], comments: e.target.value },
-                          }))
-                        }
-                      />
+                      <button
+                        type="button"
+                        title={hasComment ? "Edit comment" : "Add comment"}
+                        onClick={() => {
+                          setCommentDraft(comments);
+                          setCommentDialog({ catId: cat.id, catName: cat.name });
+                        }}
+                        className={cn(
+                          "relative inline-flex items-center justify-center rounded-md transition-colors shrink-0",
+                          "h-9 w-9 border",
+                          needsComment
+                            ? "border-amber-400 bg-amber-50 text-amber-600 hover:bg-amber-100 animate-pulse"
+                            : hasComment
+                              ? "border-nmh-teal bg-nmh-teal/10 text-nmh-teal hover:bg-nmh-teal/20"
+                              : "border-input text-muted-foreground hover:bg-accent hover:text-foreground"
+                        )}
+                      >
+                        <MessageSquare className="h-4 w-4" />
+                        {hasComment && (
+                          <span className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-nmh-teal ring-2 ring-background" />
+                        )}
+                        {needsComment && (
+                          <span className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-amber-500 ring-2 ring-background" />
+                        )}
+                      </button>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </CardContent>
         </Card>
 
         <Card className="mt-4">
           <CardHeader>
-            <CardTitle>Performance Summary</CardTitle>
+            <CardTitle className="text-lg">Performance Summary</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
@@ -432,7 +638,11 @@ export function EditDorClient({ dorId, fto, trainees, phases, dorCategories, tra
                 <Label>Most Satisfactory Performance</Label>
                 <Select
                   name="mostSatisfactory"
-                  defaultValue={existingData.mostSatisfactory || undefined}
+                  value={mostSatisfactory || undefined}
+                  onValueChange={(v) => {
+                    setMostSatisfactory(v);
+                    setMostManuallySet(true);
+                  }}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select strongest area..." />
@@ -445,12 +655,21 @@ export function EditDorClient({ dorId, fto, trainees, phases, dorCategories, tra
                     ))}
                   </SelectContent>
                 </Select>
+                {!mostManuallySet && mostSatisfactory && (
+                  <p className="text-[11px] text-muted-foreground italic">
+                    Auto-selected from highest-rated category
+                  </p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label>Least Satisfactory Performance</Label>
                 <Select
                   name="leastSatisfactory"
-                  defaultValue={existingData.leastSatisfactory || undefined}
+                  value={leastSatisfactory || undefined}
+                  onValueChange={(v) => {
+                    setLeastSatisfactory(v);
+                    setLeastManuallySet(true);
+                  }}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select area needing most improvement..." />
@@ -463,6 +682,11 @@ export function EditDorClient({ dorId, fto, trainees, phases, dorCategories, tra
                     ))}
                   </SelectContent>
                 </Select>
+                {!leastManuallySet && leastSatisfactory && (
+                  <p className="text-[11px] text-muted-foreground italic">
+                    Auto-selected from lowest-rated category
+                  </p>
+                )}
               </div>
             </div>
           </CardContent>
@@ -470,7 +694,7 @@ export function EditDorClient({ dorId, fto, trainees, phases, dorCategories, tra
 
         <Card className="mt-4">
           <CardHeader>
-            <CardTitle>Overall Assessment</CardTitle>
+            <CardTitle className="text-lg">Overall Assessment</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
@@ -497,6 +721,7 @@ export function EditDorClient({ dorId, fto, trainees, phases, dorCategories, tra
             <div className="space-y-2">
               <Label>Narrative / Notes</Label>
               <Textarea
+                ref={narrativeRef}
                 name="narrative"
                 defaultValue={existingData.narrative}
                 placeholder="Overall observations, strengths, areas for improvement..."
@@ -505,22 +730,13 @@ export function EditDorClient({ dorId, fto, trainees, phases, dorCategories, tra
             </div>
             <div className="flex items-center gap-6">
               <div className="flex items-center gap-2">
-                <Checkbox
-                  id="nrtFlag"
-                  checked={nrtFlag}
-                  onCheckedChange={(v) => setNrtFlag(!!v)}
-                />
+                <Checkbox id="nrtFlag" checked={nrtFlag} onCheckedChange={(v) => setNrtFlag(!!v)} />
                 <Label htmlFor="nrtFlag" className="text-sm">
-                  <Badge className="bg-red-100 text-red-800">NRT</Badge> Not Responding to
-                  Training
+                  <Badge className="bg-red-100 text-red-800">NRT</Badge> Not Responding to Training
                 </Label>
               </div>
               <div className="flex items-center gap-2">
-                <Checkbox
-                  id="remFlag"
-                  checked={remFlag}
-                  onCheckedChange={(v) => setRemFlag(!!v)}
-                />
+                <Checkbox id="remFlag" checked={remFlag} onCheckedChange={(v) => setRemFlag(!!v)} />
                 <Label htmlFor="remFlag" className="text-sm">
                   <Badge className="bg-orange-100 text-orange-800">REM</Badge> Remedial Training
                 </Label>
@@ -549,6 +765,68 @@ export function EditDorClient({ dorId, fto, trainees, phases, dorCategories, tra
           </Button>
         </div>
       </form>
+
+      {/* Comment Dialog */}
+      <Dialog
+        open={commentDialog !== null}
+        onOpenChange={(open) => {
+          if (!open) setCommentDialog(null);
+        }}
+      >
+        <DialogContent className="sm:max-w-xl overflow-hidden">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <MessageSquare className="h-4 w-4" />
+              Comments — {commentDialog?.catName}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 overflow-hidden">
+            {commentDialog &&
+              categoryRatings[commentDialog.catId]?.rating != null &&
+              categoryRatings[commentDialog.catId]?.rating < 4 && (
+                <div className="flex items-center gap-2 text-sm text-amber-700 bg-amber-50 rounded-md px-3 py-2 border border-amber-200">
+                  <AlertCircle className="h-4 w-4 shrink-0" />
+                  <span>
+                    This category is rated below standard. Please provide comments to help the
+                    trainee improve.
+                  </span>
+                </div>
+              )}
+            <Textarea
+              value={commentDraft}
+              onChange={(e) => setCommentDraft(e.target.value)}
+              placeholder="Enter observations, specific examples, teaching points, or areas for improvement..."
+              rows={8}
+              className="!field-sizing-normal resize-y min-h-[180px]"
+              autoFocus
+            />
+            <p className="text-xs text-muted-foreground">
+              Detailed comments help trainees understand expectations and track their growth.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCommentDialog(null)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                if (commentDialog) {
+                  setCategoryRatings((prev) => ({
+                    ...prev,
+                    [commentDialog.catId]: {
+                      ...prev[commentDialog.catId],
+                      comments: commentDraft,
+                    },
+                  }));
+                }
+                setCommentDialog(null);
+              }}
+            >
+              Save Comment
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

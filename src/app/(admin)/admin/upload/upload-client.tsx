@@ -2,11 +2,7 @@
 
 import { useState, useCallback, useMemo, useRef } from "react";
 import Papa from "papaparse";
-import {
-  importUploadedData,
-  type ValidatedRow,
-  type LookupData,
-} from "@/actions/upload";
+import { importUploadedData, type ValidatedRow, type TemplateLookupData } from "@/actions/upload";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -27,6 +23,8 @@ import {
 } from "@/components/ui/table";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Upload,
   FileSpreadsheet,
@@ -38,6 +36,10 @@ import {
   Loader2,
   X,
   Trash2,
+  Download,
+  ChevronDown,
+  ChevronRight,
+  Search,
 } from "lucide-react";
 
 // ---------------------------------------------------------------------------
@@ -68,23 +70,8 @@ type RowValidation = {
 // ---------------------------------------------------------------------------
 
 const HEADER_HINTS: Record<keyof ColumnMapping, string[]> = {
-  metric: [
-    "metric",
-    "metric_name",
-    "metric name",
-    "kpi",
-    "measure",
-    "indicator",
-  ],
-  period: [
-    "period",
-    "date",
-    "month",
-    "period_start",
-    "period start",
-    "year",
-    "time",
-  ],
+  metric: ["metric", "metric_name", "metric name", "kpi", "measure", "indicator"],
+  period: ["period", "date", "month", "period_start", "period start", "year", "time"],
   value: ["value", "amount", "count", "result", "score", "total", "number"],
   department: ["department", "dept", "department_name", "department name"],
   division: ["division", "unit", "group", "section", "division_name"],
@@ -101,10 +88,7 @@ const HEADER_HINTS: Record<keyof ColumnMapping, string[]> = {
   notes: ["notes", "note", "comment", "comments", "description"],
 };
 
-function autoDetectColumn(
-  headers: string[],
-  field: keyof ColumnMapping
-): string {
+function autoDetectColumn(headers: string[], field: keyof ColumnMapping): string {
   const hints = HEADER_HINTS[field];
   const lower = headers.map((h) => h.toLowerCase().trim());
   for (const hint of hints) {
@@ -131,8 +115,7 @@ function fuzzyMatch(
 
   // Contains match
   const contains = haystack.find(
-    (h) =>
-      h.name.toLowerCase().includes(n) || n.includes(h.name.toLowerCase())
+    (h) => h.name.toLowerCase().includes(n) || n.includes(h.name.toLowerCase())
   );
   if (contains) return contains.id;
 
@@ -162,13 +145,7 @@ function StepIndicator({ current, steps }: { current: Step; steps: Step[] }) {
         const isComplete = idx < currentIdx;
         return (
           <div key={step} className="flex items-center gap-2">
-            {idx > 0 && (
-              <div
-                className={`h-px w-6 ${
-                  isComplete ? "bg-[#00b0ad]" : "bg-border"
-                }`}
-              />
-            )}
+            {idx > 0 && <div className={`h-px w-6 ${isComplete ? "bg-[#00b0ad]" : "bg-border"}`} />}
             <div
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
                 isActive
@@ -194,7 +171,7 @@ function StepIndicator({ current, steps }: { current: Step; steps: Step[] }) {
 // Main component
 // ---------------------------------------------------------------------------
 
-export function UploadClient({ lookup }: { lookup: LookupData }) {
+export function UploadClient({ lookup }: { lookup: TemplateLookupData }) {
   // Wizard state
   const [step, setStep] = useState<Step>("upload");
 
@@ -221,9 +198,7 @@ export function UploadClient({ lookup }: { lookup: LookupData }) {
   const [periodType, setPeriodType] = useState<string>("monthly");
 
   // Validation
-  const [validationResults, setValidationResults] = useState<RowValidation[]>(
-    []
-  );
+  const [validationResults, setValidationResults] = useState<RowValidation[]>([]);
 
   // Import
   const [importing, setImporting] = useState(false);
@@ -237,6 +212,220 @@ export function UploadClient({ lookup }: { lookup: LookupData }) {
   const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Template generator state
+  const [templateOpen, setTemplateOpen] = useState(false);
+  const [templateMetricIds, setTemplateMetricIds] = useState<Set<string>>(new Set());
+  const [templateDivisionFilter, setTemplateDivisionFilter] = useState<string>("__all__");
+  const [templateDeptFilter, setTemplateDeptFilter] = useState<string>("__all__");
+  const [templatePeriodType, setTemplatePeriodType] = useState<string>("monthly");
+  const [templateStartDate, setTemplateStartDate] = useState<string>("");
+  const [templateEndDate, setTemplateEndDate] = useState<string>("");
+  const [templateIncludeScope, setTemplateIncludeScope] = useState(true);
+  const [templateMetricSearch, setTemplateMetricSearch] = useState("");
+
+  // Departments (regions) filtered by selected division
+  const templateDepts = useMemo(() => {
+    if (templateDivisionFilter === "__all__") return lookup.regions;
+    return lookup.regions.filter((r) => r.divisionId === templateDivisionFilter);
+  }, [lookup.regions, templateDivisionFilter]);
+
+  // Division/department-filtered metrics for template
+  // Uses metric associations to determine which metrics are linked to which divisions/departments
+  const templateMetrics = useMemo(() => {
+    if (templateDivisionFilter === "__all__" && templateDeptFilter === "__all__") {
+      return lookup.metrics;
+    }
+
+    // Build set of metric IDs associated with the selected division/department
+    const matchingMetricIds = new Set<string>();
+    for (const a of lookup.associations) {
+      if (templateDeptFilter !== "__all__") {
+        // Filter by department (region) — must match the regionId
+        if (a.regionId === templateDeptFilter) {
+          matchingMetricIds.add(a.metricDefinitionId);
+        }
+      } else if (templateDivisionFilter !== "__all__") {
+        // Filter by division — match divisionId directly OR through region's division
+        if (a.divisionId === templateDivisionFilter) {
+          matchingMetricIds.add(a.metricDefinitionId);
+        } else if (a.regionId) {
+          const region = lookup.regions.find((r) => r.id === a.regionId);
+          if (region?.divisionId === templateDivisionFilter) {
+            matchingMetricIds.add(a.metricDefinitionId);
+          }
+        }
+      }
+    }
+
+    return lookup.metrics.filter((m) => matchingMetricIds.has(m.id));
+  }, [lookup.metrics, lookup.associations, lookup.regions, templateDivisionFilter, templateDeptFilter]);
+
+  // Search-filtered metrics for display in the checklist
+  const displayedMetrics = useMemo(() => {
+    if (!templateMetricSearch.trim()) return templateMetrics;
+    const q = templateMetricSearch.toLowerCase().trim();
+    return templateMetrics.filter((m) => m.name.toLowerCase().includes(q));
+  }, [templateMetrics, templateMetricSearch]);
+
+  // Generate template CSV and trigger download
+  const downloadTemplate = useCallback(() => {
+    // Build period list from start/end dates
+    const periods: string[] = [];
+    if (templateStartDate) {
+      const startParts = templateStartDate.split("-");
+      const startYear = parseInt(startParts[0]);
+      const startMonth = parseInt(startParts[1]) - 1;
+
+      if (templateEndDate) {
+        const endParts = templateEndDate.split("-");
+        const endYear = parseInt(endParts[0]);
+        const endMonth = parseInt(endParts[1]) - 1;
+
+        if (templatePeriodType === "monthly") {
+          let y = startYear, m = startMonth;
+          while (y < endYear || (y === endYear && m <= endMonth)) {
+            periods.push(`${y}-${String(m + 1).padStart(2, "0")}`);
+            m++;
+            if (m > 11) { m = 0; y++; }
+          }
+        } else if (templatePeriodType === "quarterly") {
+          // Snap start to quarter start
+          let y = startYear, q = Math.floor(startMonth / 3);
+          const endQ = Math.floor(endMonth / 3);
+          while (y < endYear || (y === endYear && q <= endQ)) {
+            const qMonth = q * 3 + 1;
+            periods.push(`${y}-${String(qMonth).padStart(2, "0")}`);
+            q++;
+            if (q > 3) { q = 0; y++; }
+          }
+        } else if (templatePeriodType === "annual") {
+          for (let y = startYear; y <= endYear; y++) {
+            periods.push(`${y}-01`);
+          }
+        } else {
+          // daily, weekly, bi-weekly — just use the start date
+          periods.push(templateStartDate);
+        }
+      } else {
+        // Single period
+        periods.push(templateStartDate.length <= 7
+          ? templateStartDate
+          : templateStartDate);
+      }
+    }
+
+    // If no periods specified, use empty string (user fills in)
+    if (periods.length === 0) periods.push("");
+
+    // Get selected metrics
+    const selectedMetrics = lookup.metrics.filter((m) => templateMetricIds.has(m.id));
+    if (selectedMetrics.length === 0) return;
+
+    // Build associations map
+    const assocMap: Record<string, { divisionIds: string[]; regionIds: string[] }> = {};
+    for (const a of lookup.associations) {
+      if (!assocMap[a.metricDefinitionId]) {
+        assocMap[a.metricDefinitionId] = { divisionIds: [], regionIds: [] };
+      }
+      if (a.divisionId) assocMap[a.metricDefinitionId].divisionIds.push(a.divisionId);
+      if (a.regionId) assocMap[a.metricDefinitionId].regionIds.push(a.regionId);
+    }
+
+    // Build rows
+    const rows: string[][] = [];
+
+    for (const metric of selectedMetrics) {
+      const assoc = assocMap[metric.id];
+
+      for (const period of periods) {
+        if (templateIncludeScope && assoc) {
+          // Region-level rows
+          const regionIds = assoc.regionIds.length > 0
+            ? assoc.regionIds
+            : [];
+
+          // Filter to selected division/department if needed
+          let filteredRegionIds = regionIds;
+          if (templateDeptFilter !== "__all__") {
+            filteredRegionIds = regionIds.filter((rId) => rId === templateDeptFilter);
+          } else if (templateDivisionFilter !== "__all__") {
+            filteredRegionIds = regionIds.filter((rId) => {
+              const region = lookup.regions.find((r) => r.id === rId);
+              return region?.divisionId === templateDivisionFilter;
+            });
+          }
+
+          if (filteredRegionIds.length > 0) {
+            // One row per region
+            for (const regionId of filteredRegionIds) {
+              const region = lookup.regions.find((r) => r.id === regionId);
+              const division = region
+                ? lookup.divisions.find((d) => d.id === region.divisionId)
+                : null;
+              rows.push([
+                metric.name,
+                period,
+                "",
+                division?.name ?? "",
+                region?.name ?? "",
+                "",
+              ]);
+            }
+          } else {
+            // Division-level rows
+            const divIds = assoc.divisionIds.length > 0
+              ? assoc.divisionIds
+              : [];
+
+            const filteredDivIds = templateDivisionFilter !== "__all__"
+              ? divIds.filter((id) => id === templateDivisionFilter)
+              : divIds;
+
+            if (filteredDivIds.length > 0) {
+              for (const divId of filteredDivIds) {
+                const div = lookup.divisions.find((d) => d.id === divId);
+                rows.push([metric.name, period, "", div?.name ?? "", "", ""]);
+              }
+            } else {
+              // No associations — single row
+              rows.push([metric.name, period, "", "", "", ""]);
+            }
+          }
+        } else {
+          // No scope expansion — one row per metric+period
+          rows.push([metric.name, period, "", "", "", ""]);
+        }
+      }
+    }
+
+    // Generate CSV with PapaParse
+    const csv = Papa.unparse({
+      fields: ["Metric", "Period", "Value", "Division", "Department", "Notes"],
+      data: rows,
+    });
+
+    // Trigger download
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    const dateSuffix = new Date().toISOString().slice(0, 10);
+    link.download = `upload-template-${dateSuffix}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }, [
+    templateMetricIds,
+    templatePeriodType,
+    templateStartDate,
+    templateEndDate,
+    templateDivisionFilter,
+    templateDeptFilter,
+    templateIncludeScope,
+    lookup,
+  ]);
+
   // -------------------------------------------------------------------------
   // Derived data
   // -------------------------------------------------------------------------
@@ -249,86 +438,71 @@ export function UploadClient({ lookup }: { lookup: LookupData }) {
     return lookup.divisions;
   }, [lookup.divisions]);
 
-  const validCount = validationResults.filter(
-    (r) => r.status === "valid"
-  ).length;
-  const errorCount = validationResults.filter(
-    (r) => r.status === "error"
-  ).length;
-  const warningCount = validationResults.filter(
-    (r) => r.status === "warning"
-  ).length;
+  const validCount = validationResults.filter((r) => r.status === "valid").length;
+  const errorCount = validationResults.filter((r) => r.status === "error").length;
+  const warningCount = validationResults.filter((r) => r.status === "warning").length;
 
   // -------------------------------------------------------------------------
   // File handling
   // -------------------------------------------------------------------------
 
-  const handleFile = useCallback(
-    (file: File) => {
-      setParseError(null);
+  const handleFile = useCallback((file: File) => {
+    setParseError(null);
 
-      if (file.size > 5 * 1024 * 1024) {
-        setParseError("File too large. Maximum size is 5 MB.");
-        return;
-      }
+    if (file.size > 5 * 1024 * 1024) {
+      setParseError("File too large. Maximum size is 5 MB.");
+      return;
+    }
 
-      const ext = file.name.split(".").pop()?.toLowerCase();
-      if (!["csv", "tsv", "txt"].includes(ext ?? "")) {
-        setParseError(
-          "Unsupported file type. Please upload a .csv, .tsv, or .txt file."
-        );
-        return;
-      }
+    const ext = file.name.split(".").pop()?.toLowerCase();
+    if (!["csv", "tsv", "txt"].includes(ext ?? "")) {
+      setParseError("Unsupported file type. Please upload a .csv, .tsv, or .txt file.");
+      return;
+    }
 
-      setFileName(file.name);
-      setFileSize(file.size);
+    setFileName(file.name);
+    setFileSize(file.size);
 
-      Papa.parse(file, {
-        header: false,
-        skipEmptyLines: true,
-        complete: (results) => {
-          const data = results.data as string[][];
-          if (data.length < 2) {
-            setParseError(
-              "File appears empty or has only headers. Need at least one data row."
-            );
-            return;
-          }
+    Papa.parse(file, {
+      header: false,
+      skipEmptyLines: true,
+      complete: (results) => {
+        const data = results.data as string[][];
+        if (data.length < 2) {
+          setParseError("File appears empty or has only headers. Need at least one data row.");
+          return;
+        }
 
-          const headers = data[0];
-          const rows = data.slice(1);
+        const headers = data[0];
+        const rows = data.slice(1);
 
-          if (rows.length > 10_000) {
-            setParseError(
-              `Too many rows (${rows.length}). Maximum is 10,000 per upload.`
-            );
-            return;
-          }
+        if (rows.length > 10_000) {
+          setParseError(`Too many rows (${rows.length}). Maximum is 10,000 per upload.`);
+          return;
+        }
 
-          setRawHeaders(headers);
-          setRawRows(rows);
+        setRawHeaders(headers);
+        setRawRows(rows);
 
-          // Auto-detect column mappings
-          const autoMapping: ColumnMapping = {
-            metric: autoDetectColumn(headers, "metric"),
-            period: autoDetectColumn(headers, "period"),
-            value: autoDetectColumn(headers, "value"),
-            department: autoDetectColumn(headers, "department"),
-            division: autoDetectColumn(headers, "division"),
-            region: autoDetectColumn(headers, "region"),
-            notes: autoDetectColumn(headers, "notes"),
-          };
-          setMapping(autoMapping);
+        // Auto-detect column mappings
+        const autoMapping: ColumnMapping = {
+          metric: autoDetectColumn(headers, "metric"),
+          period: autoDetectColumn(headers, "period"),
+          value: autoDetectColumn(headers, "value"),
+          department: autoDetectColumn(headers, "department"),
+          division: autoDetectColumn(headers, "division"),
+          region: autoDetectColumn(headers, "region"),
+          notes: autoDetectColumn(headers, "notes"),
+        };
+        setMapping(autoMapping);
 
-          setStep("preview");
-        },
-        error: (err) => {
-          setParseError(`Failed to parse file: ${err.message}`);
-        },
-      });
-    },
-    []
-  );
+        setStep("preview");
+      },
+      error: (err) => {
+        setParseError(`Failed to parse file: ${err.message}`);
+      },
+    });
+  }, []);
 
   const handleDrop = useCallback(
     (e: React.DragEvent) => {
@@ -368,10 +542,7 @@ export function UploadClient({ lookup }: { lookup: LookupData }) {
       const rowNum = i + 2; // +2 for 1-indexed + header row
 
       // --- Value ---
-      const rawValue =
-        valueColIdx >= 0
-          ? row[valueColIdx]?.replace(/[$,%]/g, "").trim()
-          : "";
+      const rawValue = valueColIdx >= 0 ? row[valueColIdx]?.replace(/[$,%]/g, "").trim() : "";
       const value = parseFloat(rawValue);
       if (isNaN(value)) {
         results.push({
@@ -414,9 +585,7 @@ export function UploadClient({ lookup }: { lookup: LookupData }) {
       if (/^\d{4}-\d{2}(-\d{2})?$/.test(rawPeriod)) {
         // "2025-01" or "2025-01-01"
         const parts = rawPeriod.split("-");
-        periodDate = new Date(
-          `${parts[0]}-${parts[1]}-${parts[2] ?? "01"}T00:00:00.000Z`
-        );
+        periodDate = new Date(`${parts[0]}-${parts[1]}-${parts[2] ?? "01"}T00:00:00.000Z`);
       } else if (/^\d{1,2}\/\d{4}$/.test(rawPeriod)) {
         // "1/2025" or "01/2025"
         const [m, y] = rawPeriod.split("/");
@@ -424,9 +593,7 @@ export function UploadClient({ lookup }: { lookup: LookupData }) {
       } else if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(rawPeriod)) {
         // "1/1/2025" or "01/01/2025"
         const [m, d, y] = rawPeriod.split("/");
-        periodDate = new Date(
-          `${y}-${m.padStart(2, "0")}-${d.padStart(2, "0")}T00:00:00.000Z`
-        );
+        periodDate = new Date(`${y}-${m.padStart(2, "0")}-${d.padStart(2, "0")}T00:00:00.000Z`);
       } else {
         // Try native Date parse
         const attempt = new Date(rawPeriod);
@@ -449,11 +616,7 @@ export function UploadClient({ lookup }: { lookup: LookupData }) {
       if (fixedDivision) {
         divisionId = fixedDivision;
       } else if (divColIdx >= 0 && row[divColIdx]?.trim()) {
-        divisionId =
-          fuzzyMatch(
-            row[divColIdx].trim(),
-            lookup.divisions
-          ) ?? null;
+        divisionId = fuzzyMatch(row[divColIdx].trim(), lookup.divisions) ?? null;
       }
 
       // --- Region (optional) ---
@@ -462,15 +625,11 @@ export function UploadClient({ lookup }: { lookup: LookupData }) {
         const divRegions = divisionId
           ? lookup.regions.filter((r) => r.divisionId === divisionId)
           : lookup.regions;
-        regionId =
-          fuzzyMatch(row[indColIdx].trim(), divRegions) ?? null;
+        regionId = fuzzyMatch(row[indColIdx].trim(), divRegions) ?? null;
       }
 
       // --- Notes ---
-      const notes =
-        notesColIdx >= 0 && row[notesColIdx]?.trim()
-          ? row[notesColIdx].trim()
-          : null;
+      const notes = notesColIdx >= 0 && row[notesColIdx]?.trim() ? row[notesColIdx].trim() : null;
 
       results.push({
         row: rowNum,
@@ -586,6 +745,224 @@ export function UploadClient({ lookup }: { lookup: LookupData }) {
       <StepIndicator current={step} steps={steps} />
 
       {/* ================================================================== */}
+      {/* Template Generator (visible on upload step) */}
+      {/* ================================================================== */}
+      {step === "upload" && (
+        <Card>
+          <CardHeader className="cursor-pointer" onClick={() => setTemplateOpen(!templateOpen)}>
+            <CardTitle className="flex items-center gap-2 text-nmh-gray">
+              <Download className="size-5" />
+              Download Template
+              {templateOpen ? (
+                <ChevronDown className="size-4 ml-auto text-muted-foreground" />
+              ) : (
+                <ChevronRight className="size-4 ml-auto text-muted-foreground" />
+              )}
+            </CardTitle>
+          </CardHeader>
+          {templateOpen && (
+            <CardContent className="space-y-5">
+              <p className="text-sm text-muted-foreground">
+                Generate a pre-filled CSV template with the correct columns and rows. Select metrics and
+                options, then download and fill in the values.
+              </p>
+
+              {/* Division & Department filters */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Filter by Division</Label>
+                  <Select value={templateDivisionFilter} onValueChange={(v) => {
+                    setTemplateDivisionFilter(v);
+                    setTemplateDeptFilter("__all__");
+                    setTemplateMetricIds(new Set());
+                  }}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__all__">All Divisions</SelectItem>
+                      {lookup.divisions.map((d) => (
+                        <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Filter by Department</Label>
+                  <Select value={templateDeptFilter} onValueChange={(v) => {
+                    setTemplateDeptFilter(v);
+                    setTemplateMetricIds(new Set());
+                  }}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__all__">All Departments</SelectItem>
+                      {templateDepts.map((d) => (
+                        <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Metric selection */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label>
+                    Metrics <span className="text-red-500">*</span>
+                  </Label>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="text-xs h-7"
+                      onClick={() => setTemplateMetricIds(new Set(templateMetrics.map((m) => m.id)))}
+                    >
+                      Select All
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="text-xs h-7"
+                      onClick={() => setTemplateMetricIds(new Set())}
+                    >
+                      Clear
+                    </Button>
+                  </div>
+                </div>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search metrics..."
+                    className="pl-9"
+                    value={templateMetricSearch}
+                    onChange={(e) => setTemplateMetricSearch(e.target.value)}
+                  />
+                </div>
+                <div className="border rounded-lg max-h-[200px] overflow-y-auto p-2 space-y-1">
+                  {templateMetrics.length === 0 ? (
+                    <p className="text-sm text-muted-foreground text-center py-4">
+                      No metrics found for the selected filters.
+                    </p>
+                  ) : displayedMetrics.length === 0 ? (
+                    <p className="text-sm text-muted-foreground text-center py-4">
+                      No metrics match &ldquo;{templateMetricSearch}&rdquo;
+                    </p>
+                  ) : (
+                    displayedMetrics.map((m) => (
+                      <label
+                        key={m.id}
+                        className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted/50 cursor-pointer text-sm"
+                      >
+                        <Checkbox
+                          checked={templateMetricIds.has(m.id)}
+                          onCheckedChange={(checked) => {
+                            setTemplateMetricIds((prev) => {
+                              const next = new Set(prev);
+                              if (checked) next.add(m.id);
+                              else next.delete(m.id);
+                              return next;
+                            });
+                          }}
+                        />
+                        <span className="truncate">{m.name}</span>
+                        <Badge variant="outline" className="ml-auto text-[10px] shrink-0">
+                          {m.unit}
+                        </Badge>
+                      </label>
+                    ))
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {templateMetricIds.size} metric{templateMetricIds.size !== 1 ? "s" : ""} selected
+                </p>
+              </div>
+
+              <Separator />
+
+              {/* Period & scope options */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label>Period Type</Label>
+                  <Select value={templatePeriodType} onValueChange={setTemplatePeriodType}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="daily">Daily</SelectItem>
+                      <SelectItem value="weekly">Weekly</SelectItem>
+                      <SelectItem value="bi-weekly">Bi-Weekly</SelectItem>
+                      <SelectItem value="monthly">Monthly</SelectItem>
+                      <SelectItem value="quarterly">Quarterly</SelectItem>
+                      <SelectItem value="annual">Annual</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Start Period</Label>
+                  <Input
+                    type={templatePeriodType === "daily" ? "date" : "month"}
+                    value={templateStartDate}
+                    onChange={(e) => setTemplateStartDate(e.target.value)}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>
+                    End Period{" "}
+                    <span className="text-muted-foreground font-normal">(optional)</span>
+                  </Label>
+                  <Input
+                    type={templatePeriodType === "daily" ? "date" : "month"}
+                    value={templateEndDate}
+                    onChange={(e) => setTemplateEndDate(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="flex items-center gap-2 h-9 cursor-pointer">
+                  <Checkbox
+                    checked={templateIncludeScope}
+                    onCheckedChange={(v) => setTemplateIncludeScope(!!v)}
+                  />
+                  <span className="text-sm">
+                    Expand rows by division/department
+                  </span>
+                </label>
+                <p className="text-[11px] text-muted-foreground">
+                  Creates separate rows for each associated division or department per metric,
+                  filtered by the selections above.
+                </p>
+              </div>
+
+              {/* Download button */}
+              <div className="flex items-center justify-between pt-2 border-t">
+                <p className="text-sm text-muted-foreground">
+                  {templateMetricIds.size > 0
+                    ? `Template will include ${templateMetricIds.size} metric${templateMetricIds.size !== 1 ? "s" : ""}${templateStartDate ? ` starting ${templateStartDate}` : ""}`
+                    : "Select at least one metric to generate a template"}
+                </p>
+                <Button
+                  onClick={downloadTemplate}
+                  disabled={templateMetricIds.size === 0}
+                  className="bg-[#00b0ad] hover:bg-[#00383d] text-white gap-2"
+                >
+                  <Download className="size-4" />
+                  Download CSV Template
+                </Button>
+              </div>
+            </CardContent>
+          )}
+        </Card>
+      )}
+
+      {/* ================================================================== */}
       {/* Step 1: Upload */}
       {/* ================================================================== */}
       {step === "upload" && (
@@ -601,10 +978,7 @@ export function UploadClient({ lookup }: { lookup: LookupData }) {
               <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700 flex items-center gap-2">
                 <XCircle className="size-4 shrink-0" />
                 {parseError}
-                <button
-                  onClick={() => setParseError(null)}
-                  className="ml-auto"
-                >
+                <button onClick={() => setParseError(null)} className="ml-auto">
                   <X className="size-3.5" />
                 </button>
               </div>
@@ -629,12 +1003,8 @@ export function UploadClient({ lookup }: { lookup: LookupData }) {
               `}
             >
               <FileSpreadsheet className="size-12 mx-auto mb-4 text-muted-foreground" />
-              <p className="text-lg font-medium mb-1">
-                Drag & drop your CSV file here
-              </p>
-              <p className="text-sm text-muted-foreground mb-4">
-                or click to browse files
-              </p>
+              <p className="text-lg font-medium mb-1">Drag & drop your CSV file here</p>
+              <p className="text-sm text-muted-foreground mb-4">or click to browse files</p>
               <Badge variant="outline" className="text-xs">
                 .csv, .tsv, .txt — Max 5 MB
               </Badge>
@@ -650,11 +1020,9 @@ export function UploadClient({ lookup }: { lookup: LookupData }) {
             <div className="mt-6 space-y-2">
               <h4 className="text-sm font-medium">Expected format</h4>
               <p className="text-xs text-muted-foreground">
-                Your CSV should include columns for at least:{" "}
-                <strong>Metric Name</strong>, <strong>Period</strong> (e.g.
-                2025-01 or 01/2025), and <strong>Value</strong>. Optional
-                columns: Department, Division, Region, Notes. Headers are
-                auto-detected.
+                Your CSV should include columns for at least: <strong>Metric Name</strong>,{" "}
+                <strong>Period</strong> (e.g. 2025-01 or 01/2025), and <strong>Value</strong>.
+                Optional columns: Department, Division, Region, Notes. Headers are auto-detected.
               </p>
               <div className="bg-muted/50 rounded-lg p-3 text-xs font-mono overflow-x-auto">
                 <pre>{`Metric,Period,Value,Department,Division,Notes\nTotal Calls,2025-01,1523,Clinical and Operational Metrics,Air Care,\nAvg Response Time,2025-01,8.2,Clinical and Operational Metrics,Ground Ambulance,`}</pre>
@@ -676,18 +1044,14 @@ export function UploadClient({ lookup }: { lookup: LookupData }) {
               <Badge variant="outline" className="ml-2">
                 {fileName}
               </Badge>
-              <Badge variant="outline">
-                {rawRows.length.toLocaleString()} rows
-              </Badge>
-              <Badge variant="outline">
-                {(fileSize / 1024).toFixed(1)} KB
-              </Badge>
+              <Badge variant="outline">{rawRows.length.toLocaleString()} rows</Badge>
+              <Badge variant="outline">{(fileSize / 1024).toFixed(1)} KB</Badge>
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              Here are the first 10 rows of your file. Verify the data looks
-              correct, then proceed to map columns.
+              Here are the first 10 rows of your file. Verify the data looks correct, then proceed
+              to map columns.
             </p>
 
             <div className="border rounded-lg overflow-x-auto max-h-[400px] overflow-y-auto">
@@ -752,39 +1116,31 @@ export function UploadClient({ lookup }: { lookup: LookupData }) {
           </CardHeader>
           <CardContent className="space-y-6">
             <p className="text-sm text-muted-foreground">
-              Map your CSV columns to the dashboard fields. Auto-detected
-              mappings are pre-selected — adjust as needed.
+              Map your CSV columns to the dashboard fields. Auto-detected mappings are pre-selected
+              — adjust as needed.
             </p>
 
             {/* Fixed overrides section */}
             <div className="bg-muted/50 rounded-lg p-4 space-y-4">
               <h4 className="text-sm font-medium">
                 Scope Overrides{" "}
-                <span className="text-muted-foreground font-normal">
-                  (apply to all rows)
-                </span>
+                <span className="text-muted-foreground font-normal">(apply to all rows)</span>
               </h4>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label>
                     Fixed Division{" "}
-                    <span className="text-muted-foreground font-normal">
-                      (optional)
-                    </span>
+                    <span className="text-muted-foreground font-normal">(optional)</span>
                   </Label>
                   <Select
                     value={fixedDivision}
-                    onValueChange={(v) =>
-                      setFixedDivision(v === "auto" ? "" : v)
-                    }
+                    onValueChange={(v) => setFixedDivision(v === "auto" ? "" : v)}
                   >
                     <SelectTrigger className="w-full">
                       <SelectValue placeholder="Auto-detect from CSV" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="auto">
-                        Auto-detect from CSV
-                      </SelectItem>
+                      <SelectItem value="auto">Auto-detect from CSV</SelectItem>
                       {filteredDivisions.map((d) => (
                         <SelectItem key={d.id} value={d.id}>
                           {d.name}
@@ -859,27 +1215,17 @@ export function UploadClient({ lookup }: { lookup: LookupData }) {
                 <div key={field} className="space-y-2">
                   <Label>
                     {label}
-                    {required && (
-                      <span className="text-red-500 ml-0.5">*</span>
-                    )}
+                    {required && <span className="text-red-500 ml-0.5">*</span>}
                     {!required && (
-                      <span className="text-muted-foreground font-normal ml-1">
-                        (optional)
-                      </span>
+                      <span className="text-muted-foreground font-normal ml-1">(optional)</span>
                     )}
                     {field === "department" && fixedDepartment && (
-                      <Badge
-                        variant="outline"
-                        className="ml-2 text-[10px] text-[#00b0ad]"
-                      >
+                      <Badge variant="outline" className="ml-2 text-[10px] text-[#00b0ad]">
                         Using fixed override
                       </Badge>
                     )}
                     {field === "division" && fixedDivision && (
-                      <Badge
-                        variant="outline"
-                        className="ml-2 text-[10px] text-[#00b0ad]"
-                      >
+                      <Badge variant="outline" className="ml-2 text-[10px] text-[#00b0ad]">
                         Using fixed override
                       </Badge>
                     )}
@@ -906,9 +1252,7 @@ export function UploadClient({ lookup }: { lookup: LookupData }) {
                         <SelectItem key={h} value={h}>
                           {h}
                           {h === mapping[field] && (
-                            <span className="ml-1 text-[#00b0ad]">
-                              (auto-detected)
-                            </span>
+                            <span className="ml-1 text-[#00b0ad]">(auto-detected)</span>
                           )}
                         </SelectItem>
                       ))}
@@ -969,23 +1313,18 @@ export function UploadClient({ lookup }: { lookup: LookupData }) {
                 </Badge>
               )}
               {errorCount > 0 && (
-                <Badge
-                  variant="outline"
-                  className="gap-1 text-red-700 border-red-300 bg-red-50"
-                >
+                <Badge variant="outline" className="gap-1 text-red-700 border-red-300 bg-red-50">
                   <XCircle className="size-3" />
                   {errorCount} errors
                 </Badge>
               )}
-              <Badge variant="outline">
-                {rawRows.length} total rows
-              </Badge>
+              <Badge variant="outline">{rawRows.length} total rows</Badge>
             </div>
 
             {errorCount > 0 && (
               <div className="text-sm text-muted-foreground">
-                Rows with errors will be skipped during import. Only{" "}
-                <strong>{validCount}</strong> valid rows will be imported.
+                Rows with errors will be skipped during import. Only <strong>{validCount}</strong>{" "}
+                valid rows will be imported.
               </div>
             )}
 
@@ -1005,15 +1344,14 @@ export function UploadClient({ lookup }: { lookup: LookupData }) {
                 <TableBody>
                   {validationResults.map((result, idx) => {
                     const metricName = result.data
-                      ? lookup.metrics.find(
-                          (m) => m.id === result.data!.metricDefinitionId
-                        )?.name ?? "—"
+                      ? (lookup.metrics.find((m) => m.id === result.data!.metricDefinitionId)
+                          ?.name ?? "—")
                       : "—";
                     const periodDisplay = result.data
-                      ? new Date(result.data.periodStart).toLocaleDateString(
-                          "en-US",
-                          { year: "numeric", month: "short" }
-                        )
+                      ? new Date(result.data.periodStart).toLocaleDateString("en-US", {
+                          year: "numeric",
+                          month: "short",
+                        })
                       : "—";
 
                     return (
@@ -1037,16 +1375,10 @@ export function UploadClient({ lookup }: { lookup: LookupData }) {
                           {result.status === "warning" && (
                             <AlertTriangle className="size-4 text-yellow-600" />
                           )}
-                          {result.status === "error" && (
-                            <XCircle className="size-4 text-red-600" />
-                          )}
+                          {result.status === "error" && <XCircle className="size-4 text-red-600" />}
                         </TableCell>
-                        <TableCell className="text-sm">
-                          {metricName}
-                        </TableCell>
-                        <TableCell className="text-sm">
-                          {periodDisplay}
-                        </TableCell>
+                        <TableCell className="text-sm">{metricName}</TableCell>
+                        <TableCell className="text-sm">{periodDisplay}</TableCell>
                         <TableCell className="text-right font-mono text-sm">
                           {result.data?.value ?? "—"}
                         </TableCell>
@@ -1085,9 +1417,7 @@ export function UploadClient({ lookup }: { lookup: LookupData }) {
         <Card>
           <CardContent className="py-16 text-center space-y-4">
             <Loader2 className="size-10 mx-auto animate-spin text-[#00b0ad]" />
-            <p className="text-lg font-medium">
-              Importing {validCount} rows...
-            </p>
+            <p className="text-lg font-medium">Importing {validCount} rows...</p>
             <p className="text-sm text-muted-foreground">
               This may take a moment for large uploads.
             </p>
@@ -1104,25 +1434,20 @@ export function UploadClient({ lookup }: { lookup: LookupData }) {
             {importResult.error ? (
               <>
                 <XCircle className="size-12 mx-auto text-red-500" />
-                <h3 className="text-xl font-bold text-red-700">
-                  Import Failed
-                </h3>
+                <h3 className="text-xl font-bold text-red-700">Import Failed</h3>
                 <p className="text-sm text-muted-foreground max-w-md mx-auto">
                   {importResult.error}
                 </p>
                 {importResult.created > 0 && (
                   <p className="text-sm text-green-700">
-                    {importResult.created} rows were successfully imported before
-                    the error.
+                    {importResult.created} rows were successfully imported before the error.
                   </p>
                 )}
               </>
             ) : (
               <>
                 <CheckCircle className="size-12 mx-auto text-green-600" />
-                <h3 className="text-xl font-bold text-green-700">
-                  Import Complete!
-                </h3>
+                <h3 className="text-xl font-bold text-green-700">Import Complete!</h3>
                 <p className="text-lg">
                   <strong>{importResult.created}</strong> entries created
                 </p>
@@ -1135,10 +1460,7 @@ export function UploadClient({ lookup }: { lookup: LookupData }) {
             )}
 
             <div className="pt-4">
-              <Button
-                onClick={resetWizard}
-                className="bg-[#00b0ad] hover:bg-[#00383d] text-white"
-              >
+              <Button onClick={resetWizard} className="bg-[#00b0ad] hover:bg-[#00383d] text-white">
                 Upload Another File
               </Button>
             </div>

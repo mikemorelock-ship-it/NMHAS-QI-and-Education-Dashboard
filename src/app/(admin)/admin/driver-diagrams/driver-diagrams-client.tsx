@@ -37,15 +37,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Plus,
-  Pencil,
-  Trash2,
-  Eye,
-  EyeOff,
-  ArrowRight,
-  GitBranchPlus,
-} from "lucide-react";
+import { Plus, Pencil, Trash2, Eye, EyeOff, ArrowRight, GitBranchPlus } from "lucide-react";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -160,10 +152,7 @@ export function DriverDiagramsClient({
                 >
                   Cancel
                 </Button>
-                <Button
-                  type="submit"
-                  className="bg-nmh-teal hover:bg-nmh-teal/90"
-                >
+                <Button type="submit" className="bg-nmh-teal hover:bg-nmh-teal/90">
                   Create Diagram
                 </Button>
               </DialogFooter>
@@ -197,10 +186,7 @@ export function DriverDiagramsClient({
             </TableHeader>
             <TableBody>
               {diagrams.map((diagram) => (
-                <TableRow
-                  key={diagram.id}
-                  className={!diagram.isActive ? "opacity-60" : undefined}
-                >
+                <TableRow key={diagram.id} className={!diagram.isActive ? "opacity-60" : undefined}>
                   <TableCell>
                     <div>
                       <span className="font-medium">{diagram.name}</span>
@@ -213,7 +199,10 @@ export function DriverDiagramsClient({
                   </TableCell>
                   <TableCell>
                     {diagram.campaignName ? (
-                      <Link href={`/admin/campaigns/${diagram.campaignId}`} className="text-sm hover:text-nmh-teal">
+                      <Link
+                        href={`/admin/campaigns/${diagram.campaignId}`}
+                        className="text-sm hover:text-nmh-teal"
+                      >
                         {diagram.campaignName}
                       </Link>
                     ) : (
@@ -235,19 +224,11 @@ export function DriverDiagramsClient({
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    {diagram.metricName ?? (
-                      <span className="text-muted-foreground">--</span>
-                    )}
+                    {diagram.metricName ?? <span className="text-muted-foreground">--</span>}
                   </TableCell>
-                  <TableCell className="text-center">
-                    {diagram.nodeCount}
-                  </TableCell>
-                  <TableCell className="text-center">
-                    {diagram.pdsaCycleCount}
-                  </TableCell>
-                  <TableCell className="text-center">
-                    {diagram.sortOrder}
-                  </TableCell>
+                  <TableCell className="text-center">{diagram.nodeCount}</TableCell>
+                  <TableCell className="text-center">{diagram.pdsaCycleCount}</TableCell>
+                  <TableCell className="text-center">{diagram.sortOrder}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-1">
                       <Button
@@ -263,19 +244,11 @@ export function DriverDiagramsClient({
                           <Eye className="h-3.5 w-3.5" />
                         )}
                       </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => openEdit(diagram)}
-                      >
+                      <Button variant="outline" size="sm" onClick={() => openEdit(diagram)}>
                         <Pencil className="h-3.5 w-3.5" />
                         Edit
                       </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        asChild
-                      >
+                      <Button variant="outline" size="sm" asChild>
                         <Link href={`/admin/driver-diagrams/${diagram.id}`}>
                           <ArrowRight className="h-3.5 w-3.5" />
                         </Link>
@@ -330,10 +303,7 @@ export function DriverDiagramsClient({
                   <p className="text-sm text-destructive">{formError}</p>
                 </div>
               )}
-              <DiagramFormFields
-                metrics={metrics}
-                defaultValues={editTarget}
-              />
+              <DiagramFormFields metrics={metrics} defaultValues={editTarget} />
               <DialogFooter className="mt-4">
                 <Button
                   type="button"
@@ -345,10 +315,7 @@ export function DriverDiagramsClient({
                 >
                   Cancel
                 </Button>
-                <Button
-                  type="submit"
-                  className="bg-nmh-teal hover:bg-nmh-teal/90"
-                >
+                <Button type="submit" className="bg-nmh-teal hover:bg-nmh-teal/90">
                   Save Changes
                 </Button>
               </DialogFooter>
@@ -358,18 +325,14 @@ export function DriverDiagramsClient({
       </Dialog>
 
       {/* Delete Confirmation */}
-      <Dialog
-        open={deleteTarget !== null}
-        onOpenChange={(open) => !open && setDeleteTarget(null)}
-      >
+      <Dialog open={deleteTarget !== null} onOpenChange={(open) => !open && setDeleteTarget(null)}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Delete Driver Diagram</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete &quot;{deleteTarget?.name}&quot;?
-              This will remove the diagram, its {deleteTarget?.nodeCount ?? 0}{" "}
-              nodes, and {deleteTarget?.pdsaCycleCount ?? 0} PDSA cycles. This
-              action cannot be undone.
+              Are you sure you want to delete &quot;{deleteTarget?.name}&quot;? This will remove the
+              diagram, its {deleteTarget?.nodeCount ?? 0} nodes, and{" "}
+              {deleteTarget?.pdsaCycleCount ?? 0} PDSA cycles. This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -450,13 +413,9 @@ function DiagramFormFields({
       {/* Linked Metric */}
       <div className="space-y-2">
         <Label>
-          Linked Metric{" "}
-          <span className="text-muted-foreground font-normal">(optional)</span>
+          Linked Metric <span className="text-muted-foreground font-normal">(optional)</span>
         </Label>
-        <Select
-          name="metricDefinitionId"
-          defaultValue={defaultValues?.metricDefinitionId ?? ""}
-        >
+        <Select name="metricDefinitionId" defaultValue={defaultValues?.metricDefinitionId ?? ""}>
           <SelectTrigger className="w-full">
             <SelectValue placeholder="None" />
           </SelectTrigger>

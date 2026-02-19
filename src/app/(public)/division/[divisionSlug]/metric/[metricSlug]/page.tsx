@@ -3,7 +3,11 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { formatPeriod, parseDateRangeFilter } from "@/lib/utils";
-import { aggregateByPeriodWeighted, type AggregationType, type MetricDataType } from "@/lib/aggregation";
+import {
+  aggregateByPeriodWeighted,
+  type AggregationType,
+  type MetricDataType,
+} from "@/lib/aggregation";
 import { computeSPCData } from "@/lib/spc-server";
 import {
   Breadcrumb,
@@ -28,9 +32,7 @@ interface PageProps {
   params: Promise<{ divisionSlug: string; metricSlug: string }>;
 }
 
-export default async function DivisionMetricDetailPage({
-  params,
-}: PageProps) {
+export default async function DivisionMetricDetailPage({ params }: PageProps) {
   const { divisionSlug, metricSlug } = await params;
 
   const isUnassigned = divisionSlug === "unassigned";
@@ -102,8 +104,7 @@ export default async function DivisionMetricDetailPage({
 
   const defaultRange = "ytd";
   const dateFilter = parseDateRangeFilter(defaultRange);
-  const periodStartFilter =
-    Object.keys(dateFilter).length > 0 ? { periodStart: dateFilter } : {};
+  const periodStartFilter = Object.keys(dateFilter).length > 0 ? { periodStart: dateFilter } : {};
 
   // -----------------------------------------------------------------------
   // Time-series data
@@ -159,10 +160,7 @@ export default async function DivisionMetricDetailPage({
     trend = ((current - previous) / Math.abs(previous)) * 100;
   }
 
-  const average =
-    values.length > 0
-      ? values.reduce((sum, v) => sum + v, 0) / values.length
-      : 0;
+  const average = values.length > 0 ? values.reduce((sum, v) => sum + v, 0) / values.length : 0;
 
   // -----------------------------------------------------------------------
   // Department (region) breakdown within this division
@@ -194,13 +192,11 @@ export default async function DivisionMetricDetailPage({
 
         const regValues = regEntries.map((e) => e.value);
         const regCurrent = regValues[regValues.length - 1];
-        const regPrevious =
-          regValues.length > 1 ? regValues[regValues.length - 2] : 0;
+        const regPrevious = regValues.length > 1 ? regValues[regValues.length - 2] : 0;
 
         let regTrend = 0;
         if (regPrevious !== 0) {
-          regTrend =
-            ((regCurrent - regPrevious) / Math.abs(regPrevious)) * 100;
+          regTrend = ((regCurrent - regPrevious) / Math.abs(regPrevious)) * 100;
         }
 
         return {
@@ -228,22 +224,26 @@ export default async function DivisionMetricDetailPage({
 
   // regionsInDiv is fetched inside the `if (!isUnassigned)` block above.
   // We need to re-fetch or capture it outside. Since it's scoped, just re-query.
-  const hierarchyRegions = !isUnassigned && division
-    ? await prisma.region.findMany({
-        where: { divisionId: division.id, isActive: true },
-        orderBy: { name: "asc" },
-        select: { id: true, name: true },
-      })
-    : [];
+  const hierarchyRegions =
+    !isUnassigned && division
+      ? await prisma.region.findMany({
+          where: { divisionId: division.id, isActive: true },
+          orderBy: { name: "asc" },
+          select: { id: true, name: true },
+        })
+      : [];
 
-  const hierarchy = !isUnassigned && division
-    ? [{
-        id: division.id,
-        name: division.name,
-        slug: division.slug,
-        departments: hierarchyRegions,
-      }]
-    : [];
+  const hierarchy =
+    !isUnassigned && division
+      ? [
+          {
+            id: division.id,
+            name: division.name,
+            slug: division.slug,
+            departments: hierarchyRegions,
+          },
+        ]
+      : [];
 
   // -----------------------------------------------------------------------
   // Parent metric info
@@ -296,15 +296,12 @@ export default async function DivisionMetricDetailPage({
 
       const childAgg = aggregateByPeriodWeighted(childRegionEntries, dataType, aggType);
       const childValues = childAgg.map((s) => s.value);
-      const childCurrent =
-        childValues.length > 0 ? childValues[childValues.length - 1] : 0;
-      const childPrevious =
-        childValues.length > 1 ? childValues[childValues.length - 2] : 0;
+      const childCurrent = childValues.length > 0 ? childValues[childValues.length - 1] : 0;
+      const childPrevious = childValues.length > 1 ? childValues[childValues.length - 2] : 0;
 
       let childTrend = 0;
       if (childPrevious !== 0) {
-        childTrend =
-          ((childCurrent - childPrevious) / Math.abs(childPrevious)) * 100;
+        childTrend = ((childCurrent - childPrevious) / Math.abs(childPrevious)) * 100;
       }
 
       return {
@@ -327,14 +324,10 @@ export default async function DivisionMetricDetailPage({
 
   let filteredAnnotations = metric.annotations;
   if (dateFilter.gte) {
-    filteredAnnotations = filteredAnnotations.filter(
-      (a) => a.date >= dateFilter.gte!
-    );
+    filteredAnnotations = filteredAnnotations.filter((a) => a.date >= dateFilter.gte!);
   }
   if (dateFilter.lte) {
-    filteredAnnotations = filteredAnnotations.filter(
-      (a) => a.date <= dateFilter.lte!
-    );
+    filteredAnnotations = filteredAnnotations.filter((a) => a.date <= dateFilter.lte!);
   }
 
   const annotations: MetricAnnotation[] = filteredAnnotations.map((a) => ({
@@ -360,7 +353,12 @@ export default async function DivisionMetricDetailPage({
 
   const spcEntryWhere = isUnassigned
     ? { metricDefinitionId: metric.id, divisionId: null, regionId: null, ...periodStartFilter }
-    : { metricDefinitionId: metric.id, divisionId: division!.id, regionId: { not: null }, ...periodStartFilter };
+    : {
+        metricDefinitionId: metric.id,
+        divisionId: division!.id,
+        regionId: { not: null },
+        ...periodStartFilter,
+      };
 
   const spcData = await computeSPCData(
     {
@@ -402,11 +400,7 @@ export default async function DivisionMetricDetailPage({
       {/* Back button */}
       <div className="flex items-center gap-4">
         <Link href={`/?division=${divisionSlug}`}>
-          <Button
-            variant="outline"
-            size="sm"
-            className="gap-2 min-h-12 touch-manipulation"
-          >
+          <Button variant="outline" size="sm" className="gap-2 min-h-12 touch-manipulation">
             <ArrowLeft className="size-4" />
             Back to {isUnassigned ? "Unassigned" : division!.name}
           </Button>
@@ -461,6 +455,7 @@ export default async function DivisionMetricDetailPage({
             count: values.length,
           },
           annotations,
+          qiAnnotations: [],
           resources: metric.resources.map((r) => ({
             id: r.id,
             title: r.title,

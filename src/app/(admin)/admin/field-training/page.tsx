@@ -24,8 +24,11 @@ import {
   AlertTriangle,
   Plus,
   FileText,
+  ExternalLink,
+  GraduationCap,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { RatingBadge } from "@/components/field-training/RatingBadge";
 
 export const dynamic = "force-dynamic";
 
@@ -33,17 +36,7 @@ function formatDate(date: Date) {
   return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
-function RatingBadge({ rating }: { rating: number }) {
-  const color =
-    rating === 1 ? "bg-red-200 text-red-900" :
-    rating === 2 ? "bg-red-100 text-red-800" :
-    rating === 3 ? "bg-orange-100 text-orange-800" :
-    rating === 4 ? "bg-gray-100 text-gray-800" :
-    rating === 5 ? "bg-green-100 text-green-800" :
-    rating === 6 ? "bg-green-200 text-green-900" :
-    "bg-emerald-200 text-emerald-900";
-  return <Badge className={cn("font-mono text-xs", color)}>{rating}/7</Badge>;
-}
+// RatingBadge imported from shared component
 
 export default async function FieldTrainingOverviewPage() {
   const session = await verifySession();
@@ -62,7 +55,9 @@ export default async function FieldTrainingOverviewPage() {
   ] = await Promise.all([
     prisma.user.count({ where: { role: "trainee", traineeStatus: "active" } }),
     prisma.user.count({ where: { role: "trainee", traineeStatus: "completed" } }),
-    prisma.user.count({ where: { role: { in: ["fto", "supervisor", "manager"] }, isActive: true } }),
+    prisma.user.count({
+      where: { role: { in: ["fto", "supervisor", "manager"] }, isActive: true },
+    }),
     prisma.dailyEvaluation.count(),
     prisma.skill.count({ where: { isActive: true } }),
     prisma.dailyEvaluation.findMany({
@@ -95,9 +90,18 @@ export default async function FieldTrainingOverviewPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Field Training Program</h1>
-        <p className="text-muted-foreground">Overview of the FTEP field training program.</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Field Training Program</h1>
+          <p className="text-muted-foreground">Overview of the FTEP field training program.</p>
+        </div>
+        <Button asChild size="lg" className="bg-nmh-teal hover:bg-nmh-teal/90 text-white gap-2 shadow-md">
+          <Link href="/fieldtraining">
+            <GraduationCap className="h-5 w-5" />
+            Open FTO/Trainee Portal
+            <ExternalLink className="h-4 w-4" />
+          </Link>
+        </Button>
       </div>
 
       {/* Stats Cards */}
@@ -166,11 +170,17 @@ export default async function FieldTrainingOverviewPage() {
               </div>
               <div>
                 <h3 className="text-lg font-semibold text-purple-900">Daily Observation Reports</h3>
-                <p className="text-sm text-purple-700">{totalDors} total DOR{totalDors !== 1 ? "s" : ""} on record</p>
+                <p className="text-sm text-purple-700">
+                  {totalDors} total DOR{totalDors !== 1 ? "s" : ""} on record
+                </p>
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <Button asChild variant="outline" className="border-purple-300 text-purple-700 hover:bg-purple-100">
+              <Button
+                asChild
+                variant="outline"
+                className="border-purple-300 text-purple-700 hover:bg-purple-100"
+              >
                 <Link href="/admin/field-training/dors">
                   <FileText className="h-4 w-4 mr-1.5" />
                   View All DORs
@@ -191,7 +201,8 @@ export default async function FieldTrainingOverviewPage() {
         <Card className="border-orange-300 bg-orange-50">
           <CardContent className="pt-6">
             <p className="text-sm font-medium text-orange-800">
-              {remediationCount} trainee{remediationCount > 1 ? "s" : ""} currently in remediation status.
+              {remediationCount} trainee{remediationCount > 1 ? "s" : ""} currently in remediation
+              status.
             </p>
           </CardContent>
         </Card>
@@ -206,7 +217,9 @@ export default async function FieldTrainingOverviewPage() {
               <CardDescription>Current progress for all active trainees</CardDescription>
             </div>
             <Button variant="outline" size="sm" asChild>
-              <Link href="/admin/field-training/trainees">View All <ArrowRight className="h-4 w-4 ml-1" /></Link>
+              <Link href="/admin/field-training/trainees">
+                View All <ArrowRight className="h-4 w-4 ml-1" />
+              </Link>
             </Button>
           </CardHeader>
           <CardContent>
@@ -215,11 +228,18 @@ export default async function FieldTrainingOverviewPage() {
             ) : (
               <div className="space-y-4">
                 {traineeSummaries.map((t) => {
-                  const currentPhase = t.traineePhases.find((tp) => tp.status === "in_progress")?.phase.name;
-                  const phasesCompleted = t.traineePhases.filter((tp) => tp.status === "completed").length;
-                  const skillPct = totalSkills > 0 ? Math.round((t._count.traineeSkillSignoffs / totalSkills) * 100) : 0;
-                  const ftoNames = t.traineeAssignments
-                    .map((a) => `${a.fto.firstName} ${a.fto.lastName}`);
+                  const currentPhase = t.traineePhases.find((tp) => tp.status === "in_progress")
+                    ?.phase.name;
+                  const phasesCompleted = t.traineePhases.filter(
+                    (tp) => tp.status === "completed"
+                  ).length;
+                  const skillPct =
+                    totalSkills > 0
+                      ? Math.round((t._count.traineeSkillSignoffs / totalSkills) * 100)
+                      : 0;
+                  const ftoNames = t.traineeAssignments.map(
+                    (a) => `${a.fto.firstName} ${a.fto.lastName}`
+                  );
 
                   return (
                     <Link
@@ -229,17 +249,23 @@ export default async function FieldTrainingOverviewPage() {
                     >
                       <div className="flex items-center justify-between mb-2">
                         <div>
-                          <span className="font-medium">{t.firstName} {t.lastName}</span>
+                          <span className="font-medium">
+                            {t.firstName} {t.lastName}
+                          </span>
                           {t.traineeStatus === "remediation" && (
-                            <Badge className="ml-2 bg-orange-100 text-orange-800">remediation</Badge>
+                            <Badge className="ml-2 bg-orange-100 text-orange-800">
+                              remediation
+                            </Badge>
                           )}
                         </div>
-                        <span className="text-sm text-muted-foreground">{ftoNames.length > 0 ? ftoNames.join(", ") : "Unassigned"}</span>
+                        <span className="text-sm text-muted-foreground">
+                          {ftoNames.length > 0 ? ftoNames.join(", ") : "Unassigned"}
+                        </span>
                       </div>
                       <div className="flex items-center gap-4 text-sm">
                         <span className="text-muted-foreground">
-                          Phase: <span className="text-foreground">{currentPhase ?? "—"}</span>
-                          {" "}({phasesCompleted}/{t.traineePhases.length})
+                          Phase: <span className="text-foreground">{currentPhase ?? "—"}</span> (
+                          {phasesCompleted}/{t.traineePhases.length})
                         </span>
                         <div className="flex items-center gap-2 flex-1">
                           <span className="text-muted-foreground">Skills:</span>
@@ -263,7 +289,9 @@ export default async function FieldTrainingOverviewPage() {
               <CardDescription>Latest Daily Observation Reports</CardDescription>
             </div>
             <Button variant="outline" size="sm" asChild>
-              <Link href="/admin/field-training/dors">View All <ArrowRight className="h-4 w-4 ml-1" /></Link>
+              <Link href="/admin/field-training/dors">
+                View All <ArrowRight className="h-4 w-4 ml-1" />
+              </Link>
             </Button>
           </CardHeader>
           <CardContent>

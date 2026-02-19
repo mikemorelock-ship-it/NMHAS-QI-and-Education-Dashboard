@@ -1,11 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import {
-  LineChart,
-  Line,
-  ResponsiveContainer,
-} from "recharts";
+import { LineChart, Line, ResponsiveContainer } from "recharts";
 import { TrendingUp, TrendingDown, Minus, ArrowRight } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { formatMetricValue, cn } from "@/lib/utils";
@@ -41,8 +37,7 @@ export function KpiCard({
   const sparklineData = sparkline.map((v, i) => ({ index: i, value: v }));
 
   // Determine if being on-target or above is "good" (most metrics: higher is better)
-  const atOrAboveTarget =
-    target !== null && value >= target;
+  const atOrAboveTarget = target !== null && value >= target;
 
   const cardContent = (
     <Card
@@ -61,7 +56,7 @@ export function KpiCard({
           <p className="text-sm text-muted-foreground truncate leading-tight">
             {name}
             {href && (
-              <ArrowRight className="inline-block size-3 ml-1 opacity-0 group-hover:opacity-100 transition-opacity text-[#00b0ad]" />
+              <ArrowRight className="inline-block size-3 ml-1 opacity-0 group-hover:opacity-100 transition-opacity text-[#00b0ad]" aria-hidden="true" />
             )}
           </p>
           <p className="text-3xl font-bold tracking-tight mt-1 lg:text-4xl">
@@ -71,7 +66,7 @@ export function KpiCard({
 
         {/* Mini sparkline chart */}
         {sparklineData.length > 1 && (
-          <div className="w-20 h-10 flex-shrink-0">
+          <div className="w-20 h-10 flex-shrink-0" aria-hidden="true">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={sparklineData}>
                 <Line
@@ -99,9 +94,9 @@ export function KpiCard({
             direction === "flat" && "text-muted-foreground"
           )}
         >
-          {direction === "up" && <TrendingUp className="size-4" />}
-          {direction === "down" && <TrendingDown className="size-4" />}
-          {direction === "flat" && <Minus className="size-4" />}
+          {direction === "up" && <TrendingUp className="size-4" aria-hidden="true" />}
+          {direction === "down" && <TrendingDown className="size-4" aria-hidden="true" />}
+          {direction === "flat" && <Minus className="size-4" aria-hidden="true" />}
           <span>
             {direction === "flat"
               ? "No change"
@@ -114,12 +109,13 @@ export function KpiCard({
           <span
             className={cn(
               "text-xs font-medium px-2 py-0.5 rounded-full",
-              atOrAboveTarget
-                ? "bg-[#00b0ad]/10 text-[#00b0ad]"
-                : "bg-[#e04726]/10 text-[#e04726]"
+              atOrAboveTarget ? "bg-[#00b0ad]/10 text-[#00b0ad]" : "bg-[#e04726]/10 text-[#e04726]"
             )}
           >
             Target: {formatMetricValue(target, unit, rateMultiplier, rateSuffix)}
+            <span className="sr-only">
+              {atOrAboveTarget ? " (on target)" : " (below target)"}
+            </span>
           </span>
         )}
       </div>

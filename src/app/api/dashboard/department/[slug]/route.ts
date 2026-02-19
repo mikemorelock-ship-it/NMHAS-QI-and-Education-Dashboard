@@ -4,10 +4,7 @@ import { formatPeriod } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ slug: string }> }
-) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
   try {
     const { slug } = await params;
     const { searchParams } = new URL(request.url);
@@ -35,18 +32,14 @@ export async function GET(
     });
 
     if (!department) {
-      return NextResponse.json(
-        { error: "Department not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Department not found" }, { status: 404 });
     }
 
     // Build date filter for entries
     const dateFilter: Record<string, Date> = {};
     if (fromDate) dateFilter.gte = fromDate;
     if (toDate) dateFilter.lte = toDate;
-    const periodStartFilter =
-      Object.keys(dateFilter).length > 0 ? dateFilter : undefined;
+    const periodStartFilter = Object.keys(dateFilter).length > 0 ? dateFilter : undefined;
 
     // Get KPI metrics and chart metrics
     const kpiMetrics = department.metricDefinitions.filter((m) => m.isKpi);
@@ -71,8 +64,7 @@ export async function GET(
 
         let trend = 0;
         if (previousValue !== 0) {
-          trend =
-            ((currentValue - previousValue) / Math.abs(previousValue)) * 100;
+          trend = ((currentValue - previousValue) / Math.abs(previousValue)) * 100;
         }
 
         const sparklineEntries = await prisma.metricEntry.findMany({
@@ -146,9 +138,6 @@ export async function GET(
     return NextResponse.json(result);
   } catch (error) {
     console.error("Department detail error:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch department details" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to fetch department details" }, { status: 500 });
   }
 }

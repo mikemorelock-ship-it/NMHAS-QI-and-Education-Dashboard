@@ -41,9 +41,7 @@ export type ValidatedRow = {
  *
  * Max 10,000 rows per call.
  */
-export async function importUploadedData(
-  rows: ValidatedRow[]
-): Promise<UploadActionResult> {
+export async function importUploadedData(rows: ValidatedRow[]): Promise<UploadActionResult> {
   // CSRF check
   if (!(await validateCsrf())) {
     return { success: false, error: "Invalid request origin." };
@@ -83,12 +81,17 @@ export async function importUploadedData(
           // Use noon UTC to avoid timezone off-by-one display issues
           const rawDate = new Date(row.periodStart);
           if (isNaN(rawDate.getTime())) {
-            throw new Error(
-              `Row ${rowIdx + 1}: Invalid date "${row.periodStart}"`
-            );
+            throw new Error(`Row ${rowIdx + 1}: Invalid date "${row.periodStart}"`);
           }
           const periodDate = new Date(
-            Date.UTC(rawDate.getUTCFullYear(), rawDate.getUTCMonth(), rawDate.getUTCDate(), 12, 0, 0)
+            Date.UTC(
+              rawDate.getUTCFullYear(),
+              rawDate.getUTCMonth(),
+              rawDate.getUTCDate(),
+              12,
+              0,
+              0
+            )
           );
 
           return prisma.metricEntry.create({
@@ -132,10 +135,7 @@ export async function importUploadedData(
   } catch (err: unknown) {
     console.error("importUploadedData error:", err);
 
-    if (
-      err instanceof Error &&
-      err.message.includes("Unique constraint failed")
-    ) {
+    if (err instanceof Error && err.message.includes("Unique constraint failed")) {
       return {
         success: false,
         error:
@@ -147,8 +147,7 @@ export async function importUploadedData(
 
     return {
       success: false,
-      error:
-        err instanceof Error ? err.message : "Failed to import data.",
+      error: err instanceof Error ? err.message : "Failed to import data.",
       created,
       skipped,
     };
@@ -179,6 +178,73 @@ export type LookupData = {
     divisionId: string;
   }>;
 };
+
+// ---------------------------------------------------------------------------
+// Template data for downloadable CSV templates
+// ---------------------------------------------------------------------------
+
+export type TemplateRow = {
+  metric: string;
+  period: string;
+  value: string;
+  division: string;
+  region: string;
+  notes: string;
+};
+
+export type TemplateLookupData = LookupData & {
+  departments: Array<{ id: string; name: string }>;
+  associations: Array<{
+    metricDefinitionId: string;
+    divisionId: string | null;
+    regionId: string | null;
+  }>;
+};
+
+/**
+ * Fetches all data needed to build a CSV template on the client.
+ * Includes metrics, divisions, regions, departments, and metric associations.
+ */
+export async function getTemplateLookupData(): Promise<TemplateLookupData> {
+  const [metrics, divisions, regions, departments, associations] = await Promise.all([
+    prisma.metricDefinition.findMany({
+      where: { isActive: true },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        departmentId: true,
+        unit: true,
+        dataType: true,
+      },
+      orderBy: { name: "asc" },
+    }),
+    prisma.division.findMany({
+      where: { isActive: true },
+      select: { id: true, name: true, slug: true },
+      orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
+    }),
+    prisma.region.findMany({
+      where: { isActive: true },
+      select: { id: true, name: true, divisionId: true },
+      orderBy: { name: "asc" },
+    }),
+    prisma.department.findMany({
+      where: { isActive: true },
+      select: { id: true, name: true },
+      orderBy: { name: "asc" },
+    }),
+    prisma.metricAssociation.findMany({
+      select: {
+        metricDefinitionId: true,
+        divisionId: true,
+        regionId: true,
+      },
+    }),
+  ]);
+
+  return { metrics, divisions, regions, departments, associations };
+}
 
 export async function getLookupData(): Promise<LookupData> {
   const [metrics, divisions, regions] = await Promise.all([

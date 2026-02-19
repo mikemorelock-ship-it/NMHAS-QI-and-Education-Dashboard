@@ -14,14 +14,8 @@ import {
   ReferenceLine,
   Cell,
 } from "recharts";
-import {
-  Filter,
-  AlertTriangle,
-  Users,
-  FileText,
-  TrendingUp,
-  X,
-} from "lucide-react";
+import Link from "next/link";
+import { Filter, AlertTriangle, Users, FileText, TrendingUp, X, GraduationCap, ExternalLink } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -91,13 +85,9 @@ function CategoryTooltip({ active, payload }: any) {
   if (!active || !payload?.length) return null;
   return (
     <div className="rounded-lg border bg-background p-3 shadow-md text-sm">
-      <p className="text-muted-foreground mb-1">
-        {payload[0].payload.categoryName}
-      </p>
+      <p className="text-muted-foreground mb-1">{payload[0].payload.categoryName}</p>
       <p className="font-semibold">{payload[0].value.toFixed(2)} / 7</p>
-      <p className="text-xs text-muted-foreground">
-        {payload[0].payload.count} evaluations
-      </p>
+      <p className="text-xs text-muted-foreground">{payload[0].payload.count} evaluations</p>
     </div>
   );
 }
@@ -110,10 +100,7 @@ function KpiSkeleton() {
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
       {Array.from({ length: 4 }).map((_, i) => (
-        <div
-          key={i}
-          className="h-[120px] rounded-xl border bg-card p-4 animate-pulse"
-        >
+        <div key={i} className="h-[120px] rounded-xl border bg-card p-4 animate-pulse">
           <div className="h-3 w-24 bg-muted rounded mb-3" />
           <div className="h-8 w-20 bg-muted rounded" />
         </div>
@@ -147,9 +134,7 @@ export default function FieldTrainingDashboardPage() {
       if (ftoId) params.set("ftoId", ftoId);
       if (traineeId) params.set("traineeId", traineeId);
       if (phaseId) params.set("phaseId", phaseId);
-      const res = await fetch(
-        `/api/dashboard/field-training?${params.toString()}`
-      );
+      const res = await fetch(`/api/dashboard/field-training?${params.toString()}`);
       if (!res.ok) throw new Error("Failed to fetch");
       setData(await res.json());
     } catch (err) {
@@ -183,14 +168,12 @@ export default function FieldTrainingDashboardPage() {
     setDivisionId(val);
     // Clear dependent filters if they're no longer valid
     if (val && ftoId) {
-      const ftoStillValid =
-        data?.filters.ftos.find((f) => f.id === ftoId)?.divisionId === val;
+      const ftoStillValid = data?.filters.ftos.find((f) => f.id === ftoId)?.divisionId === val;
       if (!ftoStillValid) setFtoId("");
     }
     if (val && traineeId) {
       const traineeStillValid =
-        data?.filters.trainees.find((t) => t.id === traineeId)?.divisionId ===
-        val;
+        data?.filters.trainees.find((t) => t.id === traineeId)?.divisionId === val;
       if (!traineeStillValid) setTraineeId("");
     }
   };
@@ -213,14 +196,21 @@ export default function FieldTrainingDashboardPage() {
       {/* 1. Header Row */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-nmh-gray">
-            Field Training Dashboard
-          </h1>
+          <h1 className="text-2xl font-bold text-nmh-gray">Field Training Dashboard</h1>
           <p className="text-muted-foreground text-sm mt-0.5">
             Daily Observation Report performance and trainee evaluation trends
           </p>
         </div>
-        <DateRangeFilter value={dateRange} onChange={setDateRange} />
+        <div className="flex items-center gap-3">
+          <DateRangeFilter value={dateRange} onChange={setDateRange} />
+          <Button asChild size="lg" className="bg-nmh-teal hover:bg-nmh-teal/90 text-white gap-2 shadow-md">
+            <Link href="/fieldtraining">
+              <GraduationCap className="h-5 w-5" aria-hidden="true" />
+              Open FTO/Trainee Portal
+              <ExternalLink className="h-4 w-4" aria-hidden="true" />
+            </Link>
+          </Button>
+        </div>
       </div>
 
       {/* 2. Filter Bar */}
@@ -233,9 +223,7 @@ export default function FieldTrainingDashboardPage() {
         {/* Division */}
         <Select
           value={divisionId || "__all__"}
-          onValueChange={(v) =>
-            handleDivisionChange(v === "__all__" ? "" : v)
-          }
+          onValueChange={(v) => handleDivisionChange(v === "__all__" ? "" : v)}
         >
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="All Divisions" />
@@ -330,14 +318,10 @@ export default function FieldTrainingDashboardPage() {
             <Card>
               <CardContent className="pt-6">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium text-muted-foreground">
-                    Total DORs
-                  </span>
+                  <span className="text-sm font-medium text-muted-foreground">Total DORs</span>
                   <FileText className="h-5 w-5 text-nmh-teal" />
                 </div>
-                <div className="text-3xl font-bold text-nmh-gray">
-                  {data.kpis.totalDors}
-                </div>
+                <div className="text-3xl font-bold text-nmh-gray">{data.kpis.totalDors}</div>
               </CardContent>
             </Card>
 
@@ -352,9 +336,7 @@ export default function FieldTrainingDashboardPage() {
                 </div>
                 <div className="text-3xl font-bold text-nmh-gray">
                   {data.kpis.avgOverallRating.toFixed(1)}
-                  <span className="text-lg font-normal text-muted-foreground">
-                    /7
-                  </span>
+                  <span className="text-lg font-normal text-muted-foreground">/7</span>
                 </div>
                 {data.kpis.avgRatingSparkline.length > 1 && (
                   <div className="w-24 h-8 mt-2">
@@ -383,14 +365,10 @@ export default function FieldTrainingDashboardPage() {
             <Card>
               <CardContent className="pt-6">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium text-muted-foreground">
-                    Active Trainees
-                  </span>
+                  <span className="text-sm font-medium text-muted-foreground">Active Trainees</span>
                   <Users className="h-5 w-5 text-nmh-teal" />
                 </div>
-                <div className="text-3xl font-bold text-nmh-gray">
-                  {data.kpis.activeTrainees}
-                </div>
+                <div className="text-3xl font-bold text-nmh-gray">{data.kpis.activeTrainees}</div>
               </CardContent>
             </Card>
 
@@ -398,20 +376,14 @@ export default function FieldTrainingDashboardPage() {
             <Card>
               <CardContent className="pt-6">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium text-muted-foreground">
-                    NRT/REM Flags
-                  </span>
+                  <span className="text-sm font-medium text-muted-foreground">NRT/REM Flags</span>
                   <AlertTriangle
                     className={`h-5 w-5 ${
-                      data.kpis.flagCount > 0
-                        ? "text-nmh-orange"
-                        : "text-nmh-gray"
+                      data.kpis.flagCount > 0 ? "text-nmh-orange" : "text-nmh-gray"
                     }`}
                   />
                 </div>
-                <div className="text-3xl font-bold text-nmh-gray">
-                  {data.kpis.flagCount}
-                </div>
+                <div className="text-3xl font-bold text-nmh-gray">{data.kpis.flagCount}</div>
               </CardContent>
             </Card>
           </div>
@@ -452,10 +424,7 @@ export default function FieldTrainingDashboardPage() {
                             bottom: 5,
                           }}
                         >
-                          <CartesianGrid
-                            strokeDasharray="3 3"
-                            className="opacity-30"
-                          />
+                          <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
                           <XAxis
                             dataKey="period"
                             tick={{ fontSize: 12 }}
@@ -496,9 +465,7 @@ export default function FieldTrainingDashboardPage() {
                 {/* Chart 2: DOR Count Over Time */}
                 <Card>
                   <CardHeader className="pb-2">
-                    <CardTitle className="text-base text-nmh-gray">
-                      DOR Count Over Time
-                    </CardTitle>
+                    <CardTitle className="text-base text-nmh-gray">DOR Count Over Time</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="h-[280px]">
@@ -512,21 +479,14 @@ export default function FieldTrainingDashboardPage() {
                             bottom: 5,
                           }}
                         >
-                          <CartesianGrid
-                            strokeDasharray="3 3"
-                            className="opacity-30"
-                          />
+                          <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
                           <XAxis
                             dataKey="period"
                             tick={{ fontSize: 12 }}
                             tickLine={false}
                             axisLine={false}
                           />
-                          <YAxis
-                            tick={{ fontSize: 12 }}
-                            tickLine={false}
-                            axisLine={false}
-                          />
+                          <YAxis tick={{ fontSize: 12 }} tickLine={false} axisLine={false} />
                           <Tooltip content={<CountTooltip />} />
                           <Bar
                             dataKey="value"
@@ -543,9 +503,7 @@ export default function FieldTrainingDashboardPage() {
                 {/* Chart 3: Rating Distribution (1-7) */}
                 <Card>
                   <CardHeader className="pb-2">
-                    <CardTitle className="text-base text-nmh-gray">
-                      Rating Distribution
-                    </CardTitle>
+                    <CardTitle className="text-base text-nmh-gray">Rating Distribution</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="h-[280px]">
@@ -559,32 +517,18 @@ export default function FieldTrainingDashboardPage() {
                             bottom: 5,
                           }}
                         >
-                          <CartesianGrid
-                            strokeDasharray="3 3"
-                            className="opacity-30"
-                          />
+                          <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
                           <XAxis
                             dataKey="rating"
                             tick={{ fontSize: 12 }}
                             tickLine={false}
                             axisLine={false}
                           />
-                          <YAxis
-                            tick={{ fontSize: 12 }}
-                            tickLine={false}
-                            axisLine={false}
-                          />
+                          <YAxis tick={{ fontSize: 12 }} tickLine={false} axisLine={false} />
                           <Tooltip content={<CountTooltip />} />
-                          <Bar
-                            dataKey="count"
-                            maxBarSize={60}
-                            radius={[4, 4, 0, 0]}
-                          >
+                          <Bar dataKey="count" maxBarSize={60} radius={[4, 4, 0, 0]}>
                             {data.ratingDistribution.map((entry) => (
-                              <Cell
-                                key={entry.rating}
-                                fill={getRatingColor(entry.rating)}
-                              />
+                              <Cell key={entry.rating} fill={getRatingColor(entry.rating)} />
                             ))}
                           </Bar>
                         </BarChart>
@@ -613,10 +557,7 @@ export default function FieldTrainingDashboardPage() {
                             bottom: 5,
                           }}
                         >
-                          <CartesianGrid
-                            strokeDasharray="3 3"
-                            className="opacity-30"
-                          />
+                          <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
                           <XAxis
                             type="number"
                             domain={[0, 7]}
@@ -633,22 +574,12 @@ export default function FieldTrainingDashboardPage() {
                             width={110}
                           />
                           <Tooltip content={<CategoryTooltip />} />
-                          <ReferenceLine
-                            x={4}
-                            stroke={NMH_COLORS.orange}
-                            strokeDasharray="6 4"
-                          />
-                          <Bar
-                            dataKey="averageRating"
-                            radius={[0, 4, 4, 0]}
-                            maxBarSize={24}
-                          >
+                          <ReferenceLine x={4} stroke={NMH_COLORS.orange} strokeDasharray="6 4" />
+                          <Bar dataKey="averageRating" radius={[0, 4, 4, 0]} maxBarSize={24}>
                             {data.categoryRatings.map((entry, idx) => (
                               <Cell
                                 key={entry.categoryId}
-                                fill={
-                                  CHART_COLORS[idx % CHART_COLORS.length]
-                                }
+                                fill={CHART_COLORS[idx % CHART_COLORS.length]}
                               />
                             ))}
                           </Bar>
@@ -679,9 +610,7 @@ export default function FieldTrainingDashboardPage() {
                           <TableHead>Trainee</TableHead>
                           <TableHead>FTO</TableHead>
                           <TableHead>Phase</TableHead>
-                          <TableHead className="text-center">
-                            Rating
-                          </TableHead>
+                          <TableHead className="text-center">Rating</TableHead>
                           <TableHead>Recommendation</TableHead>
                           <TableHead>Flags</TableHead>
                         </TableRow>
@@ -689,34 +618,19 @@ export default function FieldTrainingDashboardPage() {
                       <TableBody>
                         {data.recentDors.map((dor) => (
                           <TableRow key={dor.id}>
-                            <TableCell className="whitespace-nowrap">
-                              {dor.date}
-                            </TableCell>
-                            <TableCell className="font-medium">
-                              {dor.traineeName}
-                            </TableCell>
+                            <TableCell className="whitespace-nowrap">{dor.date}</TableCell>
+                            <TableCell className="font-medium">{dor.traineeName}</TableCell>
                             <TableCell>{dor.ftoName}</TableCell>
                             <TableCell>
-                              {dor.phaseName ?? (
-                                <span className="text-muted-foreground">
-                                  —
-                                </span>
-                              )}
+                              {dor.phaseName ?? <span className="text-muted-foreground">—</span>}
                             </TableCell>
                             <TableCell className="text-center">
-                              <Badge
-                                className={getRatingBadgeClass(
-                                  dor.overallRating
-                                )}
-                              >
+                              <Badge className={getRatingBadgeClass(dor.overallRating)}>
                                 {dor.overallRating}
                               </Badge>
                             </TableCell>
                             <TableCell>
-                              <Badge
-                                variant="outline"
-                                className="text-xs capitalize"
-                              >
+                              <Badge variant="outline" className="text-xs capitalize">
                                 {dor.recommendAction}
                               </Badge>
                             </TableCell>
@@ -735,9 +649,7 @@ export default function FieldTrainingDashboardPage() {
                                   )}
                                 </div>
                               ) : (
-                                <span className="text-muted-foreground">
-                                  —
-                                </span>
+                                <span className="text-muted-foreground">—</span>
                               )}
                             </TableCell>
                           </TableRow>

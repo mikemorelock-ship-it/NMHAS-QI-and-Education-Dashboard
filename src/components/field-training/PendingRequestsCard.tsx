@@ -52,9 +52,7 @@ export function PendingRequestsCard({ requests }: PendingRequestsCardProps) {
       <CardHeader className="pb-3">
         <div className="flex items-center gap-2">
           <Bell className="h-5 w-5 text-amber-600" />
-          <CardTitle className="text-base text-amber-800">
-            Pending Assignment Requests
-          </CardTitle>
+          <CardTitle className="text-base text-amber-800">Pending Assignment Requests</CardTitle>
           <Badge variant="outline" className="text-amber-700 border-amber-300 ml-auto">
             {visibleRequests.length} pending
           </Badge>
@@ -68,17 +66,12 @@ export function PendingRequestsCard({ requests }: PendingRequestsCardProps) {
         )}
 
         {visibleRequests.map((req) => (
-          <div
-            key={req.id}
-            className="rounded-lg border bg-white p-4 space-y-3"
-          >
+          <div key={req.id} className="rounded-lg border bg-white p-4 space-y-3">
             <div className="flex items-start justify-between">
               <div>
                 <p className="font-medium text-sm">
                   {req.requesterName}{" "}
-                  <span className="text-muted-foreground font-normal">
-                    requests
-                  </span>{" "}
+                  <span className="text-muted-foreground font-normal">requests</span>{" "}
                   {req.traineeName}
                   {req.traineeEmployeeId && (
                     <span className="text-muted-foreground text-xs ml-1">
@@ -87,9 +80,7 @@ export function PendingRequestsCard({ requests }: PendingRequestsCardProps) {
                   )}
                 </p>
                 {req.reason && (
-                  <p className="text-sm text-muted-foreground mt-1">
-                    &ldquo;{req.reason}&rdquo;
-                  </p>
+                  <p className="text-sm text-muted-foreground mt-1">&ldquo;{req.reason}&rdquo;</p>
                 )}
                 <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
                   <Clock className="h-3 w-3" />

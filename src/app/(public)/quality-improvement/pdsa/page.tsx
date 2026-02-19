@@ -40,9 +40,7 @@ export default async function PublicPdsaPage() {
     },
   });
 
-  const activeCycles = cycles.filter(
-    (c) => !["completed", "abandoned"].includes(c.status)
-  );
+  const activeCycles = cycles.filter((c) => !["completed", "abandoned"].includes(c.status));
   const completedCycles = cycles.filter(
     (c) => c.status === "completed" || c.status === "abandoned"
   );
@@ -96,10 +94,7 @@ export default async function PublicPdsaPage() {
                         <Badge variant="secondary" className="text-xs">
                           Cycle #{c.cycleNumber}
                         </Badge>
-                        <Badge
-                          variant="secondary"
-                          className={statusColors[c.status] ?? ""}
-                        >
+                        <Badge variant="secondary" className={statusColors[c.status] ?? ""}>
                           {statusLabels[c.status] ?? c.status}
                         </Badge>
                       </div>
@@ -117,18 +112,14 @@ export default async function PublicPdsaPage() {
                             Change Idea: {c.changeIdeaNode.text}
                           </span>
                         )}
-                        {c.metricDefinition && (
-                          <span>Metric: {c.metricDefinition.name}</span>
-                        )}
+                        {c.metricDefinition && <span>Metric: {c.metricDefinition.name}</span>}
                       </div>
 
                       {/* Phase summaries */}
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-3">
                         {c.planDescription && (
                           <div className="text-xs">
-                            <span className="font-medium text-[#00b0ad]">
-                              Plan:
-                            </span>{" "}
+                            <span className="font-medium text-[#00b0ad]">Plan:</span>{" "}
                             <span className="text-muted-foreground line-clamp-2">
                               {c.planDescription}
                             </span>
@@ -136,9 +127,7 @@ export default async function PublicPdsaPage() {
                         )}
                         {c.doObservations && (
                           <div className="text-xs">
-                            <span className="font-medium text-[#e04726]">
-                              Do:
-                            </span>{" "}
+                            <span className="font-medium text-[#e04726]">Do:</span>{" "}
                             <span className="text-muted-foreground line-clamp-2">
                               {c.doObservations}
                             </span>
@@ -146,9 +135,7 @@ export default async function PublicPdsaPage() {
                         )}
                         {c.studyResults && (
                           <div className="text-xs">
-                            <span className="font-medium text-[#fcb526]">
-                              Study:
-                            </span>{" "}
+                            <span className="font-medium text-[#fcb526]">Study:</span>{" "}
                             <span className="text-muted-foreground line-clamp-2">
                               {c.studyResults}
                             </span>
@@ -156,9 +143,7 @@ export default async function PublicPdsaPage() {
                         )}
                         {c.actDecision && (
                           <div className="text-xs">
-                            <span className="font-medium text-[#4b4f54]">
-                              Act:
-                            </span>{" "}
+                            <span className="font-medium text-[#4b4f54]">Act:</span>{" "}
                             <span className="text-muted-foreground line-clamp-2">
                               {c.actDecision}
                             </span>
@@ -195,29 +180,18 @@ export default async function PublicPdsaPage() {
                         <Badge variant="secondary" className="text-xs">
                           Cycle #{c.cycleNumber}
                         </Badge>
-                        <Badge
-                          variant="secondary"
-                          className={statusColors[c.status] ?? ""}
-                        >
+                        <Badge variant="secondary" className={statusColors[c.status] ?? ""}>
                           {statusLabels[c.status] ?? c.status}
                         </Badge>
                         {c.outcome && (
-                          <Badge
-                            variant="secondary"
-                            className={outcomeColors[c.outcome] ?? ""}
-                          >
-                            {c.outcome.charAt(0).toUpperCase() +
-                              c.outcome.slice(1)}
+                          <Badge variant="secondary" className={outcomeColors[c.outcome] ?? ""}>
+                            {c.outcome.charAt(0).toUpperCase() + c.outcome.slice(1)}
                           </Badge>
                         )}
                       </div>
                       <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
-                        {c.driverDiagram && (
-                          <span>{c.driverDiagram.name}</span>
-                        )}
-                        {c.metricDefinition && (
-                          <span>Metric: {c.metricDefinition.name}</span>
-                        )}
+                        {c.driverDiagram && <span>{c.driverDiagram.name}</span>}
+                        {c.metricDefinition && <span>Metric: {c.metricDefinition.name}</span>}
                       </div>
                     </div>
                     <span className="text-xs text-muted-foreground whitespace-nowrap">

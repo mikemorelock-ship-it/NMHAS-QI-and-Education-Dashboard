@@ -1,17 +1,10 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import {
-  ChevronLeftIcon,
-  ChevronRightIcon,
-} from "lucide-react"
-import {
-  DayPicker,
-  getDefaultClassNames,
-  type DayButton,
-} from "react-day-picker"
+import * as React from "react";
+import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
+import { DayPicker, getDefaultClassNames, type DayButton } from "react-day-picker";
 
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/utils";
 
 function Calendar({
   className,
@@ -22,7 +15,7 @@ function Calendar({
   components,
   ...props
 }: React.ComponentProps<typeof DayPicker>) {
-  const defaultClassNames = getDefaultClassNames()
+  const defaultClassNames = getDefaultClassNames();
 
   return (
     <DayPicker
@@ -34,16 +27,12 @@ function Calendar({
       )}
       captionLayout={captionLayout}
       formatters={{
-        formatMonthDropdown: (date) =>
-          date.toLocaleString("default", { month: "short" }),
+        formatMonthDropdown: (date) => date.toLocaleString("default", { month: "short" }),
         ...formatters,
       }}
       classNames={{
         root: cn("w-fit", defaultClassNames.root),
-        months: cn(
-          "flex gap-6 flex-col md:flex-row relative",
-          defaultClassNames.months
-        ),
+        months: cn("flex gap-6 flex-col md:flex-row relative", defaultClassNames.months),
         month: cn("flex flex-col w-full gap-3", defaultClassNames.month),
         nav: cn(
           "flex items-center gap-1 w-full absolute top-0 inset-x-0 justify-between z-10",
@@ -73,10 +62,7 @@ function Calendar({
           "relative has-focus:border-ring border border-input shadow-xs has-focus:ring-ring/50 has-focus:ring-[3px] rounded-md",
           defaultClassNames.dropdown_root
         ),
-        dropdown: cn(
-          "absolute bg-popover inset-0 opacity-0",
-          defaultClassNames.dropdown
-        ),
+        dropdown: cn("absolute bg-popover inset-0 opacity-0", defaultClassNames.dropdown),
         caption_label: cn(
           "select-none font-semibold text-sm tracking-tight text-foreground",
           defaultClassNames.caption_label
@@ -88,10 +74,7 @@ function Calendar({
           defaultClassNames.weekday
         ),
         week: cn("flex w-full mt-0.5", defaultClassNames.week),
-        week_number_header: cn(
-          "select-none w-(--cell-size)",
-          defaultClassNames.week_number_header
-        ),
+        week_number_header: cn("select-none w-(--cell-size)", defaultClassNames.week_number_header),
         week_number: cn(
           "text-[0.8rem] select-none text-muted-foreground",
           defaultClassNames.week_number
@@ -102,53 +85,27 @@ function Calendar({
           "[&:last-child[data-selected=true]_button]:rounded-r-md",
           defaultClassNames.day
         ),
-        range_start: cn(
-          "rounded-l-md bg-[#00b0ad]/15",
-          defaultClassNames.range_start
-        ),
-        range_middle: cn(
-          "rounded-none bg-[#00b0ad]/8",
-          defaultClassNames.range_middle
-        ),
-        range_end: cn(
-          "rounded-r-md bg-[#00b0ad]/15",
-          defaultClassNames.range_end
-        ),
-        today: cn(
-          "relative",
-          defaultClassNames.today
-        ),
+        range_start: cn("rounded-l-md bg-[#00b0ad]/15", defaultClassNames.range_start),
+        range_middle: cn("rounded-none bg-[#00b0ad]/8", defaultClassNames.range_middle),
+        range_end: cn("rounded-r-md bg-[#00b0ad]/15", defaultClassNames.range_end),
+        today: cn("relative", defaultClassNames.today),
         outside: cn(
           "text-muted-foreground/30 aria-selected:text-muted-foreground/50",
           defaultClassNames.outside
         ),
-        disabled: cn(
-          "text-muted-foreground/25 cursor-not-allowed",
-          defaultClassNames.disabled
-        ),
+        disabled: cn("text-muted-foreground/25 cursor-not-allowed", defaultClassNames.disabled),
         hidden: cn("invisible", defaultClassNames.hidden),
         ...classNames,
       }}
       components={{
         Root: ({ className, rootRef, ...props }) => {
-          return (
-            <div
-              data-slot="calendar"
-              ref={rootRef}
-              className={cn(className)}
-              {...props}
-            />
-          )
+          return <div data-slot="calendar" ref={rootRef} className={cn(className)} {...props} />;
         },
         Chevron: ({ className, orientation, ...props }) => {
           if (orientation === "left") {
-            return (
-              <ChevronLeftIcon className={cn("size-4", className)} {...props} />
-            )
+            return <ChevronLeftIcon className={cn("size-4", className)} {...props} />;
           }
-          return (
-            <ChevronRightIcon className={cn("size-4", className)} {...props} />
-          )
+          return <ChevronRightIcon className={cn("size-4", className)} {...props} />;
         },
         DayButton: CalendarDayButton,
         WeekNumber: ({ children, ...props }) => {
@@ -158,13 +115,13 @@ function Calendar({
                 {children}
               </div>
             </td>
-          )
+          );
         },
         ...components,
       }}
       {...props}
     />
-  )
+  );
 }
 
 function CalendarDayButton({
@@ -173,16 +130,13 @@ function CalendarDayButton({
   modifiers,
   ...props
 }: React.ComponentProps<typeof DayButton>) {
-  const ref = React.useRef<HTMLButtonElement>(null)
+  const ref = React.useRef<HTMLButtonElement>(null);
   React.useEffect(() => {
-    if (modifiers.focused) ref.current?.focus()
-  }, [modifiers.focused])
+    if (modifiers.focused) ref.current?.focus();
+  }, [modifiers.focused]);
 
   const isSelected =
-    modifiers.selected &&
-    !modifiers.range_start &&
-    !modifiers.range_end &&
-    !modifiers.range_middle
+    modifiers.selected && !modifiers.range_start && !modifiers.range_end && !modifiers.range_middle;
 
   return (
     <button
@@ -237,7 +191,7 @@ function CalendarDayButton({
       )}
       {...props}
     />
-  )
+  );
 }
 
-export { Calendar, CalendarDayButton }
+export { Calendar, CalendarDayButton };

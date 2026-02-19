@@ -52,6 +52,7 @@ import type {
   MetricDetailData,
   ChartDataPoint,
   MetricAnnotation,
+  QIAnnotation,
   DivisionMetricBreakdown,
   ChildMetricSummary,
 } from "@/types";
@@ -81,26 +82,36 @@ interface MetricDetailClientProps {
 // ---------------------------------------------------------------------------
 
 const ANNOTATION_STYLES: Record<
-  MetricAnnotation["type"],
-  { color: string; bg: string; border: string; label: string }
+  string,
+  { color: string; bg: string; border: string; label: string; dotColor: string }
 > = {
   intervention: {
     color: "text-[#00b0ad]",
     bg: "bg-[#00b0ad]/10",
     border: "border-[#00b0ad]/20",
     label: "Intervention",
+    dotColor: "bg-[#00b0ad]",
   },
   milestone: {
     color: "text-[#e04726]",
     bg: "bg-[#e04726]/10",
     border: "border-[#e04726]/20",
     label: "Milestone",
+    dotColor: "bg-[#e04726]",
   },
   event: {
     color: "text-[#4b4f54]",
     bg: "bg-[#4b4f54]/10",
     border: "border-[#4b4f54]/20",
     label: "Event",
+    dotColor: "bg-[#4b4f54]",
+  },
+  pdsa: {
+    color: "text-violet-600",
+    bg: "bg-violet-100",
+    border: "border-violet-200",
+    label: "PDSA Cycle",
+    dotColor: "bg-violet-600",
   },
 };
 
@@ -150,13 +161,7 @@ function DetailTooltip({
 // Mini sparkline for division breakdown
 // ---------------------------------------------------------------------------
 
-function MiniSparkline({
-  data,
-  color,
-}: {
-  data: ChartDataPoint[];
-  color: string;
-}) {
+function MiniSparkline({ data, color }: { data: ChartDataPoint[]; color: string }) {
   if (data.length < 2) return null;
   return (
     <div className="w-24 h-8">
@@ -193,9 +198,9 @@ export function MetricDetailClient({
   const [range, setRange] = useState("ytd");
   const [loading, setLoading] = useState(false);
   const [chartMode, setChartMode] = useState<"trend" | "control">("trend");
+  const [showAnnotations, setShowAnnotations] = useState(true);
 
-  const resolvedApiPath =
-    apiBasePath ?? `/api/dashboard/metric/${departmentSlug}/${metricSlug}`;
+  const resolvedApiPath = apiBasePath ?? `/api/dashboard/metric/${departmentSlug}/${metricSlug}`;
 
   // -----------------------------------------------------------------------
   // Date range change -> re-fetch from API
@@ -206,9 +211,7 @@ export function MetricDetailClient({
       setRange(newRange);
       setLoading(true);
       try {
-        const res = await fetch(
-          `${resolvedApiPath}?range=${encodeURIComponent(newRange)}`
-        );
+        const res = await fetch(`${resolvedApiPath}?range=${encodeURIComponent(newRange)}`);
         if (res.ok) {
           const json: MetricDetailData = await res.json();
           setData(json);
@@ -232,8 +235,7 @@ export function MetricDetailClient({
     return "flat";
   }, [data.stats.trend]);
 
-  const atOrAboveTarget =
-    data.target !== null && data.stats.current >= data.target;
+  const atOrAboveTarget = data.target !== null && data.stats.current >= data.target;
 
   const rateMultiplier = data.rateMultiplier;
   const rateSuffix = data.rateSuffix;
@@ -245,6 +247,13 @@ export function MetricDetailClient({
       period: format(toUTCDate(parseISO(a.date)), "MMM yyyy"),
     }));
   }, [data.annotations]);
+
+  // Unified QI annotations for chart overlays (includes manual annotations + PDSA cycles)
+  const qiAnnotations: QIAnnotation[] = useMemo(() => {
+    return data.qiAnnotations ?? [];
+  }, [data.qiAnnotations]);
+
+  const hasQIAnnotations = qiAnnotations.length > 0;
 
   // -----------------------------------------------------------------------
   // Chart rendering
@@ -269,12 +278,7 @@ export function MetricDetailClient({
   const commonAxisElements = (
     <>
       <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-      <XAxis
-        dataKey="period"
-        tick={{ fontSize: 12 }}
-        tickLine={false}
-        axisLine={false}
-      />
+      <XAxis dataKey="period" tick={{ fontSize: 12 }} tickLine={false} axisLine={false} />
       <YAxis
         tick={{ fontSize: 12 }}
         tickLine={false}
@@ -283,7 +287,9 @@ export function MetricDetailClient({
         width={55}
       />
       <Tooltip
-        content={<DetailTooltip unit={data.unit} rateMultiplier={rateMultiplier} rateSuffix={rateSuffix} />}
+        content={
+          <DetailTooltip unit={data.unit} rateMultiplier={rateMultiplier} rateSuffix={rateSuffix} />
+        }
         cursor={{ strokeDasharray: "3 3" }}
       />
       {/* Target reference line */}
@@ -301,35 +307,25 @@ export function MetricDetailClient({
           }}
         />
       )}
-      {/* QI Annotation markers (vertical lines at annotation dates) */}
-      {annotationMarkers.map((marker) => (
-        <ReferenceLine
-          key={marker.id}
-          x={marker.period}
-          stroke={
-            marker.type === "intervention"
-              ? NMH_COLORS.teal
-              : marker.type === "milestone"
-                ? NMH_COLORS.orange
-                : NMH_COLORS.gray
-          }
-          strokeDasharray="4 3"
-          strokeWidth={1.5}
-          label={{
-            value: marker.title,
-            position: "insideTopLeft",
-            fill:
-              marker.type === "intervention"
-                ? NMH_COLORS.teal
-                : marker.type === "milestone"
-                  ? NMH_COLORS.orange
-                  : NMH_COLORS.gray,
-            fontSize: 10,
-            angle: -90,
-            offset: 10,
-          }}
-        />
-      ))}
+      {/* QI Annotation markers (vertical lines at annotation dates + PDSA cycles) */}
+      {showAnnotations &&
+        qiAnnotations.map((ann) => (
+          <ReferenceLine
+            key={ann.id}
+            x={ann.period}
+            stroke={ann.type === "pdsa" ? "#7c3aed" : NMH_COLORS.teal}
+            strokeDasharray="4 3"
+            strokeWidth={1.5}
+            label={{
+              value: ann.label,
+              position: "insideTopLeft",
+              fill: ann.type === "pdsa" ? "#7c3aed" : NMH_COLORS.teal,
+              fontSize: 10,
+              angle: -90,
+              offset: 10,
+            }}
+          />
+        ))}
     </>
   );
 
@@ -344,12 +340,7 @@ export function MetricDetailClient({
         return (
           <BarChart {...commonChartProps}>
             {commonAxisElements}
-            <Bar
-              dataKey="value"
-              fill={mainColor}
-              radius={[4, 4, 0, 0]}
-              maxBarSize={48}
-            />
+            <Bar dataKey="value" fill={mainColor} radius={[4, 4, 0, 0]} maxBarSize={48} />
           </BarChart>
         );
       case "area":
@@ -416,9 +407,7 @@ export function MetricDetailClient({
                 Part of: {data.parentMetric.name}
               </Link>
             )}
-            <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
-              {data.name}
-            </h1>
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight">{data.name}</h1>
             <div className="flex items-center gap-2 flex-wrap">
               {contextLabel && (
                 <Badge variant="secondary" className="text-xs">
@@ -443,9 +432,7 @@ export function MetricDetailClient({
               </Badge>
             </div>
             {data.description && (
-              <p className="text-muted-foreground max-w-2xl">
-                {data.description}
-              </p>
+              <p className="text-muted-foreground max-w-2xl">{data.description}</p>
             )}
           </div>
 
@@ -465,9 +452,7 @@ export function MetricDetailClient({
                 )}
               >
                 {trendDirection === "up" && <TrendingUp className="size-4" />}
-                {trendDirection === "down" && (
-                  <TrendingDown className="size-4" />
-                )}
+                {trendDirection === "down" && <TrendingDown className="size-4" />}
                 {trendDirection === "flat" && <Minus className="size-4" />}
                 <span>
                   {trendDirection === "flat"
@@ -567,35 +552,53 @@ export function MetricDetailClient({
             <CardTitle className="text-base">
               {chartMode === "control" ? "Control Chart" : "Trend Over Time"}
             </CardTitle>
-            {/* Trend / Control Chart toggle — only shown when SPC data exists */}
-            {data.spcData && (
-              <div className="inline-flex items-center rounded-lg border bg-muted/50 p-0.5 text-xs font-medium">
+            <div className="flex items-center gap-2">
+              {/* Show/Hide QI Events toggle */}
+              {hasQIAnnotations && (
                 <button
                   type="button"
-                  onClick={() => setChartMode("trend")}
+                  onClick={() => setShowAnnotations(!showAnnotations)}
                   className={cn(
-                    "rounded-md px-3 py-1.5 transition-all",
-                    chartMode === "trend"
-                      ? "bg-background text-foreground shadow-sm"
-                      : "text-muted-foreground hover:text-foreground"
+                    "inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs font-medium transition-all",
+                    showAnnotations
+                      ? "border-violet-300 bg-violet-50 text-violet-700"
+                      : "border-gray-200 bg-muted/50 text-muted-foreground hover:text-foreground"
                   )}
                 >
-                  Trend
+                  <Activity className="size-3" />
+                  QI Events
                 </button>
-                <button
-                  type="button"
-                  onClick={() => setChartMode("control")}
-                  className={cn(
-                    "rounded-md px-3 py-1.5 transition-all",
-                    chartMode === "control"
-                      ? "bg-background text-foreground shadow-sm"
-                      : "text-muted-foreground hover:text-foreground"
-                  )}
-                >
-                  Control Chart
-                </button>
-              </div>
-            )}
+              )}
+              {/* Trend / Control Chart toggle — only shown when SPC data exists */}
+              {data.spcData && (
+                <div className="inline-flex items-center rounded-lg border bg-muted/50 p-0.5 text-xs font-medium">
+                  <button
+                    type="button"
+                    onClick={() => setChartMode("trend")}
+                    className={cn(
+                      "rounded-md px-3 py-1.5 transition-all",
+                      chartMode === "trend"
+                        ? "bg-background text-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    Trend
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setChartMode("control")}
+                    className={cn(
+                      "rounded-md px-3 py-1.5 transition-all",
+                      chartMode === "control"
+                        ? "bg-background text-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    Control Chart
+                  </button>
+                </div>
+              )}
+            </div>
           </CardHeader>
           <CardContent>
             {data.chartData.length > 0 ? (
@@ -606,6 +609,7 @@ export function MetricDetailClient({
                   target={data.target}
                   rateMultiplier={rateMultiplier}
                   rateSuffix={rateSuffix}
+                  annotations={showAnnotations ? qiAnnotations : undefined}
                 />
               ) : (
                 <div className="h-[400px] w-full">
@@ -711,7 +715,13 @@ export function MetricDetailClient({
                       width={55}
                     />
                     <Tooltip
-                      content={<StackedTooltip unit={data.unit} rateMultiplier={rateMultiplier} rateSuffix={rateSuffix} />}
+                      content={
+                        <StackedTooltip
+                          unit={data.unit}
+                          rateMultiplier={rateMultiplier}
+                          rateSuffix={rateSuffix}
+                        />
+                      }
                       cursor={{ strokeDasharray: "3 3" }}
                     />
                     <Legend />
@@ -737,7 +747,9 @@ export function MetricDetailClient({
                       <th className="pb-2 font-semibold">Sub-Metric</th>
                       <th className="pb-2 font-semibold text-right">Current Value</th>
                       <th className="pb-2 font-semibold text-right">Trend</th>
-                      <th className="pb-2 font-semibold text-right hidden sm:table-cell">Sparkline</th>
+                      <th className="pb-2 font-semibold text-right hidden sm:table-cell">
+                        Sparkline
+                      </th>
                       <th className="pb-2 w-8" />
                     </tr>
                   </thead>
@@ -765,7 +777,12 @@ export function MetricDetailClient({
                             </Link>
                           </td>
                           <td className="py-3 text-right font-mono">
-                            {formatMetricValue(child.currentValue, data.unit, rateMultiplier, rateSuffix)}
+                            {formatMetricValue(
+                              child.currentValue,
+                              data.unit,
+                              rateMultiplier,
+                              rateSuffix
+                            )}
                           </td>
                           <td className="py-3 text-right">
                             <span
@@ -826,24 +843,18 @@ export function MetricDetailClient({
                   <h3 className="text-sm font-semibold text-muted-foreground mb-1">
                     Data Definition
                   </h3>
-                  <p className="text-sm leading-relaxed">
-                    {data.dataDefinition}
-                  </p>
+                  <p className="text-sm leading-relaxed">{data.dataDefinition}</p>
                 </div>
               )}
               {data.methodology && (
                 <div>
-                  <h3 className="text-sm font-semibold text-muted-foreground mb-1">
-                    Methodology
-                  </h3>
+                  <h3 className="text-sm font-semibold text-muted-foreground mb-1">Methodology</h3>
                   <p className="text-sm leading-relaxed">{data.methodology}</p>
                 </div>
               )}
               {!data.dataDefinition && !data.methodology && data.description && (
                 <div>
-                  <h3 className="text-sm font-semibold text-muted-foreground mb-1">
-                    Description
-                  </h3>
+                  <h3 className="text-sm font-semibold text-muted-foreground mb-1">Description</h3>
                   <p className="text-sm leading-relaxed">{data.description}</p>
                 </div>
               )}
@@ -868,7 +879,8 @@ export function MetricDetailClient({
       {/* ================================================================= */}
       {/* QUALITY IMPROVEMENT TIMELINE                                      */}
       {/* ================================================================= */}
-      {data.annotations.length > 0 && (
+      {(data.annotations.length > 0 ||
+        (data.qiAnnotations?.filter((a) => a.type === "pdsa").length ?? 0) > 0) && (
         <section>
           <Card className="rounded-xl shadow-sm">
             <CardHeader>
@@ -883,19 +895,30 @@ export function MetricDetailClient({
                 <div className="absolute left-[11px] top-2 bottom-2 w-px bg-border" />
 
                 <div className="space-y-4">
-                  {data.annotations
-                    .sort(
-                      (a, b) =>
-                        new Date(b.date).getTime() -
-                        new Date(a.date).getTime()
-                    )
+                  {/* Merge manual annotations + PDSA entries into unified timeline */}
+                  {[
+                    ...data.annotations.map((a) => ({
+                      id: a.id,
+                      date: a.date,
+                      title: a.title,
+                      description: a.description,
+                      type: a.type as string,
+                    })),
+                    ...(data.qiAnnotations ?? [])
+                      .filter((a) => a.type === "pdsa")
+                      .map((a) => ({
+                        id: a.id,
+                        date: a.date,
+                        title: a.label,
+                        description: null as string | null,
+                        type: "pdsa",
+                      })),
+                  ]
+                    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
                     .map((annotation) => {
-                      const style = ANNOTATION_STYLES[annotation.type];
+                      const style = ANNOTATION_STYLES[annotation.type] ?? ANNOTATION_STYLES.event;
                       return (
-                        <div
-                          key={annotation.id}
-                          className="relative flex items-start gap-4 pl-8"
-                        >
+                        <div key={annotation.id} className="relative flex items-start gap-4 pl-8">
                           {/* Timeline dot */}
                           <div
                             className={cn(
@@ -905,30 +928,15 @@ export function MetricDetailClient({
                               style.border
                             )}
                           >
-                            <div
-                              className={cn(
-                                "size-2 rounded-full",
-                                annotation.type === "intervention"
-                                  ? "bg-[#00b0ad]"
-                                  : annotation.type === "milestone"
-                                    ? "bg-[#e04726]"
-                                    : "bg-[#4b4f54]"
-                              )}
-                            />
+                            <div className={cn("size-2 rounded-full", style.dotColor)} />
                           </div>
 
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 flex-wrap">
-                              <span className="text-sm font-semibold">
-                                {annotation.title}
-                              </span>
+                              <span className="text-sm font-semibold">{annotation.title}</span>
                               <Badge
                                 variant="outline"
-                                className={cn(
-                                  "text-[10px] px-1.5 py-0",
-                                  style.color,
-                                  style.border
-                                )}
+                                className={cn("text-[10px] px-1.5 py-0", style.color, style.border)}
                               >
                                 {style.label}
                               </Badge>
@@ -971,9 +979,7 @@ export function MetricDetailClient({
                       <th className="pb-2 font-semibold">
                         {viewContext === "division" ? "Department" : "Division"}
                       </th>
-                      <th className="pb-2 font-semibold text-right">
-                        Current Value
-                      </th>
+                      <th className="pb-2 font-semibold text-right">Current Value</th>
                       <th className="pb-2 font-semibold text-right">Trend</th>
                       <th className="pb-2 font-semibold text-right hidden sm:table-cell">
                         Sparkline
@@ -983,12 +989,7 @@ export function MetricDetailClient({
                   </thead>
                   <tbody>
                     {data.divisionBreakdown.map((div, idx) => {
-                      const divTrend =
-                        div.trend > 0.5
-                          ? "up"
-                          : div.trend < -0.5
-                            ? "down"
-                            : "flat";
+                      const divTrend = div.trend > 0.5 ? "up" : div.trend < -0.5 ? "down" : "flat";
 
                       // Links depend on context
                       const breakdownHref =
@@ -1014,7 +1015,12 @@ export function MetricDetailClient({
                             )}
                           </td>
                           <td className="py-3 text-right font-mono">
-                            {formatMetricValue(div.currentValue, data.unit, rateMultiplier, rateSuffix)}
+                            {formatMetricValue(
+                              div.currentValue,
+                              data.unit,
+                              rateMultiplier,
+                              rateSuffix
+                            )}
                           </td>
                           <td className="py-3 text-right">
                             <span
@@ -1025,15 +1031,9 @@ export function MetricDetailClient({
                                 divTrend === "flat" && "text-muted-foreground"
                               )}
                             >
-                              {divTrend === "up" && (
-                                <TrendingUp className="size-3" />
-                              )}
-                              {divTrend === "down" && (
-                                <TrendingDown className="size-3" />
-                              )}
-                              {divTrend === "flat" && (
-                                <Minus className="size-3" />
-                              )}
+                              {divTrend === "up" && <TrendingUp className="size-3" />}
+                              {divTrend === "down" && <TrendingDown className="size-3" />}
+                              {divTrend === "flat" && <Minus className="size-3" />}
                               {divTrend === "flat"
                                 ? "—"
                                 : `${divTrend === "up" ? "+" : ""}${div.trend.toFixed(1)}%`}
@@ -1043,9 +1043,7 @@ export function MetricDetailClient({
                             <div className="flex justify-end">
                               <MiniSparkline
                                 data={div.data}
-                                color={
-                                  CHART_COLORS[idx % CHART_COLORS.length]
-                                }
+                                color={CHART_COLORS[idx % CHART_COLORS.length]}
                               />
                             </div>
                           </td>
@@ -1092,12 +1090,8 @@ export function MetricDetailClient({
                       <User className="size-5 text-[#00b0ad]" />
                     </div>
                     <div className="min-w-0">
-                      <p className="font-medium text-sm truncate">
-                        {party.name}
-                      </p>
-                      <p className="text-xs text-muted-foreground truncate">
-                        {party.role}
-                      </p>
+                      <p className="font-medium text-sm truncate">{party.name}</p>
+                      <p className="text-xs text-muted-foreground truncate">{party.role}</p>
                       {party.email && (
                         <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1 truncate">
                           <Mail className="size-3 flex-shrink-0" />
@@ -1144,9 +1138,7 @@ export function MetricDetailClient({
                         <p className="text-sm font-medium group-hover:text-[#00b0ad] transition-colors truncate">
                           {resource.title}
                         </p>
-                        <p className="text-xs text-muted-foreground capitalize">
-                          {resource.type}
-                        </p>
+                        <p className="text-xs text-muted-foreground capitalize">{resource.type}</p>
                       </div>
                       <ExternalLink className="size-4 text-muted-foreground flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
                     </a>
@@ -1169,9 +1161,7 @@ export function MetricDetailClient({
  * Merge child metric time-series into a single array where each object has
  * { period: "Jan 2025", "OMD Clinical Debrief": 5, "QA Clinical Debrief": 8 }
  */
-function buildStackedData(
-  children: ChildMetricSummary[]
-): Record<string, string | number>[] {
+function buildStackedData(children: ChildMetricSummary[]): Record<string, string | number>[] {
   const periodMap = new Map<string, Record<string, string | number>>();
 
   for (const child of children) {
@@ -1218,12 +1208,16 @@ function StackedTooltip({
             />
             {p.name}
           </span>
-          <span className="font-mono">{formatMetricValue(p.value, unit, rateMultiplier, rateSuffix)}</span>
+          <span className="font-mono">
+            {formatMetricValue(p.value, unit, rateMultiplier, rateSuffix)}
+          </span>
         </div>
       ))}
       <div className="border-t mt-1.5 pt-1.5 flex justify-between font-semibold">
         <span>Total</span>
-        <span className="font-mono">{formatMetricValue(total, unit, rateMultiplier, rateSuffix)}</span>
+        <span className="font-mono">
+          {formatMetricValue(total, unit, rateMultiplier, rateSuffix)}
+        </span>
       </div>
     </div>
   );
@@ -1251,9 +1245,7 @@ function StatCard({
           {icon}
           <span className="text-xs font-medium">{label}</span>
         </div>
-        <p className={cn("text-xl font-bold tracking-tight", valueColor)}>
-          {value}
-        </p>
+        <p className={cn("text-xl font-bold tracking-tight", valueColor)}>{value}</p>
       </CardContent>
     </Card>
   );

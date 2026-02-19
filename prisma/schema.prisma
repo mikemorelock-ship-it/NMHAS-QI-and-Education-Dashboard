@@ -41,8 +41,9 @@ model Division {
   metricEntries      MetricEntry[]
   regions            Region[]
   scorecardDivisions ScorecardDivision[]
-  metricAssociations MetricAssociation[]
-  users              User[]
+  metricAssociations      MetricAssociation[]
+  users                   User[]
+  divisionChangeRequests  DivisionChangeRequest[]
 
   @@unique([departmentId, slug])
 }
@@ -496,9 +497,39 @@ model User {
   traineeSnapshots      TraineeSnapshot[]    @relation("TraineeSnapshots")
   createdSnapshots      TraineeSnapshot[]    @relation("SnapshotCreator")
 
+  // Division change requests
+  divisionChangeRequests         DivisionChangeRequest[] @relation("DivisionChangeRequester")
+  divisionChangeRequestsReviewed DivisionChangeRequest[] @relation("DivisionChangeReviewer")
+
   @@index([divisionId])
   @@index([status])
   @@index([role])
+}
+
+// ---------------------------------------------------------------------------
+// Division Change Request
+// ---------------------------------------------------------------------------
+
+model DivisionChangeRequest {
+  id                  String    @id @default(cuid())
+  userId              String
+  currentDivisionId   String?
+  requestedDivisionId String
+  reason              String?
+  status              String    @default("pending") // "pending" | "approved" | "denied"
+  reviewedById        String?
+  reviewNotes         String?
+  reviewedAt          DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  user              User      @relation("DivisionChangeRequester", fields: [userId], references: [id], onDelete: Cascade)
+  requestedDivision Division  @relation(fields: [requestedDivisionId], references: [id], onDelete: Cascade)
+  reviewedBy        User?     @relation("DivisionChangeReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([status])
+  @@index([requestedDivisionId])
 }
 
 // ---------------------------------------------------------------------------
@@ -740,9 +771,15 @@ model AuditLog {
   entity    String
   entityId  String
   details   String?
+  changes   String?  // JSON string: { before: {...}, after: {...} }
   actorId   String?  // User.id
   actorType String?  // "user" | "system"
   createdAt DateTime @default(now())
+
+  @@index([entity, entityId]) // entity history lookups
+  @@index([actorId])          // user activity lookups
+  @@index([createdAt])        // time-range queries
+  @@index([action])           // action type filtering
 }
 
 // ---------------------------------------------------------------------------

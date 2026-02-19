@@ -5,11 +5,7 @@ import { format, subMonths, startOfMonth, isAfter } from "date-fns";
 import { CalendarIcon, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import type { DateRange } from "react-day-picker";
 
@@ -74,9 +70,7 @@ export function DateRangeFilter({ value, onChange }: DateRangeFilterProps) {
 
   const customRange = useMemo(() => parseCustomRange(value), [value]);
 
-  const [pendingRange, setPendingRange] = useState<DateRange | undefined>(
-    customRange
-  );
+  const [pendingRange, setPendingRange] = useState<DateRange | undefined>(customRange);
 
   const handleOpenChange = useCallback(
     (nextOpen: boolean) => {
@@ -117,17 +111,12 @@ export function DateRangeFilter({ value, onChange }: DateRangeFilterProps) {
   // Summary text shown inside the popover
   const pendingSummary = useMemo(() => {
     if (!pendingRange?.from) return "Pick a start date";
-    if (!pendingRange?.to)
-      return `${format(pendingRange.from, "MMM d, yyyy")} → pick end date`;
+    if (!pendingRange?.to) return `${format(pendingRange.from, "MMM d, yyyy")} → pick end date`;
     return `${format(pendingRange.from, "MMM d, yyyy")} → ${format(pendingRange.to, "MMM d, yyyy")}`;
   }, [pendingRange]);
 
   return (
-    <div
-      className="flex items-center gap-2 flex-wrap"
-      role="group"
-      aria-label="Date range filter"
-    >
+    <div className="flex items-center gap-2 flex-wrap" role="group" aria-label="Date range filter">
       {/* Quick preset pills */}
       {PRESETS.map((preset) => {
         const isActive = preset.value === activePreset;
@@ -177,9 +166,7 @@ export function DateRangeFilter({ value, onChange }: DateRangeFilterProps) {
           {/* Selection summary bar */}
           <div className="px-5 pt-4 pb-3 border-b border-border/50">
             <div className="flex items-center justify-between gap-4">
-              <p className="text-[13px] font-semibold text-foreground">
-                Custom Range
-              </p>
+              <p className="text-[13px] font-semibold text-foreground">Custom Range</p>
               <p
                 className={cn(
                   "text-xs font-medium px-2.5 py-1 rounded-md",
@@ -232,11 +219,7 @@ export function DateRangeFilter({ value, onChange }: DateRangeFilterProps) {
               onSelect={setPendingRange}
               numberOfMonths={2}
               disabled={(date) => isAfter(date, new Date())}
-              defaultMonth={
-                pendingRange?.from
-                  ? pendingRange.from
-                  : subMonths(new Date(), 1)
-              }
+              defaultMonth={pendingRange?.from ? pendingRange.from : subMonths(new Date(), 1)}
             />
           </div>
 

@@ -32,7 +32,18 @@ export default async function DataEntryPage({
       prisma.metricDefinition.findMany({
         where: { isActive: true },
         orderBy: { name: "asc" },
-        select: { id: true, name: true, departmentId: true, unit: true, periodType: true, dataType: true, numeratorLabel: true, denominatorLabel: true, rateMultiplier: true, rateSuffix: true },
+        select: {
+          id: true,
+          name: true,
+          departmentId: true,
+          unit: true,
+          periodType: true,
+          dataType: true,
+          numeratorLabel: true,
+          denominatorLabel: true,
+          rateMultiplier: true,
+          rateSuffix: true,
+        },
       }),
       prisma.division.findMany({
         where: { isActive: true },
@@ -49,7 +60,15 @@ export default async function DataEntryPage({
         take: pageSize,
         orderBy: { periodStart: "desc" },
         include: {
-          metricDefinition: { select: { name: true, unit: true, dataType: true, rateMultiplier: true, rateSuffix: true } },
+          metricDefinition: {
+            select: {
+              name: true,
+              unit: true,
+              dataType: true,
+              rateMultiplier: true,
+              rateSuffix: true,
+            },
+          },
           division: { select: { name: true } },
           region: { select: { name: true } },
         },
@@ -65,10 +84,7 @@ export default async function DataEntryPage({
     ]);
 
   // Build associations map: metricId -> { divisionIds[], regionIds[] }
-  const associationsMap: Record<
-    string,
-    { divisionIds: string[]; regionIds: string[] }
-  > = {};
+  const associationsMap: Record<string, { divisionIds: string[]; regionIds: string[] }> = {};
   for (const a of associations) {
     if (!associationsMap[a.metricDefinitionId]) {
       associationsMap[a.metricDefinitionId] = { divisionIds: [], regionIds: [] };

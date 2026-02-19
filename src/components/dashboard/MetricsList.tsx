@@ -12,11 +12,7 @@ interface MetricsListProps {
 
 export function MetricsList({ kpis, divisionSlug }: MetricsListProps) {
   if (kpis.length === 0) {
-    return (
-      <div className="text-center py-12 text-muted-foreground">
-        No KPI data available.
-      </div>
-    );
+    return <div className="text-center py-12 text-muted-foreground">No KPI data available.</div>;
   }
 
   return (
@@ -27,20 +23,14 @@ export function MetricsList({ kpis, divisionSlug }: MetricsListProps) {
             <th className="text-left font-medium px-4 py-3">Metric</th>
             <th className="text-right font-medium px-4 py-3">Value</th>
             <th className="text-right font-medium px-4 py-3">Trend</th>
-            <th className="text-right font-medium px-4 py-3 hidden sm:table-cell">
-              Target
-            </th>
-            <th className="text-right font-medium px-4 py-3 hidden md:table-cell">
-              Category
-            </th>
+            <th className="text-right font-medium px-4 py-3 hidden sm:table-cell">Target</th>
+            <th className="text-right font-medium px-4 py-3 hidden md:table-cell">Category</th>
           </tr>
         </thead>
         <tbody>
           {kpis.map((kpi) => {
-            const direction =
-              kpi.trend > 0.5 ? "up" : kpi.trend < -0.5 ? "down" : "flat";
-            const atOrAboveTarget =
-              kpi.target !== null && kpi.currentValue >= kpi.target;
+            const direction = kpi.trend > 0.5 ? "up" : kpi.trend < -0.5 ? "down" : "flat";
+            const atOrAboveTarget = kpi.target !== null && kpi.currentValue >= kpi.target;
             const effectiveSlug = kpi.divisionSlug || divisionSlug || "";
             const metricHref = kpi.metricSlug
               ? effectiveSlug && effectiveSlug !== "all"
@@ -58,10 +48,7 @@ export function MetricsList({ kpis, divisionSlug }: MetricsListProps) {
               >
                 <td className="px-4 py-3 font-medium">
                   {metricHref ? (
-                    <Link
-                      href={metricHref}
-                      className="hover:text-[#00b0ad] transition-colors"
-                    >
+                    <Link href={metricHref} className="hover:text-[#00b0ad] transition-colors">
                       {kpi.name}
                     </Link>
                   ) : (
@@ -69,7 +56,12 @@ export function MetricsList({ kpis, divisionSlug }: MetricsListProps) {
                   )}
                 </td>
                 <td className="px-4 py-3 text-right tabular-nums font-semibold">
-                  {formatMetricValue(kpi.currentValue, kpi.unit, kpi.rateMultiplier, kpi.rateSuffix)}
+                  {formatMetricValue(
+                    kpi.currentValue,
+                    kpi.unit,
+                    kpi.rateMultiplier,
+                    kpi.rateSuffix
+                  )}
                 </td>
                 <td className="px-4 py-3 text-right">
                   <span
@@ -81,9 +73,7 @@ export function MetricsList({ kpis, divisionSlug }: MetricsListProps) {
                     )}
                   >
                     {direction === "up" && <TrendingUp className="size-3.5" />}
-                    {direction === "down" && (
-                      <TrendingDown className="size-3.5" />
-                    )}
+                    {direction === "down" && <TrendingDown className="size-3.5" />}
                     {direction === "flat" && <Minus className="size-3.5" />}
                     <span>
                       {direction === "flat"
@@ -109,9 +99,7 @@ export function MetricsList({ kpis, divisionSlug }: MetricsListProps) {
                   )}
                 </td>
                 <td className="px-4 py-3 text-right hidden md:table-cell">
-                  <span className="text-xs text-muted-foreground">
-                    {kpi.category ?? "—"}
-                  </span>
+                  <span className="text-xs text-muted-foreground">{kpi.category ?? "—"}</span>
                 </td>
               </tr>
             );

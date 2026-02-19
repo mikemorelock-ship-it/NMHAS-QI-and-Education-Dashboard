@@ -6,11 +6,7 @@ import { DepartmentEditClient } from "./department-edit-client";
 
 export const dynamic = "force-dynamic";
 
-export default async function DepartmentEditPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
+export default async function DepartmentEditPage({ params }: { params: Promise<{ id: string }> }) {
   const session = await verifySession();
   if (!session || !hasAdminPermission(session.role, "manage_metric_defs")) {
     notFound();

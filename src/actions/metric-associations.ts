@@ -31,9 +31,7 @@ export async function setMetricAssociations(
     });
 
     // Create new associations (filter out empty entries)
-    const validAssociations = associations.filter(
-      (a) => a.divisionId || a.regionId
-    );
+    const validAssociations = associations.filter((a) => a.divisionId || a.regionId);
 
     if (validAssociations.length > 0) {
       await prisma.metricAssociation.createMany({

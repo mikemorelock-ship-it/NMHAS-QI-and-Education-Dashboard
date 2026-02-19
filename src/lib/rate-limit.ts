@@ -28,9 +28,7 @@ export interface RateLimitResult {
  * Returns `{ allowed: true }` if the login can proceed, or
  * `{ allowed: false, reason, retryAfterSeconds }` if blocked.
  */
-export async function checkLoginAllowed(
-  identifier: string
-): Promise<RateLimitResult> {
+export async function checkLoginAllowed(identifier: string): Promise<RateLimitResult> {
   const now = new Date();
 
   try {
@@ -59,13 +57,9 @@ export async function checkLoginAllowed(
       });
 
       if (nthFailure) {
-        const lockoutExpiresAt = new Date(
-          nthFailure.createdAt.getTime() + LOCKOUT_DURATION_MS
-        );
+        const lockoutExpiresAt = new Date(nthFailure.createdAt.getTime() + LOCKOUT_DURATION_MS);
         if (now < lockoutExpiresAt) {
-          const retryAfterSeconds = Math.ceil(
-            (lockoutExpiresAt.getTime() - now.getTime()) / 1000
-          );
+          const retryAfterSeconds = Math.ceil((lockoutExpiresAt.getTime() - now.getTime()) / 1000);
           return {
             allowed: false,
             retryAfterSeconds,
@@ -76,9 +70,7 @@ export async function checkLoginAllowed(
     }
 
     // 2. Check rate limit (5 failures in 15 minutes)
-    const rateLimitWindowStart = new Date(
-      now.getTime() - RATE_LIMIT_WINDOW_MS
-    );
+    const rateLimitWindowStart = new Date(now.getTime() - RATE_LIMIT_WINDOW_MS);
     const recentFailures = await prisma.loginAttempt.count({
       where: {
         identifier,
@@ -101,10 +93,7 @@ export async function checkLoginAllowed(
 
       const retryAfterSeconds = oldestInWindow
         ? Math.ceil(
-            (oldestInWindow.createdAt.getTime() +
-              RATE_LIMIT_WINDOW_MS -
-              now.getTime()) /
-              1000
+            (oldestInWindow.createdAt.getTime() + RATE_LIMIT_WINDOW_MS - now.getTime()) / 1000
           )
         : Math.ceil(RATE_LIMIT_WINDOW_MS / 1000);
 

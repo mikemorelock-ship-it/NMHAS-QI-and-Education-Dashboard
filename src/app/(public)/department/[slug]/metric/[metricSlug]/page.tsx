@@ -14,7 +14,12 @@ import {
 } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
 import { MetricDetailClient } from "./MetricDetailClient";
-import type { ChartDataPoint, MetricAnnotation, DivisionMetricBreakdown, ChildMetricSummary } from "@/types";
+import type {
+  ChartDataPoint,
+  MetricAnnotation,
+  DivisionMetricBreakdown,
+  ChildMetricSummary,
+} from "@/types";
 
 export const dynamic = "force-dynamic";
 
@@ -66,8 +71,7 @@ export default async function MetricDetailPage({ params }: PageProps) {
 
   const defaultRange = "ytd";
   const dateFilter = parseDateRangeFilter(defaultRange);
-  const periodStartFilter =
-    Object.keys(dateFilter).length > 0 ? { periodStart: dateFilter } : {};
+  const periodStartFilter = Object.keys(dateFilter).length > 0 ? { periodStart: dateFilter } : {};
 
   // -----------------------------------------------------------------------
   // Department-level time-series data (filtered to default range)
@@ -100,10 +104,7 @@ export default async function MetricDetailPage({ params }: PageProps) {
     trend = ((current - previous) / Math.abs(previous)) * 100;
   }
 
-  const average =
-    values.length > 0
-      ? values.reduce((sum, v) => sum + v, 0) / values.length
-      : 0;
+  const average = values.length > 0 ? values.reduce((sum, v) => sum + v, 0) / values.length : 0;
 
   // -----------------------------------------------------------------------
   // Division breakdown
@@ -287,9 +288,7 @@ export default async function MetricDetailPage({ params }: PageProps) {
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
-            <BreadcrumbLink href={`/department/${slug}`}>
-              {department.name}
-            </BreadcrumbLink>
+            <BreadcrumbLink href={`/department/${slug}`}>{department.name}</BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
@@ -301,11 +300,7 @@ export default async function MetricDetailPage({ params }: PageProps) {
       {/* Back button */}
       <div className="flex items-center gap-4">
         <Link href={`/department/${slug}`}>
-          <Button
-            variant="outline"
-            size="sm"
-            className="gap-2 min-h-12 touch-manipulation"
-          >
+          <Button variant="outline" size="sm" className="gap-2 min-h-12 touch-manipulation">
             <ArrowLeft className="size-4" />
             Back
           </Button>
@@ -359,6 +354,7 @@ export default async function MetricDetailPage({ params }: PageProps) {
             count: values.length,
           },
           annotations,
+          qiAnnotations: [],
           resources: metric.resources.map((r) => ({
             id: r.id,
             title: r.title,

@@ -27,12 +27,10 @@ export default function FieldTrainingError({
         <AlertTriangle className="h-8 w-8 text-destructive" />
       </div>
       <div className="space-y-2">
-        <h2 className="text-xl font-semibold text-foreground">
-          Something went wrong
-        </h2>
+        <h2 className="text-xl font-semibold text-foreground">Something went wrong</h2>
         <p className="text-muted-foreground max-w-md">
-          An unexpected error occurred. Your data is safe — try refreshing
-          or navigating to a different page.
+          An unexpected error occurred. Your data is safe — try refreshing or navigating to a
+          different page.
         </p>
       </div>
       <div className="flex gap-3">
@@ -40,10 +38,7 @@ export default function FieldTrainingError({
           <RefreshCw className="h-4 w-4 mr-2" />
           Try Again
         </Button>
-        <Button
-          variant="outline"
-          onClick={() => (window.location.href = "/fieldtraining")}
-        >
+        <Button variant="outline" onClick={() => (window.location.href = "/fieldtraining")}>
           Go to Dashboard
         </Button>
       </div>

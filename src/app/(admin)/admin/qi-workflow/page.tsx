@@ -156,25 +156,18 @@ export default async function QiWorkflowPage() {
 
   // Build campaign summaries with completeness scores
   const campaignSummaries: CampaignSummary[] = campaigns.map((c) => {
-    const totalPdsaCycles = c.driverDiagrams.reduce(
-      (sum, d) => sum + d.pdsaCycles.length,
-      0
-    );
+    const totalPdsaCycles = c.driverDiagrams.reduce((sum, d) => sum + d.pdsaCycles.length, 0);
 
     const hasAim = Boolean(c.goals && c.goals.trim().length > 0);
     const hasMeasures = Boolean(
-      c.driverDiagrams.some((d) =>
-        diagrams.find((dd) => dd.id === d.id && dd.metricDefinitionId)
-      )
+      c.driverDiagrams.some((d) => diagrams.find((dd) => dd.id === d.id && dd.metricDefinitionId))
     );
     const hasDiagram = c._count.driverDiagrams > 0;
     const hasPdsa = totalPdsaCycles > 0;
     const hasActions = c._count.actionItems > 0;
 
     const checks = [hasAim, hasMeasures, hasDiagram, hasPdsa, hasActions];
-    const completeness = Math.round(
-      (checks.filter(Boolean).length / checks.length) * 100
-    );
+    const completeness = Math.round((checks.filter(Boolean).length / checks.length) * 100);
 
     return {
       id: c.id,
@@ -185,9 +178,7 @@ export default async function QiWorkflowPage() {
       status: c.status,
       isActive: c.isActive,
       ownerId: c.ownerId,
-      ownerName: c.owner
-        ? `${c.owner.firstName} ${c.owner.lastName}`
-        : null,
+      ownerName: c.owner ? `${c.owner.firstName} ${c.owner.lastName}` : null,
       startDate: c.startDate?.toISOString().split("T")[0] ?? null,
       endDate: c.endDate?.toISOString().split("T")[0] ?? null,
       diagramCount: c._count.driverDiagrams,

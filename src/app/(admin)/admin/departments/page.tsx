@@ -63,10 +63,5 @@ export default async function DivisionsAndDepartmentsPage() {
     associationsCount: dept._count.metricAssociations,
   }));
 
-  return (
-    <DivisionsAndDepartmentsClient
-      divisions={divisionsData}
-      departments={departmentsData}
-    />
-  );
+  return <DivisionsAndDepartmentsClient divisions={divisionsData} departments={departmentsData} />;
 }

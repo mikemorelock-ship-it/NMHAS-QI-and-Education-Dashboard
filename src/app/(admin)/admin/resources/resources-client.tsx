@@ -80,23 +80,15 @@ export function ResourcesClient({
   const [formDept, setFormDept] = useState<string>("");
 
   const filteredByDept =
-    filterDept === "all"
-      ? regions
-      : regions.filter((r) => r.departmentId === filterDept);
+    filterDept === "all" ? regions : regions.filter((r) => r.departmentId === filterDept);
 
   const filtered =
-    filterDiv === "all"
-      ? filteredByDept
-      : filteredByDept.filter((r) => r.divisionId === filterDiv);
+    filterDiv === "all" ? filteredByDept : filteredByDept.filter((r) => r.divisionId === filterDiv);
 
   const filterDivisions =
-    filterDept === "all"
-      ? divisions
-      : divisions.filter((d) => d.departmentId === filterDept);
+    filterDept === "all" ? divisions : divisions.filter((d) => d.departmentId === filterDept);
 
-  const formDivisions = formDept
-    ? divisions.filter((d) => d.departmentId === formDept)
-    : [];
+  const formDivisions = formDept ? divisions.filter((d) => d.departmentId === formDept) : [];
 
   // Group filtered regions by division for display
   const groupedByDivision = filtered.reduce<
@@ -140,9 +132,7 @@ export function ResourcesClient({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-nmh-gray">Resources</h1>
-          <p className="text-muted-foreground mt-1">
-            Manage regions within divisions.
-          </p>
+          <p className="text-muted-foreground mt-1">Manage regions within divisions.</p>
         </div>
 
         <Dialog open={addOpen} onOpenChange={setAddOpen}>
@@ -158,9 +148,7 @@ export function ResourcesClient({
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Add Region</DialogTitle>
-              <DialogDescription>
-                Add a new region to a division.
-              </DialogDescription>
+              <DialogDescription>Add a new region to a division.</DialogDescription>
             </DialogHeader>
             <form
               action={async (formData) => {
@@ -175,17 +163,10 @@ export function ResourcesClient({
                 onDeptChange={setFormDept}
               />
               <DialogFooter className="mt-4">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setAddOpen(false)}
-                >
+                <Button type="button" variant="outline" onClick={() => setAddOpen(false)}>
                   Cancel
                 </Button>
-                <Button
-                  type="submit"
-                  className="bg-nmh-teal hover:bg-nmh-teal/90"
-                >
+                <Button type="submit" className="bg-nmh-teal hover:bg-nmh-teal/90">
                   Add Region
                 </Button>
               </DialogFooter>
@@ -273,9 +254,7 @@ export function ResourcesClient({
                     >
                       <TableCell className="font-medium">{region.name}</TableCell>
                       <TableCell>
-                        {region.role ?? (
-                          <span className="text-muted-foreground">--</span>
-                        )}
+                        {region.role ?? <span className="text-muted-foreground">--</span>}
                       </TableCell>
                       <TableCell>
                         <Badge
@@ -289,9 +268,7 @@ export function ResourcesClient({
                           {region.isActive ? "Active" : "Inactive"}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-center">
-                        {region.entriesCount}
-                      </TableCell>
+                      <TableCell className="text-center">{region.entriesCount}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1">
                           <Button
@@ -307,11 +284,7 @@ export function ResourcesClient({
                               <Eye className="h-3.5 w-3.5" />
                             )}
                           </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => openEdit(region)}
-                          >
+                          <Button variant="outline" size="sm" onClick={() => openEdit(region)}>
                             <Pencil className="h-3.5 w-3.5" />
                             Edit
                           </Button>
@@ -335,16 +308,11 @@ export function ResourcesClient({
       )}
 
       {/* Edit Dialog */}
-      <Dialog
-        open={editTarget !== null}
-        onOpenChange={(open) => !open && setEditTarget(null)}
-      >
+      <Dialog open={editTarget !== null} onOpenChange={(open) => !open && setEditTarget(null)}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Edit Region</DialogTitle>
-            <DialogDescription>
-              Update this region&apos;s information.
-            </DialogDescription>
+            <DialogDescription>Update this region&apos;s information.</DialogDescription>
           </DialogHeader>
           {editTarget && (
             <form
@@ -361,17 +329,10 @@ export function ResourcesClient({
                 defaultValues={editTarget}
               />
               <DialogFooter className="mt-4">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setEditTarget(null)}
-                >
+                <Button type="button" variant="outline" onClick={() => setEditTarget(null)}>
                   Cancel
                 </Button>
-                <Button
-                  type="submit"
-                  className="bg-nmh-teal hover:bg-nmh-teal/90"
-                >
+                <Button type="submit" className="bg-nmh-teal hover:bg-nmh-teal/90">
                   Save Changes
                 </Button>
               </DialogFooter>
@@ -381,20 +342,20 @@ export function ResourcesClient({
       </Dialog>
 
       {/* Delete Confirmation */}
-      <Dialog
-        open={deleteTarget !== null}
-        onOpenChange={(open) => !open && setDeleteTarget(null)}
-      >
+      <Dialog open={deleteTarget !== null} onOpenChange={(open) => !open && setDeleteTarget(null)}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Delete Region</DialogTitle>
             <DialogDescription>
               Are you sure you want to delete &quot;{deleteTarget?.name}&quot;?
               {(deleteTarget?.entriesCount ?? 0) > 0 && (
-                <> This region has {deleteTarget?.entriesCount} associated data entries
-                  that will have their region reference cleared.</>
-              )}
-              {" "}This action cannot be undone.
+                <>
+                  {" "}
+                  This region has {deleteTarget?.entriesCount} associated data entries that will
+                  have their region reference cleared.
+                </>
+              )}{" "}
+              This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -459,11 +420,7 @@ function RegionFormFields({
           disabled={!formDept}
         >
           <SelectTrigger className="w-full">
-            <SelectValue
-              placeholder={
-                formDept ? "Select division" : "Select a department first"
-              }
-            />
+            <SelectValue placeholder={formDept ? "Select division" : "Select a department first"} />
           </SelectTrigger>
           <SelectContent>
             {divisions.map((div) => (
@@ -486,8 +443,7 @@ function RegionFormFields({
       </div>
       <div className="space-y-2">
         <Label htmlFor="regionRole">
-          Type{" "}
-          <span className="text-muted-foreground font-normal">(optional)</span>
+          Type <span className="text-muted-foreground font-normal">(optional)</span>
         </Label>
         <Input
           id="regionRole"

@@ -19,10 +19,7 @@ import {
   ChevronDown,
   ChevronUp,
 } from "lucide-react";
-import {
-  startCoachingActivity,
-  completeCoachingActivity,
-} from "@/actions/coaching";
+import { startCoachingActivity, completeCoachingActivity } from "@/actions/coaching";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -93,9 +90,9 @@ export function CoachingDashboardClient({ activities }: CoachingDashboardClientP
     <div className="space-y-6 max-w-3xl mx-auto">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" asChild>
+        <Button variant="ghost" size="icon" asChild aria-label="Go back">
           <Link href="/fieldtraining">
-            <ArrowLeft className="h-4 w-4" />
+            <ArrowLeft className="h-4 w-4" aria-hidden="true" />
           </Link>
         </Button>
         <div>
@@ -233,14 +230,11 @@ function ActivityCard({ assignment }: { assignment: CoachingAssignment }) {
                   {TYPE_LABELS[activity.type] || activity.type}
                 </Badge>
                 <span className="text-xs text-muted-foreground flex items-center gap-1">
-                  <Clock className="h-3 w-3" />
-                  ~{activity.estimatedMins} min
+                  <Clock className="h-3 w-3" />~{activity.estimatedMins} min
                 </span>
               </div>
               {activity.description && (
-                <CardDescription className="mt-1.5 text-xs">
-                  {activity.description}
-                </CardDescription>
+                <CardDescription className="mt-1.5 text-xs">{activity.description}</CardDescription>
               )}
             </div>
           </div>
@@ -254,14 +248,8 @@ function ActivityCard({ assignment }: { assignment: CoachingAssignment }) {
             {status === "in_progress" && (
               <Badge className="bg-blue-100 text-blue-700">In Progress</Badge>
             )}
-            {status === "assigned" && (
-              <Badge className="bg-amber-100 text-amber-700">New</Badge>
-            )}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setExpanded(!expanded)}
-            >
+            {status === "assigned" && <Badge className="bg-amber-100 text-amber-700">New</Badge>}
+            <Button variant="ghost" size="sm" onClick={() => setExpanded(!expanded)}>
               {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
             </Button>
           </div>
@@ -275,15 +263,12 @@ function ActivityCard({ assignment }: { assignment: CoachingAssignment }) {
 
       {expanded && (
         <CardContent className="pt-0 space-y-4">
-          {error && (
-            <div className="rounded-md bg-red-50 p-3 text-sm text-red-800">{error}</div>
-          )}
+          {error && <div className="rounded-md bg-red-50 p-3 text-sm text-red-800">{error}</div>}
 
           {/* DOR reference */}
           {assignment.dor && (
             <div className="text-xs text-muted-foreground bg-muted p-2 rounded">
-              Triggered by DOR on{" "}
-              {new Date(assignment.dor.date).toLocaleDateString()} (Rating:{" "}
+              Triggered by DOR on {new Date(assignment.dor.date).toLocaleDateString()} (Rating:{" "}
               {assignment.dor.overallRating}/7)
             </div>
           )}
@@ -293,12 +278,10 @@ function ActivityCard({ assignment }: { assignment: CoachingAssignment }) {
             <Card className="border-dashed border-2 border-muted-foreground/20">
               <CardContent className="pt-6 text-center py-8">
                 <Gamepad2 className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-                <p className="font-medium text-muted-foreground">
-                  Interactive Content Coming Soon
-                </p>
+                <p className="font-medium text-muted-foreground">Interactive Content Coming Soon</p>
                 <p className="text-xs text-muted-foreground mt-1 max-w-sm mx-auto">
-                  This {activity.type} will feature AI-generated interactive scenarios
-                  based on EMS protocols and policies. Check back later!
+                  This {activity.type} will feature AI-generated interactive scenarios based on EMS
+                  protocols and policies. Check back later!
                 </p>
               </CardContent>
             </Card>
@@ -350,10 +333,7 @@ function ActivityCard({ assignment }: { assignment: CoachingAssignment }) {
                 <Button
                   size="sm"
                   onClick={handleComplete}
-                  disabled={
-                    isPending ||
-                    (activity.type === "reflection" && !response.trim())
-                  }
+                  disabled={isPending || (activity.type === "reflection" && !response.trim())}
                   className="bg-green-600 hover:bg-green-700"
                 >
                   <CheckCircle2 className="h-3.5 w-3.5 mr-1" />

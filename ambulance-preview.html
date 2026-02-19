@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>NMH Ambulance Loader Preview</title>
+<style>
+  body { display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; background: #f5f5f5; font-family: system-ui, sans-serif; }
+  .wrapper { text-align: center; }
+
+  /* Subtle side-to-side sway */
+  .ambulance { animation: amb-sway 2.5s ease-in-out infinite; }
+  @keyframes amb-sway { 0%, 100% { transform: translateX(-2px); } 50% { transform: translateX(2px); } }
+
+  /* Red/blue alternating flash */
+  .light-red { animation: flash-red 0.6s ease-in-out infinite; }
+  .light-blue { animation: flash-blue 0.6s ease-in-out infinite; }
+  @keyframes flash-red { 0%, 45% { fill: #dc2626; opacity: 1; } 50%, 100% { fill: #dc2626; opacity: 0.15; } }
+  @keyframes flash-blue { 0%, 45% { fill: #2563eb; opacity: 0.15; } 50%, 100% { fill: #2563eb; opacity: 1; } }
+
+  /* Flash rays that alternate with lights */
+  .ray-red { animation: ray-red 0.6s ease-in-out infinite; }
+  .ray-blue { animation: ray-blue 0.6s ease-in-out infinite; }
+  @keyframes ray-red { 0%, 45% { stroke: #dc2626; opacity: 0.7; } 50%, 100% { stroke: #dc2626; opacity: 0; } }
+  @keyframes ray-blue { 0%, 45% { stroke: #2563eb; opacity: 0; } 50%, 100% { stroke: #2563eb; opacity: 0.7; } }
+
+  .message { color: #6b7280; font-size: 14px; font-weight: 500; margin-top: 12px; animation: pulse 2s ease-in-out infinite; }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+</style>
+</head>
+<body>
+<div class="wrapper">
+  <div class="ambulance">
+    <svg width="260" height="160" viewBox="0 0 260 160" fill="none" xmlns="http://www.w3.org/2000/svg">
+
+      <!-- ===== LIGHT BAR (replaces yellow light with red/blue) ===== -->
+      <!-- Light bar base -->
+      <rect x="148" y="32" width="28" height="8" rx="3" fill="#444"/>
+      <!-- Red light (left) -->
+      <circle cx="156" cy="36" r="4" class="light-red"/>
+      <!-- Blue light (right) -->
+      <circle cx="170" cy="36" r="4" class="light-blue"/>
+
+      <!-- Flash rays - red (left side) -->
+      <line x1="146" y1="28" x2="142" y2="20" stroke-width="2" stroke-linecap="round" class="ray-red"/>
+      <line x1="150" y1="26" x2="150" y2="18" stroke-width="2" stroke-linecap="round" class="ray-red"/>
+      <line x1="156" y1="25" x2="158" y2="17" stroke-width="2" stroke-linecap="round" class="ray-red"/>
+      <!-- Flash rays - blue (right side) -->
+      <line x1="166" y1="25" x2="164" y2="17" stroke-width="2" stroke-linecap="round" class="ray-blue"/>
+      <line x1="172" y1="26" x2="172" y2="18" stroke-width="2" stroke-linecap="round" class="ray-blue"/>
+      <line x1="176" y1="28" x2="180" y2="20" stroke-width="2" stroke-linecap="round" class="ray-blue"/>
+
+      <!-- ===== PATIENT COMPARTMENT (dark charcoal box) ===== -->
+      <rect x="20" y="42" width="148" height="80" rx="4" fill="#5a5e63"/>
+
+      <!-- Three small white windows along top -->
+      <rect x="32" y="52" width="22" height="16" rx="3" fill="white"/>
+      <rect x="60" y="52" width="22" height="16" rx="3" fill="white"/>
+      <rect x="88" y="52" width="22" height="16" rx="3" fill="white"/>
+
+      <!-- Horizontal stripe/divider line -->
+      <rect x="20" y="76" width="148" height="2" fill="#484c50"/>
+
+      <!-- NMH logo circle (white circle with colored N logo) -->
+      <circle cx="80" cy="100" r="14" fill="white"/>
+      <!-- The N logo bars: teal, red, yellow -->
+      <rect x="72" y="91" width="5" height="18" rx="1" fill="#00b0ad"/>
+      <rect x="78" y="91" width="5" height="18" rx="1" fill="#e04726"/>
+      <rect x="84" y="91" width="5" height="18" rx="1" fill="#fcb526"/>
+
+      <!-- ===== CAB (front section) ===== -->
+      <path d="M168 56 h44 a16 16 0 0 1 16 16 v50 H168 V56z" fill="#5a5e63"/>
+
+      <!-- Cab windshield (white/light) -->
+      <path d="M176 60 h34 a12 12 0 0 1 12 12 v24 H176 V60z" fill="white" rx="3"/>
+
+      <!-- Cab-to-box connection (seamless) -->
+      <rect x="164" y="42" width="8" height="80" fill="#5a5e63"/>
+
+      <!-- Headlight -->
+      <rect x="224" y="96" width="6" height="12" rx="3" fill="#e5e7eb"/>
+
+      <!-- ===== LOWER BODY ===== -->
+      <rect x="16" y="122" width="216" height="6" rx="2" fill="#4b4f54"/>
+
+      <!-- ===== REAR WHEEL ===== -->
+      <circle cx="64" cy="130" r="18" fill="#e5e7eb"/>
+      <circle cx="64" cy="130" r="12" fill="#d1d5db"/>
+      <circle cx="64" cy="130" r="5" fill="#9ca3af"/>
+
+      <!-- ===== FRONT WHEEL ===== -->
+      <circle cx="196" cy="130" r="18" fill="#e5e7eb"/>
+      <circle cx="196" cy="130" r="12" fill="#d1d5db"/>
+      <circle cx="196" cy="130" r="5" fill="#9ca3af"/>
+
+    </svg>
+  </div>
+  <div class="message">Loading...</div>
+</div>
+</body>
+</html>

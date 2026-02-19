@@ -2,11 +2,7 @@
 
 import React, { useState, useTransition } from "react";
 import Link from "next/link";
-import {
-  createDriverNode,
-  updateDriverNode,
-  deleteDriverNode,
-} from "@/actions/driver-diagrams";
+import { createDriverNode, updateDriverNode, deleteDriverNode } from "@/actions/driver-diagrams";
 import { DRIVER_NODE_TYPE_LABELS, DRIVER_NODE_TYPE_COLORS } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -134,15 +130,14 @@ function countDescendants(nodeId: string, nodes: NodeRow[]): number {
 // Component
 // ---------------------------------------------------------------------------
 
-export function DriverDiagramDetailClient({
-  diagram,
-  nodes,
-}: DriverDiagramDetailClientProps) {
+export function DriverDiagramDetailClient({ diagram, nodes }: DriverDiagramDetailClientProps) {
   const [isPending, startTransition] = useTransition();
 
   // Dialog state
   const [addNodeOpen, setAddNodeOpen] = useState(false);
-  const [addNodeType, setAddNodeType] = useState<"aim" | "primary" | "secondary" | "changeIdea">("aim");
+  const [addNodeType, setAddNodeType] = useState<"aim" | "primary" | "secondary" | "changeIdea">(
+    "aim"
+  );
   const [addNodeParentId, setAddNodeParentId] = useState<string | null>(null);
 
   const [editNode, setEditNode] = useState<NodeRow | null>(null);
@@ -193,9 +188,7 @@ export function DriverDiagramDetailClient({
         </Button>
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold text-nmh-gray">
-              {diagram.name}
-            </h1>
+            <h1 className="text-2xl font-bold text-nmh-gray">{diagram.name}</h1>
             <Badge variant="outline" className="capitalize">
               {diagram.status}
             </Badge>
@@ -223,11 +216,7 @@ export function DriverDiagramDetailClient({
         <div className="flex items-center justify-between px-4 py-3 border-b">
           <h2 className="font-semibold text-nmh-gray">Node Tree</h2>
           {!hasAim && (
-            <Button
-              size="sm"
-              className="bg-nmh-teal hover:bg-nmh-teal/90"
-              onClick={handleAddAim}
-            >
+            <Button size="sm" className="bg-nmh-teal hover:bg-nmh-teal/90" onClick={handleAddAim}>
               <Plus className="h-4 w-4" />
               Add Aim
             </Button>
@@ -239,11 +228,7 @@ export function DriverDiagramDetailClient({
             <p className="text-muted-foreground mb-4">
               No nodes yet. Start by adding an Aim statement for this driver diagram.
             </p>
-            <Button
-              size="lg"
-              className="bg-nmh-teal hover:bg-nmh-teal/90"
-              onClick={handleAddAim}
-            >
+            <Button size="lg" className="bg-nmh-teal hover:bg-nmh-teal/90" onClick={handleAddAim}>
               <Plus className="h-5 w-5" />
               Add Aim Statement
             </Button>
@@ -264,14 +249,9 @@ export function DriverDiagramDetailClient({
                     >
                       {DRIVER_NODE_TYPE_LABELS[node.type]}
                     </Badge>
-                    <span className="font-medium text-sm truncate">
-                      {node.text}
-                    </span>
+                    <span className="font-medium text-sm truncate">{node.text}</span>
                     {node.type === "changeIdea" && node.pdsaCycleCount > 0 && (
-                      <Badge
-                        variant="secondary"
-                        className="text-xs shrink-0"
-                      >
+                      <Badge variant="secondary" className="text-xs shrink-0">
                         <RefreshCcw className="h-3 w-3 mr-1" />
                         {node.pdsaCycleCount} PDSA
                       </Badge>
@@ -326,12 +306,10 @@ export function DriverDiagramDetailClient({
       <Dialog open={addNodeOpen} onOpenChange={setAddNodeOpen}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>
-              Add {DRIVER_NODE_TYPE_LABELS[addNodeType]}
-            </DialogTitle>
+            <DialogTitle>Add {DRIVER_NODE_TYPE_LABELS[addNodeType]}</DialogTitle>
             <DialogDescription>
-              Create a new {DRIVER_NODE_TYPE_LABELS[addNodeType].toLowerCase()} node
-              in this driver diagram.
+              Create a new {DRIVER_NODE_TYPE_LABELS[addNodeType].toLowerCase()} node in this driver
+              diagram.
             </DialogDescription>
           </DialogHeader>
           <form
@@ -380,22 +358,12 @@ export function DriverDiagramDetailClient({
               </div>
               <div className="space-y-2">
                 <Label htmlFor="add-sortOrder">Sort Order</Label>
-                <Input
-                  id="add-sortOrder"
-                  name="sortOrder"
-                  type="number"
-                  defaultValue={0}
-                  min={0}
-                />
+                <Input id="add-sortOrder" name="sortOrder" type="number" defaultValue={0} min={0} />
               </div>
             </div>
 
             <DialogFooter className="mt-4">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setAddNodeOpen(false)}
-              >
+              <Button type="button" variant="outline" onClick={() => setAddNodeOpen(false)}>
                 Cancel
               </Button>
               <Button
@@ -413,18 +381,13 @@ export function DriverDiagramDetailClient({
       {/* ================================================================= */}
       {/* Edit Node Dialog                                                   */}
       {/* ================================================================= */}
-      <Dialog
-        open={editNode !== null}
-        onOpenChange={(open) => !open && setEditNode(null)}
-      >
+      <Dialog open={editNode !== null} onOpenChange={(open) => !open && setEditNode(null)}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>
               Edit {editNode ? DRIVER_NODE_TYPE_LABELS[editNode.type] : "Node"}
             </DialogTitle>
-            <DialogDescription>
-              Update this node&apos;s text and details.
-            </DialogDescription>
+            <DialogDescription>Update this node&apos;s text and details.</DialogDescription>
           </DialogHeader>
           {editNode && (
             <form
@@ -482,11 +445,7 @@ export function DriverDiagramDetailClient({
               </div>
 
               <DialogFooter className="mt-4">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setEditNode(null)}
-                >
+                <Button type="button" variant="outline" onClick={() => setEditNode(null)}>
                   Cancel
                 </Button>
                 <Button
@@ -505,18 +464,13 @@ export function DriverDiagramDetailClient({
       {/* ================================================================= */}
       {/* Delete Node Confirmation Dialog                                    */}
       {/* ================================================================= */}
-      <Dialog
-        open={deleteTarget !== null}
-        onOpenChange={(open) => !open && setDeleteTarget(null)}
-      >
+      <Dialog open={deleteTarget !== null} onOpenChange={(open) => !open && setDeleteTarget(null)}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Delete Node</DialogTitle>
             <DialogDescription>
               Are you sure you want to delete the{" "}
-              {deleteTarget
-                ? DRIVER_NODE_TYPE_LABELS[deleteTarget.type].toLowerCase()
-                : "node"}{" "}
+              {deleteTarget ? DRIVER_NODE_TYPE_LABELS[deleteTarget.type].toLowerCase() : "node"}{" "}
               &quot;{deleteTarget?.text}&quot;?
               {deleteTarget && countDescendants(deleteTarget.id, nodes) > 0 && (
                 <>
@@ -535,10 +489,7 @@ export function DriverDiagramDetailClient({
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setDeleteTarget(null)}
-            >
+            <Button variant="outline" onClick={() => setDeleteTarget(null)}>
               Cancel
             </Button>
             <form
@@ -556,11 +507,7 @@ export function DriverDiagramDetailClient({
                 });
               }}
             >
-              <Button
-                type="submit"
-                variant="destructive"
-                disabled={isPending}
-              >
+              <Button type="submit" variant="destructive" disabled={isPending}>
                 {isPending ? "Deleting..." : "Delete"}
               </Button>
             </form>

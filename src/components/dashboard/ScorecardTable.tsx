@@ -50,17 +50,16 @@ export function ScorecardTable({ scorecard }: ScorecardTableProps) {
         <table className="w-full text-sm">
           <thead>
             <tr className="bg-nmh-gray text-white">
-              <th className="text-left font-semibold px-4 py-2.5 whitespace-nowrap sticky left-0 bg-nmh-gray z-10">
+              <th scope="col" className="text-left font-semibold px-4 py-2.5 whitespace-nowrap sticky left-0 bg-nmh-gray z-10">
                 Metric
               </th>
-              <th className="text-right font-semibold px-3 py-2.5 whitespace-nowrap">
-                Target
-              </th>
-              <th className="text-right font-semibold px-3 py-2.5 whitespace-nowrap border-r border-white/20">
+              <th scope="col" className="text-right font-semibold px-3 py-2.5 whitespace-nowrap">Target</th>
+              <th scope="col" className="text-right font-semibold px-3 py-2.5 whitespace-nowrap border-r border-white/20">
                 YTD
               </th>
               {months.map((month) => (
                 <th
+                  scope="col"
                   key={month}
                   className="text-right font-semibold px-3 py-2.5 whitespace-nowrap min-w-[70px]"
                 >
@@ -86,13 +85,23 @@ export function ScorecardTable({ scorecard }: ScorecardTableProps) {
                 {/* Metric rows in this group */}
                 {group.metrics.map((metric) => {
                   const monthIndex = (m: string) =>
-                    ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"].indexOf(m);
+                    [
+                      "Jan",
+                      "Feb",
+                      "Mar",
+                      "Apr",
+                      "May",
+                      "Jun",
+                      "Jul",
+                      "Aug",
+                      "Sep",
+                      "Oct",
+                      "Nov",
+                      "Dec",
+                    ].indexOf(m);
 
                   return (
-                    <tr
-                      key={metric.metricId}
-                      className="hover:bg-muted/50 transition-colors"
-                    >
+                    <tr key={metric.metricId} className="hover:bg-muted/50 transition-colors">
                       {/* Metric name */}
                       <td className="px-4 py-2.5 font-medium whitespace-nowrap sticky left-0 bg-card z-10">
                         {metric.metricName}
@@ -101,7 +110,12 @@ export function ScorecardTable({ scorecard }: ScorecardTableProps) {
                       {/* Target */}
                       <td className="px-3 py-2.5 text-right font-mono text-muted-foreground whitespace-nowrap">
                         {metric.target !== null
-                          ? formatMetricValue(metric.target, metric.unit, metric.rateMultiplier, metric.rateSuffix)
+                          ? formatMetricValue(
+                              metric.target,
+                              metric.unit,
+                              metric.rateMultiplier,
+                              metric.rateSuffix
+                            )
                           : "--"}
                       </td>
 
@@ -113,7 +127,19 @@ export function ScorecardTable({ scorecard }: ScorecardTableProps) {
                         }
                       >
                         {metric.actualYtd !== null
-                          ? formatMetricValue(metric.actualYtd, metric.unit, metric.rateMultiplier, metric.rateSuffix)
+                          ? <>
+                              {formatMetricValue(
+                                metric.actualYtd,
+                                metric.unit,
+                                metric.rateMultiplier,
+                                metric.rateSuffix
+                              )}
+                              {metric.target !== null && (
+                                <span className="sr-only">
+                                  {metric.actualYtd >= metric.target ? "(on target)" : "(below target)"}
+                                </span>
+                              )}
+                            </>
                           : "--"}
                       </td>
 
@@ -131,11 +157,23 @@ export function ScorecardTable({ scorecard }: ScorecardTableProps) {
                               getTargetColorClass(value, metric.target)
                             }
                           >
-                            {value !== null
-                              ? formatMetricValue(value, metric.unit, metric.rateMultiplier, metric.rateSuffix)
-                              : (
-                                <span className="text-muted-foreground/40">--</span>
-                              )}
+                            {value !== null ? (
+                              <>
+                                {formatMetricValue(
+                                  value,
+                                  metric.unit,
+                                  metric.rateMultiplier,
+                                  metric.rateSuffix
+                                )}
+                                {metric.target !== null && (
+                                  <span className="sr-only">
+                                    {value >= metric.target ? "(on target)" : "(below target)"}
+                                  </span>
+                                )}
+                              </>
+                            ) : (
+                              <span className="text-muted-foreground/40">--</span>
+                            )}
                           </td>
                         );
                       })}
@@ -151,10 +189,7 @@ export function ScorecardTable({ scorecard }: ScorecardTableProps) {
   );
 }
 
-function getTargetColorClass(
-  value: number | null,
-  target: number | null
-): string {
+function getTargetColorClass(value: number | null, target: number | null): string {
   if (value === null || target === null) return "";
   if (value >= target) return "text-green-700 bg-green-50";
   return "text-red-700 bg-red-50";

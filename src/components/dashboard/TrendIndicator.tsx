@@ -19,13 +19,11 @@ export function TrendIndicator({ value, direction }: TrendIndicatorProps) {
         direction === "flat" && "text-muted-foreground"
       )}
     >
-      {direction === "up" && <TrendingUp className="size-4" />}
-      {direction === "down" && <TrendingDown className="size-4" />}
-      {direction === "flat" && <Minus className="size-4" />}
+      {direction === "up" && <TrendingUp className="size-4" aria-hidden="true" />}
+      {direction === "down" && <TrendingDown className="size-4" aria-hidden="true" />}
+      {direction === "flat" && <Minus className="size-4" aria-hidden="true" />}
       <span>
-        {direction === "flat"
-          ? "0%"
-          : `${direction === "up" ? "+" : "-"}${value.toFixed(1)}%`}
+        {direction === "flat" ? "0%" : `${direction === "up" ? "+" : "-"}${value.toFixed(1)}%`}
       </span>
     </div>
   );

@@ -3,13 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
@@ -68,13 +62,7 @@ type Division = {
   name: string;
 };
 
-export function FtosClient({
-  ftos,
-  divisions,
-}: {
-  ftos: Fto[];
-  divisions: Division[];
-}) {
+export function FtosClient({ ftos, divisions }: { ftos: Fto[]; divisions: Division[] }) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingFto, setEditingFto] = useState<Fto | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -133,16 +121,14 @@ export function FtosClient({
   return (
     <div className="space-y-8">
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" asChild>
-          <Link href="/admin/field-training"><ArrowLeft className="h-4 w-4" /></Link>
+        <Button variant="ghost" size="icon" asChild aria-label="Go back">
+          <Link href="/admin/field-training">
+            <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+          </Link>
         </Button>
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">
-            Field Training Officers
-          </h1>
-          <p className="text-muted-foreground">
-            Manage FTOs who supervise and evaluate trainees.
-          </p>
+          <h1 className="text-2xl font-bold tracking-tight">Field Training Officers</h1>
+          <p className="text-muted-foreground">Manage FTOs who supervise and evaluate trainees.</p>
         </div>
       </div>
 
@@ -151,8 +137,7 @@ export function FtosClient({
           <div>
             <CardTitle>FTOs</CardTitle>
             <CardDescription>
-              {ftos.length} field training officer{ftos.length !== 1 && "s"}{" "}
-              total
+              {ftos.length} field training officer{ftos.length !== 1 && "s"} total
             </CardDescription>
           </div>
           <Dialog
@@ -174,9 +159,7 @@ export function FtosClient({
             <DialogContent>
               <form action={handleSubmit}>
                 <DialogHeader>
-                  <DialogTitle>
-                    {editingFto ? "Edit FTO" : "Add FTO"}
-                  </DialogTitle>
+                  <DialogTitle>{editingFto ? "Edit FTO" : "Add FTO"}</DialogTitle>
                   <DialogDescription>
                     {editingFto
                       ? "Update the field training officer details."
@@ -184,9 +167,9 @@ export function FtosClient({
                   </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 py-4">
-                  {error && (
-                    <p className="text-sm text-destructive">{error}</p>
-                  )}
+                  <div aria-live="polite">
+                    {error && <p className="text-sm text-destructive" role="alert">{error}</p>}
+                  </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="firstName">First Name</Label>
@@ -240,10 +223,7 @@ export function FtosClient({
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="divisionId">Division</Label>
-                      <Select
-                        name="divisionId"
-                        defaultValue={editingFto?.divisionId ?? ""}
-                      >
+                      <Select name="divisionId" defaultValue={editingFto?.divisionId ?? ""}>
                         <SelectTrigger className="w-full">
                           <SelectValue placeholder="Select division (optional)" />
                         </SelectTrigger>
@@ -258,10 +238,7 @@ export function FtosClient({
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="role">Role</Label>
-                      <Select
-                        name="role"
-                        defaultValue={editingFto?.role ?? "fto"}
-                      >
+                      <Select name="role" defaultValue={editingFto?.role ?? "fto"}>
                         <SelectTrigger className="w-full">
                           <SelectValue placeholder="Select role" />
                         </SelectTrigger>
@@ -277,9 +254,7 @@ export function FtosClient({
                   </div>
                 </div>
                 <DialogFooter>
-                  <Button type="submit">
-                    {editingFto ? "Update" : "Create"}
-                  </Button>
+                  <Button type="submit">{editingFto ? "Update" : "Create"}</Button>
                 </DialogFooter>
               </form>
             </DialogContent>
@@ -314,10 +289,13 @@ export function FtosClient({
                     <Badge
                       variant="outline"
                       className={
-                        fto.role === "supervisor" ? "border-blue-300 text-blue-700 bg-blue-50" :
-                        fto.role === "manager" ? "border-purple-300 text-purple-700 bg-purple-50" :
-                        fto.role === "admin" ? "border-red-300 text-red-700 bg-red-50" :
-                        ""
+                        fto.role === "supervisor"
+                          ? "border-blue-300 text-blue-700 bg-blue-50"
+                          : fto.role === "manager"
+                            ? "border-purple-300 text-purple-700 bg-purple-50"
+                            : fto.role === "admin"
+                              ? "border-red-300 text-red-700 bg-red-50"
+                              : ""
                       }
                     >
                       {FTO_ROLE_LABELS[fto.role] ?? fto.role}
@@ -332,9 +310,7 @@ export function FtosClient({
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    <Badge
-                      variant={fto.isActive ? "default" : "secondary"}
-                    >
+                    <Badge variant={fto.isActive ? "default" : "secondary"}>
                       {fto.isActive ? "Active" : "Inactive"}
                     </Badge>
                   </TableCell>
@@ -368,9 +344,7 @@ export function FtosClient({
                       >
                         <UserCheck
                           className={`h-4 w-4 ${
-                            fto.isActive
-                              ? "text-green-600"
-                              : "text-muted-foreground"
+                            fto.isActive ? "text-green-600" : "text-muted-foreground"
                           }`}
                         />
                       </Button>
@@ -385,11 +359,7 @@ export function FtosClient({
                         <Pencil className="h-4 w-4" />
                       </Button>
                       {fto.assignmentCount === 0 && fto.evalCount === 0 && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleDelete(fto.id)}
-                        >
+                        <Button variant="ghost" size="icon" onClick={() => handleDelete(fto.id)}>
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       )}
@@ -399,10 +369,7 @@ export function FtosClient({
               ))}
               {ftos.length === 0 && (
                 <TableRow>
-                  <TableCell
-                    colSpan={10}
-                    className="text-center text-muted-foreground py-8"
-                  >
+                  <TableCell colSpan={10} className="text-center text-muted-foreground py-8">
                     No field training officers added yet.
                   </TableCell>
                 </TableRow>

@@ -12,7 +12,7 @@ import {
   ReferenceLine,
 } from "recharts";
 import { NMH_COLORS } from "@/lib/constants";
-import type { SPCChartData } from "@/types";
+import type { SPCChartData, QIAnnotation } from "@/types";
 import { formatMetricValue } from "@/lib/utils";
 
 // ---------------------------------------------------------------------------
@@ -26,17 +26,14 @@ interface ControlChartProps {
   className?: string;
   rateMultiplier?: number | null;
   rateSuffix?: string | null;
+  annotations?: QIAnnotation[];
 }
 
 // ---------------------------------------------------------------------------
 // Custom dot renderer: red for special cause, teal for normal
 // ---------------------------------------------------------------------------
 
-function CustomDot(props: {
-  cx?: number;
-  cy?: number;
-  payload?: { specialCause?: boolean };
-}) {
+function CustomDot(props: { cx?: number; cy?: number; payload?: { specialCause?: boolean } }) {
   const { cx, cy, payload } = props;
   if (cx == null || cy == null) return null;
 
@@ -100,7 +97,9 @@ function ControlChartTooltip({
         <div className="flex justify-between gap-4">
           <span className="text-gray-500">Center:</span>
           <span className="font-mono text-gray-600">
-            {centerLine != null ? formatMetricValue(centerLine, unit, rateMultiplier, rateSuffix) : "--"}
+            {centerLine != null
+              ? formatMetricValue(centerLine, unit, rateMultiplier, rateSuffix)
+              : "--"}
           </span>
         </div>
         <div className="flex justify-between gap-4">
@@ -136,7 +135,15 @@ function ControlChartTooltip({
 // Main Component
 // ---------------------------------------------------------------------------
 
-export function ControlChart({ spcData, unit, target, className, rateMultiplier, rateSuffix }: ControlChartProps) {
+export function ControlChart({
+  spcData,
+  unit,
+  target,
+  className,
+  rateMultiplier,
+  rateSuffix,
+  annotations,
+}: ControlChartProps) {
   if (!spcData || spcData.points.length === 0) {
     return (
       <div className="text-center py-12 text-muted-foreground">
@@ -154,42 +161,34 @@ export function ControlChart({ spcData, unit, target, className, rateMultiplier,
 
   // For P/U charts, control limits vary per point — use Line elements
   // For I-MR, limits are constant — but we use Lines for consistency
-  const hasVariableLimits =
-    spcData.chartType === "p-chart" || spcData.chartType === "u-chart";
+  const hasVariableLimits = spcData.chartType === "p-chart" || spcData.chartType === "u-chart";
 
   const specialCauseCount = spcData.points.filter((p) => p.specialCause).length;
 
   return (
     <div className={className}>
       {/* Individuals Chart */}
+      <div aria-hidden="true">
       <ResponsiveContainer width="100%" height={350}>
-        <ComposedChart
-          data={spcData.points}
-          margin={{ top: 10, right: 30, left: 10, bottom: 5 }}
-        >
+        <ComposedChart data={spcData.points} margin={{ top: 10, right: 30, left: 10, bottom: 5 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-          <XAxis
-            dataKey="period"
-            tick={{ fontSize: 11 }}
-            tickLine={false}
-          />
+          <XAxis dataKey="period" tick={{ fontSize: 11 }} tickLine={false} />
           <YAxis
-            domain={[
-              Math.floor(yMin - yPadding),
-              Math.ceil(yMax + yPadding),
-            ]}
+            domain={[Math.floor(yMin - yPadding), Math.ceil(yMax + yPadding)]}
             tick={{ fontSize: 11 }}
             tickLine={false}
             tickFormatter={(v: number) => formatMetricValue(v, unit, rateMultiplier, rateSuffix)}
           />
           <Tooltip
-            content={<ControlChartTooltip unit={unit} rateMultiplier={rateMultiplier} rateSuffix={rateSuffix} />}
+            content={
+              <ControlChartTooltip
+                unit={unit}
+                rateMultiplier={rateMultiplier}
+                rateSuffix={rateSuffix}
+              />
+            }
           />
-          <Legend
-            verticalAlign="top"
-            height={36}
-            iconType="plainline"
-          />
+          <Legend verticalAlign="top" height={36} iconType="plainline" />
 
           {/* UCL line (dashed, orange) */}
           <Line
@@ -247,6 +246,25 @@ export function ControlChart({ spcData, unit, target, className, rateMultiplier,
             />
           )}
 
+          {/* QI Annotation vertical lines */}
+          {annotations?.map((ann) => (
+            <ReferenceLine
+              key={ann.id}
+              x={ann.period}
+              stroke={ann.type === "pdsa" ? "#7c3aed" : NMH_COLORS.teal}
+              strokeDasharray="4 3"
+              strokeWidth={1.5}
+              label={{
+                value: ann.label,
+                position: "insideTopLeft",
+                fill: ann.type === "pdsa" ? "#7c3aed" : NMH_COLORS.teal,
+                fontSize: 10,
+                angle: -90,
+                offset: 10,
+              }}
+            />
+          ))}
+
           {/* Data line */}
           <Line
             type="monotone"
@@ -259,35 +277,34 @@ export function ControlChart({ spcData, unit, target, className, rateMultiplier,
           />
         </ComposedChart>
       </ResponsiveContainer>
+      </div>
 
       {/* Moving Range Chart (for I-MR) */}
       {spcData.chartType === "i-mr" && spcData.movingRange && spcData.movingRange.length > 0 && (
-        <div className="mt-4">
-          <p className="text-xs font-medium text-muted-foreground mb-2 ml-1">
-            Moving Range
-          </p>
+        <div className="mt-4" aria-hidden="true">
+          <p className="text-xs font-medium text-muted-foreground mb-2 ml-1">Moving Range</p>
           <ResponsiveContainer width="100%" height={180}>
             <ComposedChart
               data={spcData.movingRange}
               margin={{ top: 5, right: 30, left: 10, bottom: 5 }}
             >
               <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-              <XAxis
-                dataKey="period"
-                tick={{ fontSize: 10 }}
-                tickLine={false}
-              />
+              <XAxis dataKey="period" tick={{ fontSize: 10 }} tickLine={false} />
               <YAxis
                 tick={{ fontSize: 10 }}
                 tickLine={false}
-                tickFormatter={(v: number) => formatMetricValue(v, unit, rateMultiplier, rateSuffix)}
+                tickFormatter={(v: number) =>
+                  formatMetricValue(v, unit, rateMultiplier, rateSuffix)
+                }
               />
               {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
               <Tooltip
-                formatter={((value: any, name: any) => [
-                  formatMetricValue(Number(value ?? 0), unit, rateMultiplier, rateSuffix),
-                  name === "ucl" ? "UCL" : name === "centerLine" ? "CL" : "MR",
-                ]) as any}
+                formatter={
+                  ((value: any, name: any) => [
+                    formatMetricValue(Number(value ?? 0), unit, rateMultiplier, rateSuffix),
+                    name === "ucl" ? "UCL" : name === "centerLine" ? "CL" : "MR",
+                  ]) as any
+                }
                 labelFormatter={(label: any) => String(label ?? "")}
               />
 
@@ -325,33 +342,49 @@ export function ControlChart({ spcData, unit, target, className, rateMultiplier,
         </div>
       )}
 
+      <span className="sr-only">
+        Control chart summary: {spcData.chartType.toUpperCase()} chart with {spcData.points.length} data points and {specialCauseCount} special cause{specialCauseCount !== 1 ? "s" : ""}.
+      </span>
       {/* SPC summary */}
       <div className="flex flex-wrap gap-4 mt-3 px-2 text-xs text-muted-foreground">
         <span>
           Chart: <strong className="text-foreground">{spcData.chartType.toUpperCase()}</strong>
         </span>
         <span>
-          Center Line: <strong className="text-foreground">{formatMetricValue(spcData.centerLine, unit, rateMultiplier, rateSuffix)}</strong>
+          Center Line:{" "}
+          <strong className="text-foreground">
+            {formatMetricValue(spcData.centerLine, unit, rateMultiplier, rateSuffix)}
+          </strong>
         </span>
         {spcData.points.length > 0 && (
           <>
             <span>
-              UCL: <strong className="text-foreground">
-                {formatMetricValue(spcData.points[spcData.points.length - 1].ucl, unit, rateMultiplier, rateSuffix)}
+              UCL:{" "}
+              <strong className="text-foreground">
+                {formatMetricValue(
+                  spcData.points[spcData.points.length - 1].ucl,
+                  unit,
+                  rateMultiplier,
+                  rateSuffix
+                )}
               </strong>
             </span>
             <span>
-              LCL: <strong className="text-foreground">
-                {formatMetricValue(spcData.points[spcData.points.length - 1].lcl, unit, rateMultiplier, rateSuffix)}
+              LCL:{" "}
+              <strong className="text-foreground">
+                {formatMetricValue(
+                  spcData.points[spcData.points.length - 1].lcl,
+                  unit,
+                  rateMultiplier,
+                  rateSuffix
+                )}
               </strong>
             </span>
           </>
         )}
         <span>
           Special Causes:{" "}
-          <strong
-            className={specialCauseCount > 0 ? "text-orange-600" : "text-foreground"}
-          >
+          <strong className={specialCauseCount > 0 ? "text-orange-600" : "text-foreground"}>
             {specialCauseCount}
           </strong>
         </span>

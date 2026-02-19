@@ -13,7 +13,9 @@ import { requireAdmin } from "@/lib/require-auth";
 const PdsaCycleSchema = z.object({
   title: z.string().min(1, "Title is required").max(200),
   cycleNumber: z.coerce.number().int().min(1).default(1),
-  status: z.enum(["planning", "doing", "studying", "acting", "completed", "abandoned"]).default("planning"),
+  status: z
+    .enum(["planning", "doing", "studying", "acting", "completed", "abandoned"])
+    .default("planning"),
   outcome: z.enum(["adopt", "adapt", "abandon"]).optional().nullable(),
   driverDiagramId: z.string().optional().nullable(),
   metricDefinitionId: z.string().optional().nullable(),
@@ -298,7 +300,7 @@ export async function advancePdsaCycle(id: string): Promise<ActionResult> {
     const cycle = await prisma.pdsaCycle.findUnique({ where: { id } });
     if (!cycle) return { success: false, error: "Cycle not found." };
 
-    const currentIdx = STATUS_ORDER.indexOf(cycle.status as typeof STATUS_ORDER[number]);
+    const currentIdx = STATUS_ORDER.indexOf(cycle.status as (typeof STATUS_ORDER)[number]);
     if (currentIdx === -1 || currentIdx >= STATUS_ORDER.length - 1) {
       return { success: false, error: "Cannot advance this cycle further." };
     }
@@ -343,9 +345,7 @@ export async function advancePdsaCycle(id: string): Promise<ActionResult> {
 // Clone PDSA Cycle (Start Next Iteration)
 // ---------------------------------------------------------------------------
 
-export async function clonePdsaCycle(
-  sourceId: string
-): Promise<ActionResult<{ id: string }>> {
+export async function clonePdsaCycle(sourceId: string): Promise<ActionResult<{ id: string }>> {
   let session;
   try {
     session = await requireAdmin("manage_driver_diagrams");

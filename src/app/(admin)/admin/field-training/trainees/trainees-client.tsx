@@ -93,17 +93,30 @@ export function TraineesClient({
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" asChild>
-            <Link href="/admin/field-training"><ArrowLeft className="h-4 w-4" /></Link>
+          <Button variant="ghost" size="icon" asChild aria-label="Go back">
+            <Link href="/admin/field-training">
+              <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+            </Link>
           </Button>
           <div>
             <h1 className="text-2xl font-bold tracking-tight">Trainees</h1>
-            <p className="text-muted-foreground">Manage trainees and track their progress through the FTO program.</p>
+            <p className="text-muted-foreground">
+              Manage trainees and track their progress through the FTO program.
+            </p>
           </div>
         </div>
-        <Dialog open={dialogOpen} onOpenChange={(open) => { setDialogOpen(open); if (!open) setError(null); }}>
+        <Dialog
+          open={dialogOpen}
+          onOpenChange={(open) => {
+            setDialogOpen(open);
+            if (!open) setError(null);
+          }}
+        >
           <DialogTrigger asChild>
-            <Button><Plus className="h-4 w-4 mr-2" />Add Trainee</Button>
+            <Button>
+              <Plus className="h-4 w-4 mr-2" />
+              Add Trainee
+            </Button>
           </DialogTrigger>
           <DialogContent className="max-w-lg">
             <form action={handleSubmit}>
@@ -151,7 +164,9 @@ export function TraineesClient({
                     </SelectTrigger>
                     <SelectContent>
                       {divisions.map((d) => (
-                        <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+                        <SelectItem key={d.id} value={d.id}>
+                          {d.name}
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -192,7 +207,9 @@ export function TraineesClient({
       <Card>
         <CardHeader>
           <CardTitle>Trainee Roster</CardTitle>
-          <CardDescription>{filtered.length} trainee{filtered.length !== 1 ? "s" : ""}</CardDescription>
+          <CardDescription>
+            {filtered.length} trainee{filtered.length !== 1 ? "s" : ""}
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
@@ -210,11 +227,15 @@ export function TraineesClient({
             </TableHeader>
             <TableBody>
               {filtered.map((t) => {
-                const skillPct = t.totalSkills > 0 ? Math.round((t.skillsCompleted / t.totalSkills) * 100) : 0;
+                const skillPct =
+                  t.totalSkills > 0 ? Math.round((t.skillsCompleted / t.totalSkills) * 100) : 0;
                 return (
                   <TableRow key={t.id}>
                     <TableCell>
-                      <Link href={`/admin/field-training/trainees/${t.id}`} className="font-medium text-nmh-teal hover:underline">
+                      <Link
+                        href={`/admin/field-training/trainees/${t.id}`}
+                        className="font-medium text-nmh-teal hover:underline"
+                      >
                         {t.lastName}, {t.firstName}
                       </Link>
                       {t.divisionName && (
@@ -233,7 +254,13 @@ export function TraineesClient({
                         </p>
                       </div>
                     </TableCell>
-                    <TableCell>{t.currentFtos.length > 0 ? t.currentFtos.join(", ") : <span className="text-muted-foreground">Unassigned</span>}</TableCell>
+                    <TableCell>
+                      {t.currentFtos.length > 0 ? (
+                        t.currentFtos.join(", ")
+                      ) : (
+                        <span className="text-muted-foreground">Unassigned</span>
+                      )}
+                    </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2 min-w-[120px]">
                         <Progress value={skillPct} className="h-2 flex-1" />

@@ -19,16 +19,14 @@ export default function RegisterPage() {
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
             <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
-              <CheckCircle className="h-8 w-8 text-green-600" />
+              <CheckCircle className="h-8 w-8 text-green-600" aria-hidden="true" />
             </div>
-            <CardTitle className="text-2xl text-nmh-gray">
-              Request Submitted
-            </CardTitle>
+            <CardTitle className="text-2xl text-nmh-gray">Request Submitted</CardTitle>
           </CardHeader>
           <CardContent className="text-center space-y-4">
             <p className="text-muted-foreground">
-              Your account request has been submitted. An administrator will
-              review and approve your account.
+              Your account request has been submitted. An administrator will review and approve your
+              account.
             </p>
             <p className="text-sm text-muted-foreground">
               You will be able to sign in once your account has been approved.
@@ -50,11 +48,9 @@ export default function RegisterPage() {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-nmh-teal/10">
-            <UserPlus className="h-8 w-8 text-nmh-teal" />
+            <UserPlus className="h-8 w-8 text-nmh-teal" aria-hidden="true" />
           </div>
-          <CardTitle className="text-2xl text-nmh-gray">
-            Request Account
-          </CardTitle>
+          <CardTitle className="text-2xl text-nmh-gray">Request Account</CardTitle>
           <p className="text-muted-foreground text-sm mt-1">
             Submit a request for an admin dashboard account
           </p>
@@ -64,33 +60,16 @@ export default function RegisterPage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="firstName">First Name</Label>
-                <Input
-                  id="firstName"
-                  name="firstName"
-                  placeholder="First"
-                  required
-                  autoFocus
-                />
+                <Input id="firstName" name="firstName" placeholder="First" required autoFocus />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="lastName">Last Name</Label>
-                <Input
-                  id="lastName"
-                  name="lastName"
-                  placeholder="Last"
-                  required
-                />
+                <Input id="lastName" name="lastName" placeholder="Last" required />
               </div>
             </div>
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                name="email"
-                type="email"
-                placeholder="you@example.com"
-                required
-              />
+              <Input id="email" name="email" type="email" placeholder="you@example.com" required />
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
@@ -114,9 +93,9 @@ export default function RegisterPage() {
                 minLength={8}
               />
             </div>
-            {state?.error && (
-              <p className="text-sm text-destructive">{state.error}</p>
-            )}
+            <div aria-live="polite">
+              {state?.error && <p className="text-sm text-destructive" role="alert">{state.error}</p>}
+            </div>
             <Button
               type="submit"
               className="w-full h-12 text-base bg-nmh-teal hover:bg-nmh-dark-teal"

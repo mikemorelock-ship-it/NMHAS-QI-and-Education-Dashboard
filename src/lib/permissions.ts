@@ -3,13 +3,7 @@
 // Unified role hierarchy: admin > manager > data_entry > supervisor > fto > trainee
 // ---------------------------------------------------------------------------
 
-export type UserRole =
-  | "admin"
-  | "manager"
-  | "data_entry"
-  | "supervisor"
-  | "fto"
-  | "trainee";
+export type UserRole = "admin" | "manager" | "data_entry" | "supervisor" | "fto" | "trainee";
 
 // ---------------------------------------------------------------------------
 // Unified permission matrix
@@ -29,6 +23,8 @@ export const PERMISSIONS = {
   upload_batch_data: ["admin", "data_entry"],
   manage_ftos_trainees: ["admin", "manager"],
   manage_dors_skills: ["admin", "manager"],
+  export_reports: ["admin", "manager"],
+  view_audit_log: ["admin"],
 
   // Dashboard access
   view_dashboard: ["admin", "manager", "data_entry"],
@@ -56,10 +52,7 @@ export type FtoPermission = Permission;
 // Permission check helper
 // ---------------------------------------------------------------------------
 
-export function hasPermission(
-  role: UserRole,
-  permission: Permission
-): boolean {
+export function hasPermission(role: UserRole, permission: Permission): boolean {
   return (PERMISSIONS[permission] as readonly string[]).includes(role);
 }
 

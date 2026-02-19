@@ -191,7 +191,7 @@ describe("calculateSPC — U-chart", () => {
   it("handles variable subgroup sizes", () => {
     const variableData: SPCDataPoint[] = [
       { period: "2025-01", value: 0.05, numerator: 5, denominator: 100 },
-      { period: "2025-02", value: 0.10, numerator: 20, denominator: 200 },
+      { period: "2025-02", value: 0.1, numerator: 20, denominator: 200 },
       { period: "2025-03", value: 0.04, numerator: 2, denominator: 50 },
     ];
     const result = calculateSPC("rate", variableData);
@@ -228,8 +228,7 @@ describe("calculateSPC — I-MR chart", () => {
 
   it("calculates center line as mean of values", () => {
     const result = calculateSPC("continuous", imrData);
-    const expectedMean =
-      (8.0 + 8.5 + 9.0 + 8.2 + 8.8 + 8.3 + 9.1 + 8.6) / 8;
+    const expectedMean = (8.0 + 8.5 + 9.0 + 8.2 + 8.8 + 8.3 + 9.1 + 8.6) / 8;
     expect(result.centerLine).toBeCloseTo(expectedMean, 2);
   });
 

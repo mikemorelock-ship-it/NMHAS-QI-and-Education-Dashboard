@@ -1,7 +1,7 @@
 import { verifySession } from "@/lib/auth";
 import { hasAdminPermission } from "@/lib/permissions";
 import { notFound } from "next/navigation";
-import { getLookupData } from "@/actions/upload";
+import { getTemplateLookupData } from "@/actions/upload";
 import { UploadClient } from "./upload-client";
 
 export const dynamic = "force-dynamic";
@@ -12,7 +12,7 @@ export default async function UploadPage() {
     notFound();
   }
 
-  const lookup = await getLookupData();
+  const lookup = await getTemplateLookupData();
 
   return <UploadClient lookup={lookup} />;
 }

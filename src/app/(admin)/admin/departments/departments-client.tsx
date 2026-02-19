@@ -93,12 +93,10 @@ export function DivisionsAndDepartmentsClient({
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-bold text-nmh-gray">
-          Divisions & Departments
-        </h1>
+        <h1 className="text-2xl font-bold text-nmh-gray">Divisions & Departments</h1>
         <p className="text-muted-foreground mt-1">
-          Manage the organizational hierarchy. Divisions are top-level units;
-          Departments are granular sub-units under each Division.
+          Manage the organizational hierarchy. Divisions are top-level units; Departments are
+          granular sub-units under each Division.
         </p>
       </div>
 
@@ -123,9 +121,7 @@ function DivisionsSection({
   const [editTarget, setEditTarget] = useState<DivisionRow | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<DivisionRow | null>(null);
   const [isPending, startTransition] = useTransition();
-  const [expandedDivisions, setExpandedDivisions] = useState<Set<string>>(
-    new Set()
-  );
+  const [expandedDivisions, setExpandedDivisions] = useState<Set<string>>(new Set());
 
   function toggleExpand(id: string) {
     setExpandedDivisions((prev) => {
@@ -167,8 +163,7 @@ function DivisionsSection({
             <DialogHeader>
               <DialogTitle>Add Division</DialogTitle>
               <DialogDescription>
-                Create a new top-level division (e.g., Air Care Clinical, Ground
-                Ambulance).
+                Create a new top-level division (e.g., Air Care Clinical, Ground Ambulance).
               </DialogDescription>
             </DialogHeader>
             <form
@@ -180,36 +175,18 @@ function DivisionsSection({
               <div className="space-y-4 py-4">
                 <div className="space-y-2">
                   <Label htmlFor="div-name">Name</Label>
-                  <Input
-                    id="div-name"
-                    name="name"
-                    placeholder="Division name"
-                    required
-                  />
+                  <Input id="div-name" name="name" placeholder="Division name" required />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="div-sort">Sort Order</Label>
-                  <Input
-                    id="div-sort"
-                    name="sortOrder"
-                    type="number"
-                    defaultValue={0}
-                    min={0}
-                  />
+                  <Input id="div-sort" name="sortOrder" type="number" defaultValue={0} min={0} />
                 </div>
               </div>
               <DialogFooter>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setAddOpen(false)}
-                >
+                <Button type="button" variant="outline" onClick={() => setAddOpen(false)}>
                   Cancel
                 </Button>
-                <Button
-                  type="submit"
-                  className="bg-nmh-teal hover:bg-nmh-teal/90"
-                >
+                <Button type="submit" className="bg-nmh-teal hover:bg-nmh-teal/90">
                   Create Division
                 </Button>
               </DialogFooter>
@@ -240,14 +217,10 @@ function DivisionsSection({
             <TableBody>
               {divisions.map((div) => {
                 const isExpanded = expandedDivisions.has(div.id);
-                const childDepts = departments.filter(
-                  (d) => d.divisionId === div.id
-                );
+                const childDepts = departments.filter((d) => d.divisionId === div.id);
                 return (
                   <React.Fragment key={div.id}>
-                    <TableRow
-                      className={!div.isActive ? "opacity-60" : undefined}
-                    >
+                    <TableRow className={!div.isActive ? "opacity-60" : undefined}>
                       <TableCell className="w-8 px-2">
                         {childDepts.length > 0 ? (
                           <Button
@@ -281,18 +254,10 @@ function DivisionsSection({
                           {div.isActive ? "Active" : "Inactive"}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-center">
-                        {div.departmentsCount}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {div.entriesCount}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {div.associationsCount}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {div.sortOrder}
-                      </TableCell>
+                      <TableCell className="text-center">{div.departmentsCount}</TableCell>
+                      <TableCell className="text-center">{div.entriesCount}</TableCell>
+                      <TableCell className="text-center">{div.associationsCount}</TableCell>
+                      <TableCell className="text-center">{div.sortOrder}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1">
                           <Button
@@ -308,11 +273,7 @@ function DivisionsSection({
                               <Eye className="h-3.5 w-3.5" />
                             )}
                           </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setEditTarget(div)}
-                          >
+                          <Button variant="outline" size="sm" onClick={() => setEditTarget(div)}>
                             <Pencil className="h-3.5 w-3.5" />
                           </Button>
                           <Button
@@ -329,20 +290,14 @@ function DivisionsSection({
                     {/* Expanded child departments */}
                     {isExpanded &&
                       childDepts.map((dept) => (
-                        <TableRow
-                          key={`child-${dept.id}`}
-                          className="bg-muted/30"
-                        >
+                        <TableRow key={`child-${dept.id}`} className="bg-muted/30">
                           <TableCell></TableCell>
                           <TableCell colSpan={2}>
                             <div className="flex items-center gap-2 pl-4">
                               <Users className="h-3.5 w-3.5 text-muted-foreground" />
                               <span className="text-sm">{dept.name}</span>
                               {dept.role && (
-                                <Badge
-                                  variant="outline"
-                                  className="text-xs font-normal"
-                                >
+                                <Badge variant="outline" className="text-xs font-normal">
                                   {dept.role}
                                 </Badge>
                               )}
@@ -376,36 +331,23 @@ function DivisionsSection({
       </div>
 
       {/* Edit Division Dialog */}
-      <Dialog
-        open={editTarget !== null}
-        onOpenChange={(open) => !open && setEditTarget(null)}
-      >
+      <Dialog open={editTarget !== null} onOpenChange={(open) => !open && setEditTarget(null)}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Edit Division</DialogTitle>
-            <DialogDescription>
-              Update division details.
-            </DialogDescription>
+            <DialogDescription>Update division details.</DialogDescription>
           </DialogHeader>
           {editTarget && (
             <form
               action={async (formData) => {
-                const result = await updateDivisionAction(
-                  editTarget.id,
-                  formData
-                );
+                const result = await updateDivisionAction(editTarget.id, formData);
                 if (result.success) setEditTarget(null);
               }}
             >
               <div className="space-y-4 py-4">
                 <div className="space-y-2">
                   <Label htmlFor="edit-div-name">Name</Label>
-                  <Input
-                    id="edit-div-name"
-                    name="name"
-                    defaultValue={editTarget.name}
-                    required
-                  />
+                  <Input id="edit-div-name" name="name" defaultValue={editTarget.name} required />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="edit-div-sort">Sort Order</Label>
@@ -419,17 +361,10 @@ function DivisionsSection({
                 </div>
               </div>
               <DialogFooter>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setEditTarget(null)}
-                >
+                <Button type="button" variant="outline" onClick={() => setEditTarget(null)}>
                   Cancel
                 </Button>
-                <Button
-                  type="submit"
-                  className="bg-nmh-teal hover:bg-nmh-teal/90"
-                >
+                <Button type="submit" className="bg-nmh-teal hover:bg-nmh-teal/90">
                   Save Changes
                 </Button>
               </DialogFooter>
@@ -439,25 +374,18 @@ function DivisionsSection({
       </Dialog>
 
       {/* Delete Division Dialog */}
-      <Dialog
-        open={deleteTarget !== null}
-        onOpenChange={(open) => !open && setDeleteTarget(null)}
-      >
+      <Dialog open={deleteTarget !== null} onOpenChange={(open) => !open && setDeleteTarget(null)}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Delete Division</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete &quot;{deleteTarget?.name}&quot;?
-              This will also delete all departments under it (
-              {deleteTarget?.departmentsCount}) and associated data entries (
-              {deleteTarget?.entriesCount}). This action cannot be undone.
+              Are you sure you want to delete &quot;{deleteTarget?.name}&quot;? This will also
+              delete all departments under it ({deleteTarget?.departmentsCount}) and associated data
+              entries ({deleteTarget?.entriesCount}). This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setDeleteTarget(null)}
-            >
+            <Button variant="outline" onClick={() => setDeleteTarget(null)}>
               Cancel
             </Button>
             <form
@@ -559,8 +487,7 @@ function DepartmentsSection({
               <DialogHeader>
                 <DialogTitle>Add Department</DialogTitle>
                 <DialogDescription>
-                  Create a new department under a division (e.g., AC 1,
-                  Brainerd, Quality).
+                  Create a new department under a division (e.g., AC 1, Brainerd, Quality).
                 </DialogDescription>
               </DialogHeader>
               <form
@@ -587,19 +514,12 @@ function DepartmentsSection({
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="dept-name">Name</Label>
-                    <Input
-                      id="dept-name"
-                      name="name"
-                      placeholder="Department name"
-                      required
-                    />
+                    <Input id="dept-name" name="name" placeholder="Department name" required />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="dept-role">
                       Type / Role{" "}
-                      <span className="text-muted-foreground font-normal">
-                        (optional)
-                      </span>
+                      <span className="text-muted-foreground font-normal">(optional)</span>
                     </Label>
                     <Input
                       id="dept-role"
@@ -609,17 +529,10 @@ function DepartmentsSection({
                   </div>
                 </div>
                 <DialogFooter>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setAddOpen(false)}
-                  >
+                  <Button type="button" variant="outline" onClick={() => setAddOpen(false)}>
                     Cancel
                   </Button>
-                  <Button
-                    type="submit"
-                    className="bg-nmh-orange hover:bg-nmh-orange/90"
-                  >
+                  <Button type="submit" className="bg-nmh-orange hover:bg-nmh-orange/90">
                     Create Department
                   </Button>
                 </DialogFooter>
@@ -650,93 +563,75 @@ function DepartmentsSection({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {Object.entries(grouped).map(
-                ([divisionId, { divisionName, departments: depts }]) =>
-                  depts.map((dept, idx) => (
-                    <TableRow
-                      key={dept.id}
-                      className={!dept.isActive ? "opacity-60" : undefined}
-                    >
-                      <TableCell>
-                        <span className="font-medium">{dept.name}</span>
-                      </TableCell>
-                      <TableCell>
-                        {idx === 0 ? (
-                          <Badge
-                            variant="outline"
-                            className="text-xs bg-nmh-teal/5 text-nmh-teal border-nmh-teal/20"
-                          >
-                            {divisionName}
-                          </Badge>
-                        ) : (
-                          <span className="text-xs text-muted-foreground">
-                            {divisionName}
-                          </span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {dept.role ? (
-                          <span className="text-sm text-muted-foreground">
-                            {dept.role}
-                          </span>
-                        ) : (
-                          <span className="text-sm text-muted-foreground/50">
-                            —
-                          </span>
-                        )}
-                      </TableCell>
-                      <TableCell>
+              {Object.entries(grouped).map(([divisionId, { divisionName, departments: depts }]) =>
+                depts.map((dept, idx) => (
+                  <TableRow key={dept.id} className={!dept.isActive ? "opacity-60" : undefined}>
+                    <TableCell>
+                      <span className="font-medium">{dept.name}</span>
+                    </TableCell>
+                    <TableCell>
+                      {idx === 0 ? (
                         <Badge
-                          variant={dept.isActive ? "default" : "secondary"}
-                          className={
-                            dept.isActive
-                              ? "bg-green-100 text-green-700 hover:bg-green-100"
-                              : "bg-gray-100 text-gray-500"
-                          }
+                          variant="outline"
+                          className="text-xs bg-nmh-teal/5 text-nmh-teal border-nmh-teal/20"
                         >
-                          {dept.isActive ? "Active" : "Inactive"}
+                          {divisionName}
                         </Badge>
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {dept.entriesCount}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {dept.associationsCount}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-1">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            title={dept.isActive ? "Deactivate" : "Activate"}
-                            onClick={() => handleToggleActive(dept)}
-                            disabled={isPending}
-                          >
-                            {dept.isActive ? (
-                              <EyeOff className="h-3.5 w-3.5" />
-                            ) : (
-                              <Eye className="h-3.5 w-3.5" />
-                            )}
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setEditTarget(dept)}
-                          >
-                            <Pencil className="h-3.5 w-3.5" />
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="text-destructive hover:text-destructive"
-                            onClick={() => setDeleteTarget(dept)}
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
+                      ) : (
+                        <span className="text-xs text-muted-foreground">{divisionName}</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {dept.role ? (
+                        <span className="text-sm text-muted-foreground">{dept.role}</span>
+                      ) : (
+                        <span className="text-sm text-muted-foreground/50">—</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        variant={dept.isActive ? "default" : "secondary"}
+                        className={
+                          dept.isActive
+                            ? "bg-green-100 text-green-700 hover:bg-green-100"
+                            : "bg-gray-100 text-gray-500"
+                        }
+                      >
+                        {dept.isActive ? "Active" : "Inactive"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-center">{dept.entriesCount}</TableCell>
+                    <TableCell className="text-center">{dept.associationsCount}</TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          title={dept.isActive ? "Deactivate" : "Activate"}
+                          onClick={() => handleToggleActive(dept)}
+                          disabled={isPending}
+                        >
+                          {dept.isActive ? (
+                            <EyeOff className="h-3.5 w-3.5" />
+                          ) : (
+                            <Eye className="h-3.5 w-3.5" />
+                          )}
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={() => setEditTarget(dept)}>
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-destructive hover:text-destructive"
+                          onClick={() => setDeleteTarget(dept)}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
               )}
             </TableBody>
           </Table>
@@ -744,10 +639,7 @@ function DepartmentsSection({
       </div>
 
       {/* Edit Department Dialog */}
-      <Dialog
-        open={editTarget !== null}
-        onOpenChange={(open) => !open && setEditTarget(null)}
-      >
+      <Dialog open={editTarget !== null} onOpenChange={(open) => !open && setEditTarget(null)}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Edit Department</DialogTitle>
@@ -763,11 +655,7 @@ function DepartmentsSection({
               <div className="space-y-4 py-4">
                 <div className="space-y-2">
                   <Label htmlFor="edit-dept-division">Division</Label>
-                  <Select
-                    name="divisionId"
-                    defaultValue={editTarget.divisionId}
-                    required
-                  >
+                  <Select name="divisionId" defaultValue={editTarget.divisionId} required>
                     <SelectTrigger className="w-full">
                       <SelectValue />
                     </SelectTrigger>
@@ -782,19 +670,12 @@ function DepartmentsSection({
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="edit-dept-name">Name</Label>
-                  <Input
-                    id="edit-dept-name"
-                    name="name"
-                    defaultValue={editTarget.name}
-                    required
-                  />
+                  <Input id="edit-dept-name" name="name" defaultValue={editTarget.name} required />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="edit-dept-role">
                     Type / Role{" "}
-                    <span className="text-muted-foreground font-normal">
-                      (optional)
-                    </span>
+                    <span className="text-muted-foreground font-normal">(optional)</span>
                   </Label>
                   <Input
                     id="edit-dept-role"
@@ -805,17 +686,10 @@ function DepartmentsSection({
                 </div>
               </div>
               <DialogFooter>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setEditTarget(null)}
-                >
+                <Button type="button" variant="outline" onClick={() => setEditTarget(null)}>
                   Cancel
                 </Button>
-                <Button
-                  type="submit"
-                  className="bg-nmh-orange hover:bg-nmh-orange/90"
-                >
+                <Button type="submit" className="bg-nmh-orange hover:bg-nmh-orange/90">
                   Save Changes
                 </Button>
               </DialogFooter>
@@ -825,25 +699,19 @@ function DepartmentsSection({
       </Dialog>
 
       {/* Delete Department Dialog */}
-      <Dialog
-        open={deleteTarget !== null}
-        onOpenChange={(open) => !open && setDeleteTarget(null)}
-      >
+      <Dialog open={deleteTarget !== null} onOpenChange={(open) => !open && setDeleteTarget(null)}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Delete Department</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete &quot;{deleteTarget?.name}&quot;?
-              This will also delete {deleteTarget?.entriesCount ?? 0} data
-              entries and {deleteTarget?.associationsCount ?? 0} metric
-              associations. This action cannot be undone.
+              Are you sure you want to delete &quot;{deleteTarget?.name}&quot;? This will also
+              delete {deleteTarget?.entriesCount ?? 0} data entries and{" "}
+              {deleteTarget?.associationsCount ?? 0} metric associations. This action cannot be
+              undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setDeleteTarget(null)}
-            >
+            <Button variant="outline" onClick={() => setDeleteTarget(null)}>
               Cancel
             </Button>
             <form

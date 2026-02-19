@@ -184,9 +184,7 @@ export function SnapshotReportClient({ data, token }: SnapshotReportClientProps)
                 {dorSummary.bestCategories.map((c, i) => (
                   <div key={i} className="flex items-center justify-between">
                     <span className="text-sm">{c.name}</span>
-                    <Badge className={`${ratingColor(c.average)} text-white`}>
-                      {c.average}
-                    </Badge>
+                    <Badge className={`${ratingColor(c.average)} text-white`}>{c.average}</Badge>
                   </div>
                 ))}
                 {dorSummary.bestCategories.length === 0 && (
@@ -208,9 +206,7 @@ export function SnapshotReportClient({ data, token }: SnapshotReportClientProps)
                 {dorSummary.worstCategories.map((c, i) => (
                   <div key={i} className="flex items-center justify-between">
                     <span className="text-sm">{c.name}</span>
-                    <Badge className={`${ratingColor(c.average)} text-white`}>
-                      {c.average}
-                    </Badge>
+                    <Badge className={`${ratingColor(c.average)} text-white`}>{c.average}</Badge>
                   </div>
                 ))}
                 {dorSummary.worstCategories.length === 0 && (
@@ -242,9 +238,7 @@ export function SnapshotReportClient({ data, token }: SnapshotReportClientProps)
                       className={`w-full rounded-t ${ratingColor(t.rating)} text-white`}
                       style={{ height: `${(t.rating / 7) * 100}%` }}
                     />
-                    <span className="text-[10px] text-muted-foreground mt-0.5">
-                      {t.rating}
-                    </span>
+                    <span className="text-[10px] text-muted-foreground mt-0.5">{t.rating}</span>
                   </div>
                 ))}
               </div>
@@ -268,10 +262,7 @@ export function SnapshotReportClient({ data, token }: SnapshotReportClientProps)
                   <div key={i} className="flex items-center gap-3">
                     <span className="text-sm flex-1 min-w-0 truncate">{c.name}</span>
                     <div className="w-32 shrink-0">
-                      <Progress
-                        value={(c.average / 7) * 100}
-                        className="h-2"
-                      />
+                      <Progress value={(c.average / 7) * 100} className="h-2" />
                     </div>
                     <Badge
                       className={`${ratingColor(c.average)} text-white shrink-0 w-12 justify-center`}
@@ -281,9 +272,7 @@ export function SnapshotReportClient({ data, token }: SnapshotReportClientProps)
                   </div>
                 ))}
               {dorSummary.categoryAverages.length === 0 && (
-                <p className="text-sm text-muted-foreground text-center py-4">
-                  No DOR data yet
-                </p>
+                <p className="text-sm text-muted-foreground text-center py-4">No DOR data yet</p>
               )}
             </div>
           </CardContent>
@@ -367,21 +356,15 @@ export function SnapshotReportClient({ data, token }: SnapshotReportClientProps)
             <CardContent>
               <div className="grid grid-cols-3 gap-4 text-center">
                 <div>
-                  <p className="text-2xl font-bold text-amber-600">
-                    {coachingProgress.assigned}
-                  </p>
+                  <p className="text-2xl font-bold text-amber-600">{coachingProgress.assigned}</p>
                   <p className="text-xs text-muted-foreground">Assigned</p>
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-blue-600">
-                    {coachingProgress.inProgress}
-                  </p>
+                  <p className="text-2xl font-bold text-blue-600">{coachingProgress.inProgress}</p>
                   <p className="text-xs text-muted-foreground">In Progress</p>
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-green-600">
-                    {coachingProgress.completed}
-                  </p>
+                  <p className="text-2xl font-bold text-green-600">{coachingProgress.completed}</p>
                   <p className="text-xs text-muted-foreground">Completed</p>
                 </div>
               </div>
@@ -423,26 +406,47 @@ export function SnapshotReportClient({ data, token }: SnapshotReportClientProps)
             Report generated {formatDate(data.generatedAt)} by {data.creatorName}.
           </p>
           <p>This is a point-in-time snapshot. Data may have changed since generation.</p>
-          <p className="mt-1 print:hidden">
-            North Memorial Health — EMS Operations Dashboard
-          </p>
+          <p className="mt-1 print:hidden">North Memorial Health — EMS Operations Dashboard</p>
         </div>
       </div>
 
       {/* Print styles */}
       <style jsx global>{`
         @media print {
-          body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-          .print\\:hidden { display: none !important; }
-          .print\\:bg-white { background-color: white !important; }
-          .print\\:rounded-none { border-radius: 0 !important; }
-          .print\\:bg-teal-600 { background-color: #0d9488 !important; }
-          .print\\:p-4 { padding: 1rem !important; }
-          .print\\:space-y-4 > * + * { margin-top: 1rem !important; }
-          .print\\:grid-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; }
-          .print\\:grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
-          .print\\:pt-2 { padding-top: 0.5rem !important; }
-          .print\\:pb-2 { padding-bottom: 0.5rem !important; }
+          body {
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+          }
+          .print\\:hidden {
+            display: none !important;
+          }
+          .print\\:bg-white {
+            background-color: white !important;
+          }
+          .print\\:rounded-none {
+            border-radius: 0 !important;
+          }
+          .print\\:bg-teal-600 {
+            background-color: #0d9488 !important;
+          }
+          .print\\:p-4 {
+            padding: 1rem !important;
+          }
+          .print\\:space-y-4 > * + * {
+            margin-top: 1rem !important;
+          }
+          .print\\:grid-cols-4 {
+            grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+          }
+          .print\\:grid-cols-2 {
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+          }
+          .print\\:pt-2 {
+            padding-top: 0.5rem !important;
+          }
+          .print\\:pb-2 {
+            padding-bottom: 0.5rem !important;
+          }
         }
       `}</style>
     </div>

@@ -26,9 +26,7 @@ const AnnotationSchema = z.object({
   type: z.enum(["intervention", "milestone", "event"]),
 });
 
-export async function createAnnotation(
-  formData: FormData
-): Promise<ActionResult> {
+export async function createAnnotation(formData: FormData): Promise<ActionResult> {
   let session;
   try {
     session = await requireAdmin("manage_metric_defs");
@@ -85,10 +83,7 @@ export async function createAnnotation(
   return { success: true };
 }
 
-export async function updateAnnotation(
-  id: string,
-  formData: FormData
-): Promise<ActionResult> {
+export async function updateAnnotation(id: string, formData: FormData): Promise<ActionResult> {
   let session;
   try {
     session = await requireAdmin("manage_metric_defs");
@@ -193,9 +188,7 @@ const ResourceSchema = z.object({
   sortOrder: z.coerce.number().int().min(0).default(0),
 });
 
-export async function createResource(
-  formData: FormData
-): Promise<ActionResult> {
+export async function createResource(formData: FormData): Promise<ActionResult> {
   let session;
   try {
     session = await requireAdmin("manage_metric_defs");
@@ -252,10 +245,7 @@ export async function createResource(
   return { success: true };
 }
 
-export async function updateResource(
-  id: string,
-  formData: FormData
-): Promise<ActionResult> {
+export async function updateResource(id: string, formData: FormData): Promise<ActionResult> {
   let session;
   try {
     session = await requireAdmin("manage_metric_defs");
@@ -360,9 +350,7 @@ const ResponsiblePartySchema = z.object({
   sortOrder: z.coerce.number().int().min(0).default(0),
 });
 
-export async function createResponsibleParty(
-  formData: FormData
-): Promise<ActionResult> {
+export async function createResponsibleParty(formData: FormData): Promise<ActionResult> {
   let session;
   try {
     session = await requireAdmin("manage_metric_defs");
@@ -479,9 +467,7 @@ export async function updateResponsibleParty(
   return { success: true };
 }
 
-export async function deleteResponsibleParty(
-  id: string
-): Promise<ActionResult> {
+export async function deleteResponsibleParty(id: string): Promise<ActionResult> {
   let session;
   try {
     session = await requireAdmin("manage_metric_defs");

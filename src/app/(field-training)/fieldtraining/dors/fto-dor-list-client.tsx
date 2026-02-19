@@ -60,7 +60,7 @@ export function FtoDorListClient({ dors }: Props) {
         </div>
         <Button asChild>
           <Link href="/fieldtraining/dors/new">
-            <Plus className="h-4 w-4 mr-2" />
+            <Plus className="h-4 w-4 mr-2" aria-hidden="true" />
             New DOR
           </Link>
         </Button>
@@ -156,15 +156,15 @@ export function FtoDorListClient({ dors }: Props) {
                     </TableCell>
                     <TableCell>
                       {dor.status === "draft" ? (
-                        <Button variant="ghost" size="icon" asChild>
+                        <Button variant="ghost" size="icon" asChild aria-label={`Edit DOR for ${dor.traineeName} on ${new Date(dor.date).toLocaleDateString()}`}>
                           <Link href={`/fieldtraining/dors/${dor.id}/edit`}>
-                            <Pencil className="h-4 w-4" />
+                            <Pencil className="h-4 w-4" aria-hidden="true" />
                           </Link>
                         </Button>
                       ) : (
-                        <Button variant="ghost" size="icon" asChild>
+                        <Button variant="ghost" size="icon" asChild aria-label={`View DOR for ${dor.traineeName} on ${new Date(dor.date).toLocaleDateString()}`}>
                           <Link href={`/fieldtraining/dors/${dor.id}`}>
-                            <Eye className="h-4 w-4" />
+                            <Eye className="h-4 w-4" aria-hidden="true" />
                           </Link>
                         </Button>
                       )}

@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { formatPeriod, parseDateRangeFilter } from "@/lib/utils";
-import { aggregateByPeriodWeighted, type AggregationType, type MetricDataType } from "@/lib/aggregation";
+import {
+  aggregateByPeriodWeighted,
+  type AggregationType,
+  type MetricDataType,
+} from "@/lib/aggregation";
 
 export const dynamic = "force-dynamic";
 
@@ -17,19 +21,14 @@ export const dynamic = "force-dynamic";
  * Optimised: bulk fetches all region-level entries in 1-2 queries, then partitions in JS.
  * Supports ?range=3mo|6mo|1yr|all|custom:YYYY-MM-DD:YYYY-MM-DD for date filtering.
  */
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ slug: string }> }
-) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
   try {
     const { slug } = await params;
     const { searchParams } = new URL(request.url);
     const range = searchParams.get("range") ?? "all";
 
     const dateFilter = parseDateRangeFilter(range);
-    const periodStartFilter = Object.keys(dateFilter).length > 0
-      ? { periodStart: dateFilter }
-      : {};
+    const periodStartFilter = Object.keys(dateFilter).length > 0 ? { periodStart: dateFilter } : {};
 
     // ---------------------------------------------------------------
     // Handle the virtual "unassigned" division
@@ -39,10 +38,7 @@ export async function GET(
       // Only metrics with NO associations at all are "unassigned".
       const allAssociations = await prisma.metricAssociation.findMany({
         where: {
-          OR: [
-            { divisionId: { not: null } },
-            { regionId: { not: null } },
-          ],
+          OR: [{ divisionId: { not: null } }, { regionId: { not: null } }],
         },
         select: { metricDefinitionId: true },
       });
@@ -61,31 +57,33 @@ export async function GET(
       const unassocMetricIds = unassociatedMetrics.map((m) => m.id);
 
       // BULK FETCH: all entries for unassociated metrics in one query
-      const allUnassocEntries = unassocMetricIds.length > 0
-        ? await prisma.metricEntry.findMany({
-            where: {
-              metricDefinitionId: { in: unassocMetricIds },
-              divisionId: null,
-              regionId: null,
-            },
-            orderBy: { periodStart: "asc" },
-            select: { metricDefinitionId: true, periodStart: true, value: true },
-          })
-        : [];
+      const allUnassocEntries =
+        unassocMetricIds.length > 0
+          ? await prisma.metricEntry.findMany({
+              where: {
+                metricDefinitionId: { in: unassocMetricIds },
+                divisionId: null,
+                regionId: null,
+              },
+              orderBy: { periodStart: "asc" },
+              select: { metricDefinitionId: true, periodStart: true, value: true },
+            })
+          : [];
 
       // Also fetch filtered entries if date filter is active
-      const filteredUnassocEntries = Object.keys(dateFilter).length > 0 && unassocMetricIds.length > 0
-        ? await prisma.metricEntry.findMany({
-            where: {
-              metricDefinitionId: { in: unassocMetricIds },
-              divisionId: null,
-              regionId: null,
-              ...periodStartFilter,
-            },
-            orderBy: { periodStart: "asc" },
-            select: { metricDefinitionId: true, periodStart: true, value: true },
-          })
-        : allUnassocEntries;
+      const filteredUnassocEntries =
+        Object.keys(dateFilter).length > 0 && unassocMetricIds.length > 0
+          ? await prisma.metricEntry.findMany({
+              where: {
+                metricDefinitionId: { in: unassocMetricIds },
+                divisionId: null,
+                regionId: null,
+                ...periodStartFilter,
+              },
+              orderBy: { periodStart: "asc" },
+              select: { metricDefinitionId: true, periodStart: true, value: true },
+            })
+          : allUnassocEntries;
 
       // Index by metricId
       const allByMetric = new Map<string, Array<{ periodStart: Date; value: number }>>();
@@ -95,7 +93,8 @@ export async function GET(
       }
       const filteredByMetric = new Map<string, Array<{ periodStart: Date; value: number }>>();
       for (const e of filteredUnassocEntries) {
-        if (!filteredByMetric.has(e.metricDefinitionId)) filteredByMetric.set(e.metricDefinitionId, []);
+        if (!filteredByMetric.has(e.metricDefinitionId))
+          filteredByMetric.set(e.metricDefinitionId, []);
         filteredByMetric.get(e.metricDefinitionId)!.push(e);
       }
 
@@ -172,10 +171,7 @@ export async function GET(
     });
 
     if (!division) {
-      return NextResponse.json(
-        { error: "Division not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Division not found" }, { status: 404 });
     }
 
     // Fetch associated metrics for this division.
@@ -192,16 +188,17 @@ export async function GET(
 
     const associatedMetricIds = [...new Set(associations.map((a) => a.metricDefinitionId))];
 
-    const metricDefinitions = associatedMetricIds.length > 0
-      ? await prisma.metricDefinition.findMany({
-          where: {
-            id: { in: associatedMetricIds },
-            isActive: true,
-            parentId: null,
-          },
-          orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
-        })
-      : [];
+    const metricDefinitions =
+      associatedMetricIds.length > 0
+        ? await prisma.metricDefinition.findMany({
+            where: {
+              id: { in: associatedMetricIds },
+              isActive: true,
+              parentId: null,
+            },
+            orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
+          })
+        : [];
 
     const allMetricIds = metricDefinitions.map((m) => m.id);
 
@@ -210,35 +207,54 @@ export async function GET(
     // Replaces 2-3 queries per metric (N+1) with bulk fetch + JS partitioning.
     // =========================================================================
 
-    const allRegionEntries = allMetricIds.length > 0
-      ? await prisma.metricEntry.findMany({
-          where: {
-            metricDefinitionId: { in: allMetricIds },
-            divisionId: division.id,
-            regionId: { not: null },
-          },
-          orderBy: { periodStart: "asc" },
-          select: { metricDefinitionId: true, periodStart: true, value: true, numerator: true, denominator: true },
-        })
-      : [];
+    const allRegionEntries =
+      allMetricIds.length > 0
+        ? await prisma.metricEntry.findMany({
+            where: {
+              metricDefinitionId: { in: allMetricIds },
+              divisionId: division.id,
+              regionId: { not: null },
+            },
+            orderBy: { periodStart: "asc" },
+            select: {
+              metricDefinitionId: true,
+              periodStart: true,
+              value: true,
+              numerator: true,
+              denominator: true,
+            },
+          })
+        : [];
 
     // Also fetch date-filtered entries if a range filter is active
     const hasDateFilter = Object.keys(dateFilter).length > 0;
-    const filteredRegionEntries = hasDateFilter && allMetricIds.length > 0
-      ? await prisma.metricEntry.findMany({
-          where: {
-            metricDefinitionId: { in: allMetricIds },
-            divisionId: division.id,
-            regionId: { not: null },
-            ...periodStartFilter,
-          },
-          orderBy: { periodStart: "asc" },
-          select: { metricDefinitionId: true, periodStart: true, value: true, numerator: true, denominator: true },
-        })
-      : allRegionEntries;
+    const filteredRegionEntries =
+      hasDateFilter && allMetricIds.length > 0
+        ? await prisma.metricEntry.findMany({
+            where: {
+              metricDefinitionId: { in: allMetricIds },
+              divisionId: division.id,
+              regionId: { not: null },
+              ...periodStartFilter,
+            },
+            orderBy: { periodStart: "asc" },
+            select: {
+              metricDefinitionId: true,
+              periodStart: true,
+              value: true,
+              numerator: true,
+              denominator: true,
+            },
+          })
+        : allRegionEntries;
 
     // Index by metricId
-    type EntryRow = { periodStart: Date; value: number; numerator: number | null; denominator: number | null };
+    type EntryRow = {
+      periodStart: Date;
+      value: number;
+      numerator: number | null;
+      denominator: number | null;
+    };
     const allByMetric = new Map<string, EntryRow[]>();
     const filteredByMetric = new Map<string, EntryRow[]>();
 
@@ -247,7 +263,8 @@ export async function GET(
       allByMetric.get(e.metricDefinitionId)!.push(e);
     }
     for (const e of filteredRegionEntries) {
-      if (!filteredByMetric.has(e.metricDefinitionId)) filteredByMetric.set(e.metricDefinitionId, []);
+      if (!filteredByMetric.has(e.metricDefinitionId))
+        filteredByMetric.set(e.metricDefinitionId, []);
       filteredByMetric.get(e.metricDefinitionId)!.push(e);
     }
 
@@ -331,9 +348,6 @@ export async function GET(
     });
   } catch (error) {
     console.error("Division detail error:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch division details" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to fetch division details" }, { status: 500 });
   }
 }

@@ -1,7 +1,13 @@
 "use client";
 
 import React, { useState, useTransition, useMemo, useCallback, useEffect, useRef } from "react";
-import { bulkCreateEntries, bulkDeleteEntries, updateEntry, deleteEntry, fetchEntriesForPeriod } from "@/actions/entries";
+import {
+  bulkCreateEntries,
+  bulkDeleteEntries,
+  updateEntry,
+  deleteEntry,
+  fetchEntriesForPeriod,
+} from "@/actions/entries";
 import type { PrefillEntry } from "@/actions/entries";
 import { formatPeriod, formatMetricValue } from "@/lib/utils";
 import { PaginationControls } from "@/components/PaginationControls";
@@ -144,7 +150,14 @@ export function DataEntryClient({
   associationsMap: AssociationsMap;
   prefill?: PrefillData;
   totalEntryCount: number;
-  pagination?: { page: number; pageSize: number; totalItems: number; totalPages: number; hasNextPage: boolean; hasPreviousPage: boolean };
+  pagination?: {
+    page: number;
+    pageSize: number;
+    totalItems: number;
+    totalPages: number;
+    hasNextPage: boolean;
+    hasPreviousPage: boolean;
+  };
 }) {
   // -----------------------------------------------------------------------
   // Single Entry state
@@ -186,20 +199,13 @@ export function DataEntryClient({
   // -----------------------------------------------------------------------
   // Derived data
   // -----------------------------------------------------------------------
-  const divisionMap = useMemo(
-    () => new Map(divisions.map((d) => [d.id, d.name])),
-    [divisions]
-  );
-  const regionMap = useMemo(
-    () => new Map(regions.map((r) => [r.id, r])),
-    [regions]
-  );
+  const divisionMap = useMemo(() => new Map(divisions.map((d) => [d.id, d.name])), [divisions]);
+  const regionMap = useMemo(() => new Map(regions.map((r) => [r.id, r])), [regions]);
 
   const getMetricDepartmentId = (metricId: string): string =>
     metrics.find((m) => m.id === metricId)?.departmentId ?? "";
 
-  const needsFullDate = (pt: string) =>
-    ["daily", "weekly", "bi-weekly"].includes(pt);
+  const needsFullDate = (pt: string) => ["daily", "weekly", "bi-weekly"].includes(pt);
 
   // Build the auto-populated rows when a metric is selected
   const buildSingleRows = useCallback(
@@ -234,9 +240,7 @@ export function DataEntryClient({
       // (to avoid double-counting)
       if (assoc.divisionIds.length > 0) {
         const divisionsWithRegions = new Set(
-          assoc.regionIds
-            .map((rid) => regionMap.get(rid)?.divisionId)
-            .filter(Boolean)
+          assoc.regionIds.map((rid) => regionMap.get(rid)?.divisionId).filter(Boolean)
         );
         for (const divisionId of assoc.divisionIds) {
           // If this division already has region rows, skip the division-level row
@@ -326,8 +330,8 @@ export function DataEntryClient({
       }))
     );
 
-    fetchEntriesForPeriod(selectedMetric, periodType, periodStart).then(
-      (entries: PrefillEntry[]) => {
+    fetchEntriesForPeriod(selectedMetric, periodType, periodStart)
+      .then((entries: PrefillEntry[]) => {
         // Abort if a newer request was started
         if (requestId !== prefillAbortRef.current) return;
         setPrefillLoading(false);
@@ -365,24 +369,29 @@ export function DataEntryClient({
             };
           })
         );
-      }
-    ).catch(() => {
-      if (requestId === prefillAbortRef.current) {
-        setPrefillLoading(false);
-      }
-    });
+      })
+      .catch(() => {
+        if (requestId === prefillAbortRef.current) {
+          setPrefillLoading(false);
+        }
+      });
   }, [selectedMetric, periodStart, periodType, metrics]);
 
   // Recent entries filtering
   const entryMetricOptions = Array.from(
     new Map(
-      recentEntries.map((e) => [e.metricDefinitionId, { id: e.metricDefinitionId, name: e.metricName }])
+      recentEntries.map((e) => [
+        e.metricDefinitionId,
+        { id: e.metricDefinitionId, name: e.metricName },
+      ])
     ).values()
   ).sort((a, b) => a.name.localeCompare(b.name));
 
   const entryPeriodOptions = Array.from(
     new Set(recentEntries.map((e) => e.periodStart.slice(0, 7)))
-  ).sort().reverse();
+  )
+    .sort()
+    .reverse();
 
   const filteredEntries = recentEntries.filter((e) => {
     if (filterMetric && e.metricDefinitionId !== filterMetric) return false;
@@ -407,7 +416,11 @@ export function DataEntryClient({
     setSingleRows(buildSingleRows(value));
   }
 
-  function updateSingleRow(key: string, field: "value" | "numerator" | "denominator" | "notes", val: string) {
+  function updateSingleRow(
+    key: string,
+    field: "value" | "numerator" | "denominator" | "notes",
+    val: string
+  ) {
     setSingleRows((prev) =>
       prev.map((r) => {
         if (r.key !== key) return r;
@@ -488,7 +501,14 @@ export function DataEntryClient({
           setSuccessMessage(`Successfully saved ${result.count} entries.`);
           // Clear values but keep rows for another period
           setSingleRows((prev) =>
-            prev.map((r) => ({ ...r, value: "", numerator: "", denominator: "", notes: "", existingEntryId: undefined }))
+            prev.map((r) => ({
+              ...r,
+              value: "",
+              numerator: "",
+              denominator: "",
+              notes: "",
+              existingEntryId: undefined,
+            }))
           );
           setPeriodStart("");
         } else {
@@ -513,9 +533,7 @@ export function DataEntryClient({
   }
 
   function updateBulkRow(key: number, field: keyof BulkRow, value: string) {
-    setBulkRows((prev) =>
-      prev.map((r) => (r.key === key ? { ...r, [field]: value } : r))
-    );
+    setBulkRows((prev) => prev.map((r) => (r.key === key ? { ...r, [field]: value } : r)));
   }
 
   async function handleBulkSubmit() {
@@ -565,18 +583,21 @@ export function DataEntryClient({
 
   // Determine if the selected metric uses numerator/denominator entry
   const selectedMetricObj = metrics.find((m) => m.id === selectedMetric);
-  const isNDMetric = selectedMetricObj?.dataType === "proportion" || selectedMetricObj?.dataType === "rate";
+  const isNDMetric =
+    selectedMetricObj?.dataType === "proportion" || selectedMetricObj?.dataType === "rate";
   const isRateMetric = selectedMetricObj?.dataType === "rate";
   const ndLabel = useMemo(() => {
     if (!selectedMetricObj) {
       return { num: "Numerator", den: "Denominator", rate: "Rate" };
     }
-    const defaults = selectedMetricObj.dataType === "proportion"
-      ? { num: "Compliant", den: "Total", rate: "Rate (%)" }
-      : { num: "Events", den: "Exposure", rate: "Rate" };
-    const rateLabel = selectedMetricObj.dataType === "rate" && selectedMetricObj.rateSuffix
-      ? `Rate (${selectedMetricObj.rateSuffix})`
-      : defaults.rate;
+    const defaults =
+      selectedMetricObj.dataType === "proportion"
+        ? { num: "Compliant", den: "Total", rate: "Rate (%)" }
+        : { num: "Events", den: "Exposure", rate: "Rate" };
+    const rateLabel =
+      selectedMetricObj.dataType === "rate" && selectedMetricObj.rateSuffix
+        ? `Rate (${selectedMetricObj.rateSuffix})`
+        : defaults.rate;
     return {
       num: selectedMetricObj.numeratorLabel || defaults.num,
       den: selectedMetricObj.denominatorLabel || defaults.den,
@@ -586,8 +607,7 @@ export function DataEntryClient({
 
   // Bulk delete helpers
   const allFilteredSelected =
-    displayedEntries.length > 0 &&
-    displayedEntries.every((e) => selectedEntryIds.has(e.id));
+    displayedEntries.length > 0 && displayedEntries.every((e) => selectedEntryIds.has(e.id));
 
   function toggleSelectAll() {
     if (allFilteredSelected) {
@@ -612,7 +632,9 @@ export function DataEntryClient({
     try {
       const result = await bulkDeleteEntries(Array.from(selectedEntryIds));
       if (result.success) {
-        setSuccessMessage(`Successfully deleted ${result.count} ${result.count === 1 ? "entry" : "entries"}.`);
+        setSuccessMessage(
+          `Successfully deleted ${result.count} ${result.count === 1 ? "entry" : "entries"}.`
+        );
         setSelectedEntryIds(new Set());
       } else {
         setErrorMessage(result.error || "Failed to delete entries.");
@@ -680,10 +702,7 @@ export function DataEntryClient({
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-muted/50 rounded-lg">
                 <div className="space-y-2">
                   <Label>Metric</Label>
-                  <Select
-                    value={selectedMetric}
-                    onValueChange={handleMetricChange}
-                  >
+                  <Select value={selectedMetric} onValueChange={handleMetricChange}>
                     <SelectTrigger className="w-full">
                       <SelectValue placeholder="Select metric" />
                     </SelectTrigger>
@@ -754,7 +773,9 @@ export function DataEntryClient({
                           <SelectContent>
                             <SelectItem value="all">All Divisions</SelectItem>
                             {filterableDivisions.map((d) => (
-                              <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+                              <SelectItem key={d.id} value={d.id}>
+                                {d.name}
+                              </SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
@@ -773,7 +794,9 @@ export function DataEntryClient({
                           <SelectContent>
                             <SelectItem value="all">All Departments</SelectItem>
                             {filterableRegions.map((r) => (
-                              <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>
+                              <SelectItem key={r.id} value={r.id}>
+                                {r.name}
+                              </SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
@@ -802,8 +825,19 @@ export function DataEntryClient({
                   {periodStart && prefillLoading && (
                     <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center gap-2 text-sm text-blue-700">
                       <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        />
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                        />
                       </svg>
                       Loading existing data…
                     </div>
@@ -811,8 +845,9 @@ export function DataEntryClient({
                   {periodStart && !prefillLoading && prefillCount > 0 && (
                     <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center gap-2 text-sm text-blue-700">
                       <CheckCircle className="h-4 w-4 flex-shrink-0" />
-                      {prefillCount} {prefillCount === 1 ? "row" : "rows"} auto-filled with existing data.
-                      Editing and re-saving will update the existing {prefillCount === 1 ? "entry" : "entries"}.
+                      {prefillCount} {prefillCount === 1 ? "row" : "rows"} auto-filled with existing
+                      data. Editing and re-saving will update the existing{" "}
+                      {prefillCount === 1 ? "entry" : "entries"}.
                     </div>
                   )}
 
@@ -842,19 +877,29 @@ export function DataEntryClient({
                       </TableHeader>
                       <TableBody>
                         {filteredSingleRows.map((row) => (
-                          <TableRow key={row.key} className={row.existingEntryId ? "bg-blue-50/50" : ""}>
+                          <TableRow
+                            key={row.key}
+                            className={row.existingEntryId ? "bg-blue-50/50" : ""}
+                          >
                             <TableCell className="font-medium text-sm py-2">
                               <div className="flex items-center gap-1.5">
-                                {row.divisionName || <span className="text-muted-foreground">—</span>}
+                                {row.divisionName || (
+                                  <span className="text-muted-foreground">—</span>
+                                )}
                                 {row.existingEntryId && (
-                                  <Badge variant="outline" className="text-[9px] px-1 py-0 text-blue-600 border-blue-300 bg-blue-50">
+                                  <Badge
+                                    variant="outline"
+                                    className="text-[9px] px-1 py-0 text-blue-600 border-blue-300 bg-blue-50"
+                                  >
                                     saved
                                   </Badge>
                                 )}
                               </div>
                             </TableCell>
                             <TableCell className="text-sm py-2">
-                              {row.regionName || <span className="text-muted-foreground italic">Division-level</span>}
+                              {row.regionName || (
+                                <span className="text-muted-foreground italic">Division-level</span>
+                              )}
                             </TableCell>
                             {isNDMetric ? (
                               <>
@@ -866,7 +911,9 @@ export function DataEntryClient({
                                     placeholder={ndLabel.num}
                                     className="h-8"
                                     value={row.numerator}
-                                    onChange={(e) => updateSingleRow(row.key, "numerator", e.target.value)}
+                                    onChange={(e) =>
+                                      updateSingleRow(row.key, "numerator", e.target.value)
+                                    }
                                   />
                                 </TableCell>
                                 <TableCell className="py-2">
@@ -877,7 +924,9 @@ export function DataEntryClient({
                                     placeholder={ndLabel.den}
                                     className="h-8"
                                     value={row.denominator}
-                                    onChange={(e) => updateSingleRow(row.key, "denominator", e.target.value)}
+                                    onChange={(e) =>
+                                      updateSingleRow(row.key, "denominator", e.target.value)
+                                    }
                                   />
                                 </TableCell>
                                 {isRateMetric && selectedMetricObj?.rateMultiplier && (
@@ -905,7 +954,9 @@ export function DataEntryClient({
                                   placeholder="Value"
                                   className="h-8"
                                   value={row.value}
-                                  onChange={(e) => updateSingleRow(row.key, "value", e.target.value)}
+                                  onChange={(e) =>
+                                    updateSingleRow(row.key, "value", e.target.value)
+                                  }
                                 />
                               </TableCell>
                             )}
@@ -920,48 +971,61 @@ export function DataEntryClient({
                           </TableRow>
                         ))}
                         {/* Totals row for N/D metrics */}
-                        {isNDMetric && filteredSingleRows.length > 0 && (() => {
-                          const nums = filteredSingleRows
-                            .map((r) => parseFloat(r.numerator))
-                            .filter((n) => !isNaN(n));
-                          const dens = filteredSingleRows
-                            .map((r) => parseFloat(r.denominator))
-                            .filter((n) => !isNaN(n));
-                          const totalNum = nums.length > 0 ? nums.reduce((a, b) => a + b, 0) : null;
-                          const totalDen = dens.length > 0 ? dens.reduce((a, b) => a + b, 0) : null;
-                          let totalRate: string | null = null;
-                          if (totalNum != null && totalDen != null && totalDen > 0) {
-                            if (selectedMetricObj?.dataType === "proportion") {
-                              totalRate = String(Math.round((totalNum / totalDen) * 10000) / 100);
-                            } else if (selectedMetricObj?.dataType === "rate" && selectedMetricObj.rateMultiplier) {
-                              totalRate = String(Math.round((totalNum / totalDen) * selectedMetricObj.rateMultiplier * 10000) / 10000);
-                            } else {
-                              totalRate = String(Math.round((totalNum / totalDen) * 10000) / 10000);
+                        {isNDMetric &&
+                          filteredSingleRows.length > 0 &&
+                          (() => {
+                            const nums = filteredSingleRows
+                              .map((r) => parseFloat(r.numerator))
+                              .filter((n) => !isNaN(n));
+                            const dens = filteredSingleRows
+                              .map((r) => parseFloat(r.denominator))
+                              .filter((n) => !isNaN(n));
+                            const totalNum =
+                              nums.length > 0 ? nums.reduce((a, b) => a + b, 0) : null;
+                            const totalDen =
+                              dens.length > 0 ? dens.reduce((a, b) => a + b, 0) : null;
+                            let totalRate: string | null = null;
+                            if (totalNum != null && totalDen != null && totalDen > 0) {
+                              if (selectedMetricObj?.dataType === "proportion") {
+                                totalRate = String(Math.round((totalNum / totalDen) * 10000) / 100);
+                              } else if (
+                                selectedMetricObj?.dataType === "rate" &&
+                                selectedMetricObj.rateMultiplier
+                              ) {
+                                totalRate = String(
+                                  Math.round(
+                                    (totalNum / totalDen) * selectedMetricObj.rateMultiplier * 10000
+                                  ) / 10000
+                                );
+                              } else {
+                                totalRate = String(
+                                  Math.round((totalNum / totalDen) * 10000) / 10000
+                                );
+                              }
                             }
-                          }
-                          return (
-                            <TableRow className="bg-muted/30 border-t-2 font-semibold">
-                              <TableCell className="py-2 text-sm" colSpan={2}>
-                                Totals
-                              </TableCell>
-                              <TableCell className="py-2 text-sm font-mono">
-                                {totalNum != null ? totalNum.toLocaleString() : "–"}
-                              </TableCell>
-                              <TableCell className="py-2 text-sm font-mono">
-                                {totalDen != null ? totalDen.toLocaleString() : "–"}
-                              </TableCell>
-                              {isRateMetric && selectedMetricObj?.rateMultiplier && (
-                                <TableCell className="py-2 text-center text-muted-foreground font-mono text-sm">
-                                  ×
+                            return (
+                              <TableRow className="bg-muted/30 border-t-2 font-semibold">
+                                <TableCell className="py-2 text-sm" colSpan={2}>
+                                  Totals
                                 </TableCell>
-                              )}
-                              <TableCell className="py-2 text-sm font-mono">
-                                {totalRate ?? "–"}
-                              </TableCell>
-                              <TableCell className="py-2" />
-                            </TableRow>
-                          );
-                        })()}
+                                <TableCell className="py-2 text-sm font-mono">
+                                  {totalNum != null ? totalNum.toLocaleString() : "–"}
+                                </TableCell>
+                                <TableCell className="py-2 text-sm font-mono">
+                                  {totalDen != null ? totalDen.toLocaleString() : "–"}
+                                </TableCell>
+                                {isRateMetric && selectedMetricObj?.rateMultiplier && (
+                                  <TableCell className="py-2 text-center text-muted-foreground font-mono text-sm">
+                                    ×
+                                  </TableCell>
+                                )}
+                                <TableCell className="py-2 text-sm font-mono">
+                                  {totalRate ?? "–"}
+                                </TableCell>
+                                <TableCell className="py-2" />
+                              </TableRow>
+                            );
+                          })()}
                       </TableBody>
                     </Table>
                   </div>
@@ -996,8 +1060,8 @@ export function DataEntryClient({
                 <div className="text-center py-8 text-muted-foreground">
                   <p>This metric has no division or department associations.</p>
                   <p className="text-sm mt-1">
-                    Use the <strong>Freeform Bulk</strong> tab to enter data manually,
-                    or add associations in the Metrics admin page.
+                    Use the <strong>Freeform Bulk</strong> tab to enter data manually, or add
+                    associations in the Metrics admin page.
                   </p>
                 </div>
               )}
@@ -1044,8 +1108,7 @@ export function DataEntryClient({
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-muted/50 rounded-lg">
                 <div className="space-y-2">
                   <Label>
-                    Division{" "}
-                    <span className="text-muted-foreground font-normal">(optional)</span>
+                    Division <span className="text-muted-foreground font-normal">(optional)</span>
                   </Label>
                   <Select
                     value={bulkDivision}
@@ -1060,15 +1123,16 @@ export function DataEntryClient({
                     <SelectContent>
                       <SelectItem value="none">No division</SelectItem>
                       {divisions.map((d) => (
-                        <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+                        <SelectItem key={d.id} value={d.id}>
+                          {d.name}
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-2">
                   <Label>
-                    Department{" "}
-                    <span className="text-muted-foreground font-normal">(optional)</span>
+                    Department <span className="text-muted-foreground font-normal">(optional)</span>
                   </Label>
                   <Select
                     value={bulkRegion || "none"}
@@ -1081,7 +1145,9 @@ export function DataEntryClient({
                     <SelectContent>
                       <SelectItem value="none">No department</SelectItem>
                       {bulkRegions.map((r) => (
-                        <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>
+                        <SelectItem key={r.id} value={r.id}>
+                          {r.name}
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -1092,9 +1158,7 @@ export function DataEntryClient({
                     value={bulkPeriodType}
                     onValueChange={(v) => {
                       if (needsFullDate(v) !== needsFullDate(bulkPeriodType)) {
-                        setBulkRows((prev) =>
-                          prev.map((r) => ({ ...r, periodStart: "" }))
-                        );
+                        setBulkRows((prev) => prev.map((r) => ({ ...r, periodStart: "" })));
                       }
                       setBulkPeriodType(v);
                     }}
@@ -1139,7 +1203,9 @@ export function DataEntryClient({
                       </SelectTrigger>
                       <SelectContent>
                         {metrics.map((m) => (
-                          <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
+                          <SelectItem key={m.id} value={m.id}>
+                            {m.name}
+                          </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -1189,7 +1255,9 @@ export function DataEntryClient({
                   onClick={handleBulkSubmit}
                   disabled={bulkPending}
                 >
-                  {bulkPending ? "Saving..." : `Save ${bulkRows.filter((r) => r.metricDefinitionId && r.value).length} Entries`}
+                  {bulkPending
+                    ? "Saving..."
+                    : `Save ${bulkRows.filter((r) => r.metricDefinitionId && r.value).length} Entries`}
                 </Button>
               </div>
             </CardContent>
@@ -1232,7 +1300,9 @@ export function DataEntryClient({
                 <SelectContent>
                   <SelectItem value="all">All metrics</SelectItem>
                   {entryMetricOptions.map((m) => (
-                    <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
+                    <SelectItem key={m.id} value={m.id}>
+                      {m.name}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -1297,11 +1367,7 @@ export function DataEntryClient({
                 {selectedEntryIds.size} {selectedEntryIds.size === 1 ? "entry" : "entries"} selected
               </span>
               <div className="ml-auto flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setSelectedEntryIds(new Set())}
-                >
+                <Button variant="outline" size="sm" onClick={() => setSelectedEntryIds(new Set())}>
                   Clear Selection
                 </Button>
                 <Button
@@ -1317,9 +1383,7 @@ export function DataEntryClient({
           )}
 
           {displayedEntries.length === 0 ? (
-            <p className="text-muted-foreground text-sm py-4 text-center">
-              No entries found.
-            </p>
+            <p className="text-muted-foreground text-sm py-4 text-center">No entries found.</p>
           ) : (
             <Table>
               <TableHeader>
@@ -1341,7 +1405,10 @@ export function DataEntryClient({
               </TableHeader>
               <TableBody>
                 {displayedEntries.map((entry) => (
-                  <TableRow key={entry.id} data-state={selectedEntryIds.has(entry.id) ? "selected" : undefined}>
+                  <TableRow
+                    key={entry.id}
+                    data-state={selectedEntryIds.has(entry.id) ? "selected" : undefined}
+                  >
                     <TableCell>
                       <Checkbox
                         checked={selectedEntryIds.has(entry.id)}
@@ -1365,7 +1432,12 @@ export function DataEntryClient({
                       </div>
                     </TableCell>
                     <TableCell className="text-right font-mono">
-                      {formatMetricValue(entry.value, entry.metricUnit, entry.metricRateMultiplier, entry.metricRateSuffix)}
+                      {formatMetricValue(
+                        entry.value,
+                        entry.metricUnit,
+                        entry.metricRateMultiplier,
+                        entry.metricRateSuffix
+                      )}
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-1">
@@ -1441,7 +1513,14 @@ export function DataEntryClient({
             <DialogDescription>
               Are you sure you want to delete this entry for &quot;
               {deleteTarget?.metricName}&quot; (
-              {deleteTarget ? formatMetricValue(deleteTarget.value, deleteTarget.metricUnit, deleteTarget.metricRateMultiplier, deleteTarget.metricRateSuffix) : ""}
+              {deleteTarget
+                ? formatMetricValue(
+                    deleteTarget.value,
+                    deleteTarget.metricUnit,
+                    deleteTarget.metricRateMultiplier,
+                    deleteTarget.metricRateSuffix
+                  )
+                : ""}
               )? This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
@@ -1487,11 +1566,7 @@ export function DataEntryClient({
             >
               Cancel
             </Button>
-            <Button
-              variant="destructive"
-              onClick={handleBulkDelete}
-              disabled={bulkDeletePending}
-            >
+            <Button variant="destructive" onClick={handleBulkDelete} disabled={bulkDeletePending}>
               {bulkDeletePending
                 ? "Deleting..."
                 : `Delete ${selectedEntryIds.size} ${selectedEntryIds.size === 1 ? "Entry" : "Entries"}`}
@@ -1536,12 +1611,14 @@ function EditEntryForm({
   // Resolve custom labels with fallbacks
   const labels = useMemo(() => {
     if (!metricDef) return { num: "Numerator", den: "Denominator", rate: "Value" };
-    const defaults = metricDef.dataType === "proportion"
-      ? { num: "Compliant", den: "Total", rate: "Rate (%)" }
-      : { num: "Events", den: "Exposure", rate: "Rate" };
-    const rateLabel = metricDef.dataType === "rate" && metricDef.rateSuffix
-      ? `Rate (${metricDef.rateSuffix})`
-      : defaults.rate;
+    const defaults =
+      metricDef.dataType === "proportion"
+        ? { num: "Compliant", den: "Total", rate: "Rate (%)" }
+        : { num: "Events", den: "Exposure", rate: "Rate" };
+    const rateLabel =
+      metricDef.dataType === "rate" && metricDef.rateSuffix
+        ? `Rate (${metricDef.rateSuffix})`
+        : defaults.rate;
     return {
       num: metricDef.numeratorLabel || defaults.num,
       den: metricDef.denominatorLabel || defaults.den,
@@ -1549,12 +1626,17 @@ function EditEntryForm({
     };
   }, [metricDef]);
 
-  const [editNum, setEditNum] = useState(editTarget.numerator != null ? String(editTarget.numerator) : "");
-  const [editDen, setEditDen] = useState(editTarget.denominator != null ? String(editTarget.denominator) : "");
+  const [editNum, setEditNum] = useState(
+    editTarget.numerator != null ? String(editTarget.numerator) : ""
+  );
+  const [editDen, setEditDen] = useState(
+    editTarget.denominator != null ? String(editTarget.denominator) : ""
+  );
   // For rate metrics, display the multiplied value; raw value goes to server
-  const initialDisplayValue = isRateType && metricDef?.rateMultiplier
-    ? editTarget.value * metricDef.rateMultiplier
-    : editTarget.value;
+  const initialDisplayValue =
+    isRateType && metricDef?.rateMultiplier
+      ? editTarget.value * metricDef.rateMultiplier
+      : editTarget.value;
   const [editValue, setEditValue] = useState(String(initialDisplayValue));
   const [rawEditValue, setRawEditValue] = useState(String(editTarget.value));
 
@@ -1661,7 +1743,10 @@ function EditEntryForm({
             </div>
           )}
           <div className="space-y-2">
-            <Label htmlFor="edit-value">{labels.rate} <span className="text-muted-foreground font-normal">(auto-computed)</span></Label>
+            <Label htmlFor="edit-value">
+              {labels.rate}{" "}
+              <span className="text-muted-foreground font-normal">(auto-computed)</span>
+            </Label>
             <input type="hidden" name="value" value={rawEditValue} />
             <Input
               id="edit-value"

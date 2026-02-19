@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { parseDateRangeFilter } from "@/lib/utils";
-import { aggregateByPeriodWeighted, type AggregationType, type MetricDataType } from "@/lib/aggregation";
+import {
+  aggregateByPeriodWeighted,
+  type AggregationType,
+  type MetricDataType,
+} from "@/lib/aggregation";
 
 export const dynamic = "force-dynamic";
 
@@ -20,9 +24,7 @@ export async function GET(request: NextRequest) {
     const range = searchParams.get("range") ?? "all";
 
     const dateFilter = parseDateRangeFilter(range);
-    const periodStartFilter = Object.keys(dateFilter).length > 0
-      ? { periodStart: dateFilter }
-      : {};
+    const periodStartFilter = Object.keys(dateFilter).length > 0 ? { periodStart: dateFilter } : {};
 
     // Fetch all active divisions
     const divisions = await prisma.division.findMany({
@@ -68,21 +70,30 @@ export async function GET(request: NextRequest) {
     }
 
     // Fetch KPI metric definitions in one query
-    const kpiMetrics = allKpiMetricIds.size > 0
-      ? await prisma.metricDefinition.findMany({
-          where: {
-            id: { in: Array.from(allKpiMetricIds) },
-            isActive: true,
-            isKpi: true,
-            parentId: null,
-          },
-          select: {
-            id: true, name: true, slug: true, unit: true, target: true,
-            chartType: true, categoryLegacy: true, aggregationType: true,
-            dataType: true, rateMultiplier: true, rateSuffix: true,
-          },
-        })
-      : [];
+    const kpiMetrics =
+      allKpiMetricIds.size > 0
+        ? await prisma.metricDefinition.findMany({
+            where: {
+              id: { in: Array.from(allKpiMetricIds) },
+              isActive: true,
+              isKpi: true,
+              parentId: null,
+            },
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+              unit: true,
+              target: true,
+              chartType: true,
+              categoryLegacy: true,
+              aggregationType: true,
+              dataType: true,
+              rateMultiplier: true,
+              rateSuffix: true,
+            },
+          })
+        : [];
 
     const kpiMetricMap = new Map(kpiMetrics.map((m) => [m.id, m]));
     const kpiMetricIdSet = new Set(kpiMetrics.map((m) => m.id));
@@ -91,39 +102,54 @@ export async function GET(request: NextRequest) {
     // BULK FETCH: all region-level entries for all associated KPI metrics at once
     // This replaces ~200 individual queries with 1-2 bulk queries.
     // =========================================================================
-    const allRegionEntries = kpiMetricIdSet.size > 0
-      ? await prisma.metricEntry.findMany({
-          where: {
-            metricDefinitionId: { in: Array.from(kpiMetricIdSet) },
-            regionId: { not: null },
-          },
-          orderBy: { periodStart: "asc" },
-          select: {
-            metricDefinitionId: true, divisionId: true,
-            periodStart: true, value: true, numerator: true, denominator: true,
-          },
-        })
-      : [];
+    const allRegionEntries =
+      kpiMetricIdSet.size > 0
+        ? await prisma.metricEntry.findMany({
+            where: {
+              metricDefinitionId: { in: Array.from(kpiMetricIdSet) },
+              regionId: { not: null },
+            },
+            orderBy: { periodStart: "asc" },
+            select: {
+              metricDefinitionId: true,
+              divisionId: true,
+              periodStart: true,
+              value: true,
+              numerator: true,
+              denominator: true,
+            },
+          })
+        : [];
 
     // Also fetch date-filtered entries if a range filter is active
     const hasDateFilter = Object.keys(dateFilter).length > 0;
-    const filteredRegionEntries = hasDateFilter && kpiMetricIdSet.size > 0
-      ? await prisma.metricEntry.findMany({
-          where: {
-            metricDefinitionId: { in: Array.from(kpiMetricIdSet) },
-            regionId: { not: null },
-            ...periodStartFilter,
-          },
-          orderBy: { periodStart: "asc" },
-          select: {
-            metricDefinitionId: true, divisionId: true,
-            periodStart: true, value: true, numerator: true, denominator: true,
-          },
-        })
-      : allRegionEntries; // no date filter = same data
+    const filteredRegionEntries =
+      hasDateFilter && kpiMetricIdSet.size > 0
+        ? await prisma.metricEntry.findMany({
+            where: {
+              metricDefinitionId: { in: Array.from(kpiMetricIdSet) },
+              regionId: { not: null },
+              ...periodStartFilter,
+            },
+            orderBy: { periodStart: "asc" },
+            select: {
+              metricDefinitionId: true,
+              divisionId: true,
+              periodStart: true,
+              value: true,
+              numerator: true,
+              denominator: true,
+            },
+          })
+        : allRegionEntries; // no date filter = same data
 
     // Index entries by (metricId, divisionId) for fast lookup
-    type EntryRow = { periodStart: Date; value: number; numerator: number | null; denominator: number | null };
+    type EntryRow = {
+      periodStart: Date;
+      value: number;
+      numerator: number | null;
+      denominator: number | null;
+    };
     const entryIndex = new Map<string, EntryRow[]>();
     const filteredEntryIndex = new Map<string, EntryRow[]>();
     const allEntriesByMetric = new Map<string, EntryRow[]>();
@@ -134,7 +160,8 @@ export async function GET(request: NextRequest) {
       if (!entryIndex.has(key)) entryIndex.set(key, []);
       entryIndex.get(key)!.push(e);
 
-      if (!allEntriesByMetric.has(e.metricDefinitionId)) allEntriesByMetric.set(e.metricDefinitionId, []);
+      if (!allEntriesByMetric.has(e.metricDefinitionId))
+        allEntriesByMetric.set(e.metricDefinitionId, []);
       allEntriesByMetric.get(e.metricDefinitionId)!.push(e);
     }
     for (const e of filteredRegionEntries) {
@@ -142,7 +169,8 @@ export async function GET(request: NextRequest) {
       if (!filteredEntryIndex.has(key)) filteredEntryIndex.set(key, []);
       filteredEntryIndex.get(key)!.push(e);
 
-      if (!filteredAllByMetric.has(e.metricDefinitionId)) filteredAllByMetric.set(e.metricDefinitionId, []);
+      if (!filteredAllByMetric.has(e.metricDefinitionId))
+        filteredAllByMetric.set(e.metricDefinitionId, []);
       filteredAllByMetric.get(e.metricDefinitionId)!.push(e);
     }
 
@@ -154,7 +182,7 @@ export async function GET(request: NextRequest) {
       metric: (typeof kpiMetrics)[number],
       entries: EntryRow[],
       sparklineEntries: EntryRow[],
-      divSlug: string,
+      divSlug: string
     ) {
       const dataType = (metric.dataType ?? "continuous") as MetricDataType;
       const aggType = metric.aggregationType as AggregationType;
@@ -212,13 +240,23 @@ export async function GET(request: NextRequest) {
     const associatedMetricIds = new Set(associations.map((a) => a.metricDefinitionId));
     const unassociatedKpis = await prisma.metricDefinition.findMany({
       where: {
-        isActive: true, isKpi: true, parentId: null,
+        isActive: true,
+        isKpi: true,
+        parentId: null,
         id: { notIn: Array.from(associatedMetricIds) },
       },
       select: {
-        id: true, name: true, slug: true, unit: true, target: true,
-        chartType: true, categoryLegacy: true, aggregationType: true,
-        dataType: true, rateMultiplier: true, rateSuffix: true,
+        id: true,
+        name: true,
+        slug: true,
+        unit: true,
+        target: true,
+        chartType: true,
+        categoryLegacy: true,
+        aggregationType: true,
+        dataType: true,
+        rateMultiplier: true,
+        rateSuffix: true,
       },
     });
 
@@ -228,7 +266,8 @@ export async function GET(request: NextRequest) {
       const unassocEntries = await prisma.metricEntry.findMany({
         where: {
           metricDefinitionId: { in: unassocIds },
-          divisionId: null, regionId: null,
+          divisionId: null,
+          regionId: null,
         },
         orderBy: { periodStart: "asc" },
         select: { metricDefinitionId: true, periodStart: true, value: true },
@@ -236,7 +275,8 @@ export async function GET(request: NextRequest) {
 
       const unassocByMetric = new Map<string, typeof unassocEntries>();
       for (const e of unassocEntries) {
-        if (!unassocByMetric.has(e.metricDefinitionId)) unassocByMetric.set(e.metricDefinitionId, []);
+        if (!unassocByMetric.has(e.metricDefinitionId))
+          unassocByMetric.set(e.metricDefinitionId, []);
         unassocByMetric.get(e.metricDefinitionId)!.push(e);
       }
 
@@ -293,9 +333,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ divisions: result, allDivisionsKpis });
   } catch (error) {
     console.error("Dashboard overview error:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch dashboard overview" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to fetch dashboard overview" }, { status: 500 });
   }
 }

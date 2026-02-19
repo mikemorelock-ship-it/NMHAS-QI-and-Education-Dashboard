@@ -17,14 +17,10 @@ export default function LoginPage() {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-nmh-teal/10">
-            <Lock className="h-8 w-8 text-nmh-teal" />
+            <Lock className="h-8 w-8 text-nmh-teal" aria-hidden="true" />
           </div>
-          <CardTitle className="text-2xl text-nmh-gray">
-            NMH EMS Dashboard
-          </CardTitle>
-          <p className="text-muted-foreground text-sm mt-1">
-            Sign in to manage dashboard data
-          </p>
+          <CardTitle className="text-2xl text-nmh-gray">NMH EMS Dashboard</CardTitle>
+          <p className="text-muted-foreground text-sm mt-1">Sign in to manage dashboard data</p>
         </CardHeader>
         <CardContent>
           <form action={formAction} className="space-y-4">
@@ -51,9 +47,9 @@ export default function LoginPage() {
                 className="h-12 text-base"
               />
             </div>
-            {state?.error && (
-              <p className="text-sm text-destructive">{state.error}</p>
-            )}
+            <div aria-live="polite">
+              {state?.error && <p className="text-sm text-destructive" role="alert">{state.error}</p>}
+            </div>
             <Button
               type="submit"
               className="w-full h-12 text-base bg-nmh-teal hover:bg-nmh-dark-teal"

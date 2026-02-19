@@ -28,7 +28,12 @@ export interface SnapshotData {
     recentRecommendations: { action: string; count: number }[];
   };
   phaseProgress: {
-    phases: { name: string; status: string; startedAt: string | null; completedAt: string | null }[];
+    phases: {
+      name: string;
+      status: string;
+      startedAt: string | null;
+      completedAt: string | null;
+    }[];
     completedCount: number;
     totalCount: number;
   };
@@ -191,10 +196,13 @@ export async function buildTraineeSnapshot(
     dorSummary: {
       totalCount: dors.length,
       averageOverall: avgOverall,
-      ratingTrend: dors.slice(0, 20).reverse().map((d) => ({
-        date: d.date.toISOString(),
-        rating: d.overallRating,
-      })),
+      ratingTrend: dors
+        .slice(0, 20)
+        .reverse()
+        .map((d) => ({
+          date: d.date.toISOString(),
+          rating: d.overallRating,
+        })),
       categoryAverages,
       bestCategories,
       worstCategories,

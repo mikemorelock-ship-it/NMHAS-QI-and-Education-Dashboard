@@ -23,12 +23,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
@@ -43,10 +38,7 @@ import {
   WIZARD_STEP_LABELS,
   type WizardStepIndex,
 } from "@/lib/qi-coaching-content";
-import {
-  DRIVER_NODE_TYPE_LABELS,
-  DRIVER_NODE_TYPE_COLORS,
-} from "@/lib/constants";
+import { DRIVER_NODE_TYPE_LABELS, DRIVER_NODE_TYPE_COLORS } from "@/lib/constants";
 import { createCampaign, updateCampaign } from "@/actions/campaigns";
 import { createDriverDiagram, createDriverNode, deleteDriverNode } from "@/actions/driver-diagrams";
 import { createPdsaCycle } from "@/actions/pdsa-cycles";
@@ -127,7 +119,7 @@ const STEP_HINTS: Record<number, TutorialHint[]> = {
     {
       id: "aim-done",
       message:
-        "Great job! Your campaign is created. Click \"Next\" to choose how you'll measure success.",
+        'Great job! Your campaign is created. Click "Next" to choose how you\'ll measure success.',
       condition: (w) => w.campaignId !== null,
     },
   ],
@@ -158,13 +150,14 @@ const STEP_HINTS: Record<number, TutorialHint[]> = {
       id: "diagram-add-primary",
       message:
         "Now add Primary Drivers — these are the major areas that influence your aim. " +
-        "Click \"Add Primary Driver\" below the aim node. Add 2-4 primary drivers before moving on.",
-      condition: (w) => w.nodes.some((n) => n.type === "aim") && !w.nodes.some((n) => n.type === "primary"),
+        'Click "Add Primary Driver" below the aim node. Add 2-4 primary drivers before moving on.',
+      condition: (w) =>
+        w.nodes.some((n) => n.type === "aim") && !w.nodes.some((n) => n.type === "primary"),
     },
     {
       id: "diagram-add-secondary",
       message:
-        "Nice! Now hover over a primary driver and click \"Add Secondary Driver\" to break it into more specific factors.",
+        'Nice! Now hover over a primary driver and click "Add Secondary Driver" to break it into more specific factors.',
       condition: (w) =>
         w.nodes.some((n) => n.type === "primary") && !w.nodes.some((n) => n.type === "secondary"),
     },
@@ -173,12 +166,13 @@ const STEP_HINTS: Record<number, TutorialHint[]> = {
       message:
         "You're almost there! Add at least one Change Idea — a specific, testable action you can try in a PDSA cycle.",
       condition: (w) =>
-        w.nodes.some((n) => n.type === "secondary") && !w.nodes.some((n) => n.type === "changeIdea"),
+        w.nodes.some((n) => n.type === "secondary") &&
+        !w.nodes.some((n) => n.type === "changeIdea"),
     },
     {
       id: "diagram-ready",
       message:
-        "Your driver diagram is taking shape! You can keep adding nodes, or click \"Next\" to plan PDSA cycles for your change ideas.",
+        'Your driver diagram is taking shape! You can keep adding nodes, or click "Next" to plan PDSA cycles for your change ideas.',
       condition: (w) => w.nodes.some((n) => n.type === "changeIdea"),
     },
   ],
@@ -192,8 +186,7 @@ const STEP_HINTS: Record<number, TutorialHint[]> = {
     },
     {
       id: "pdsa-done",
-      message:
-        "PDSA cycle(s) created! You can add more, or proceed to Review & Launch.",
+      message: "PDSA cycle(s) created! You can add more, or proceed to Review & Launch.",
       condition: (w) => w.pdsaCycleIds.length > 0,
     },
   ],
@@ -307,11 +300,7 @@ function buildDisplayOrder(nodes: NodeRow[]): (NodeRow & { depth: number })[] {
 // Component
 // ---------------------------------------------------------------------------
 
-export function GuidedWizard({
-  users,
-  metrics: initialMetrics,
-  departments,
-}: GuidedWizardProps) {
+export function GuidedWizard({ users, metrics: initialMetrics, departments }: GuidedWizardProps) {
   const [step, setStep] = useState<WizardStepIndex>(0);
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -355,8 +344,10 @@ export function GuidedWizard({
 
   const canGoNext = () => {
     switch (step) {
-      case 0: return wizard.campaignId !== null;
-      case 1: return true; // Educational step, always passable
+      case 0:
+        return wizard.campaignId !== null;
+      case 1:
+        return true; // Educational step, always passable
       case 2: {
         // Require diagram + aim + at least one primary driver + at least one change idea
         return (
@@ -366,9 +357,12 @@ export function GuidedWizard({
           wizard.nodes.some((n) => n.type === "changeIdea")
         );
       }
-      case 3: return wizard.pdsaCycleIds.length > 0; // Require at least one PDSA cycle
-      case 4: return true;
-      default: return false;
+      case 3:
+        return wizard.pdsaCycleIds.length > 0; // Require at least one PDSA cycle
+      case 4:
+        return true;
+      default:
+        return false;
     }
   };
 
@@ -401,7 +395,9 @@ export function GuidedWizard({
           variant={showHints ? "default" : "outline"}
           size="sm"
           onClick={() => setShowHints(!showHints)}
-          className={showHints ? "bg-nmh-teal hover:bg-nmh-teal/90 text-white shrink-0" : "shrink-0"}
+          className={
+            showHints ? "bg-nmh-teal hover:bg-nmh-teal/90 text-white shrink-0" : "shrink-0"
+          }
           title={showHints ? "Hide tutorial hints" : "Show tutorial hints"}
         >
           <MessageCircle className="h-4 w-4 mr-1.5" />
@@ -497,11 +493,7 @@ export function GuidedWizard({
               </p>
             )}
             <div className="flex items-center justify-between">
-              <Button
-                variant="outline"
-                onClick={goBack}
-                disabled={step === 0}
-              >
+              <Button variant="outline" onClick={goBack} disabled={step === 0}>
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Back
               </Button>
@@ -540,14 +532,14 @@ export function GuidedWizard({
 
 function getCompletedSteps(wizard: WizardState, currentStep: number): boolean[] {
   return [
-    wizard.campaignId !== null,           // Step 0: Aim
-    currentStep > 1,                      // Step 1: Measures (educational)
-    wizard.diagramId !== null &&          // Step 2: Diagram — need aim + primary + change idea
+    wizard.campaignId !== null, // Step 0: Aim
+    currentStep > 1, // Step 1: Measures (educational)
+    wizard.diagramId !== null && // Step 2: Diagram — need aim + primary + change idea
       wizard.nodes.some((n) => n.type === "aim") &&
       wizard.nodes.some((n) => n.type === "primary") &&
       wizard.nodes.some((n) => n.type === "changeIdea"),
-    wizard.pdsaCycleIds.length > 0,       // Step 3: PDSA
-    false,                                // Step 4: Review (never auto-complete)
+    wizard.pdsaCycleIds.length > 0, // Step 3: PDSA
+    false, // Step 4: Review (never auto-complete)
   ];
 }
 
@@ -573,15 +565,11 @@ function StepIndicator({
                   isActive
                     ? "bg-nmh-teal text-white"
                     : isCompleted || isPast
-                    ? "bg-nmh-teal/20 text-nmh-teal"
-                    : "bg-muted text-muted-foreground"
+                      ? "bg-nmh-teal/20 text-nmh-teal"
+                      : "bg-muted text-muted-foreground"
                 }`}
               >
-                {isCompleted && !isActive ? (
-                  <CheckCircle2 className="h-4 w-4" />
-                ) : (
-                  i + 1
-                )}
+                {isCompleted && !isActive ? <CheckCircle2 className="h-4 w-4" /> : i + 1}
               </div>
               <span
                 className={`text-xs font-medium hidden sm:inline ${
@@ -628,7 +616,8 @@ function Step1Aim({
           <div>
             <p className="font-semibold">Campaign created: {wizard.campaignName}</p>
             <p className="text-sm text-muted-foreground">
-              You can proceed to the next step. The campaign will be updated when you finish the wizard.
+              You can proceed to the next step. The campaign will be updated when you finish the
+              wizard.
             </p>
           </div>
         </div>
@@ -690,7 +679,9 @@ function Step1Aim({
           <div>
             <Label htmlFor="gw-campaign-goals">
               Aim Statement / Goals *
-              <span className="text-xs text-muted-foreground ml-2">(SMART: Specific, Measurable, Achievable, Relevant, Time-bound)</span>
+              <span className="text-xs text-muted-foreground ml-2">
+                (SMART: Specific, Measurable, Achievable, Relevant, Time-bound)
+              </span>
             </Label>
             <Textarea
               id="gw-campaign-goals"
@@ -802,11 +793,10 @@ function Step2Measures({
 
         {/* Optional metric link */}
         <div className="border-t pt-4">
-          <Label htmlFor="gw-metric-link">
-            Link a metric from the dashboard (optional)
-          </Label>
+          <Label htmlFor="gw-metric-link">Link a metric from the dashboard (optional)</Label>
           <p className="text-xs text-muted-foreground mb-2">
-            If your outcome measure is already tracked in the dashboard, link it here. It will be associated with the driver diagram in the next step.
+            If your outcome measure is already tracked in the dashboard, link it here. It will be
+            associated with the driver diagram in the next step.
           </p>
           <div className="flex items-center gap-2">
             <div className="flex-1">
@@ -826,18 +816,14 @@ function Step2Measures({
                   <SelectItem value="__none__">None — I&apos;ll add measures later</SelectItem>
                   {metrics.map((m) => (
                     <SelectItem key={m.id} value={m.id}>
-                      {m.name}{m.departmentName ? ` (${m.departmentName})` : ""}
+                      {m.name}
+                      {m.departmentName ? ` (${m.departmentName})` : ""}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => setShowCreate(true)}
-            >
+            <Button type="button" variant="outline" size="sm" onClick={() => setShowCreate(true)}>
               <Plus className="h-4 w-4 mr-1" />
               Create New
             </Button>
@@ -853,7 +839,13 @@ function Step2Measures({
             <form action={handleCreateMetric} className="space-y-4">
               <div>
                 <Label htmlFor="cm-name">Name *</Label>
-                <Input id="cm-name" name="name" required maxLength={150} placeholder="e.g., Response Time" />
+                <Input
+                  id="cm-name"
+                  name="name"
+                  required
+                  maxLength={150}
+                  placeholder="e.g., Response Time"
+                />
               </div>
               <div>
                 <Label htmlFor="cm-dept">Department *</Label>
@@ -863,7 +855,9 @@ function Step2Measures({
                   </SelectTrigger>
                   <SelectContent>
                     {departments.map((d) => (
-                      <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+                      <SelectItem key={d.id} value={d.id}>
+                        {d.name}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -886,7 +880,12 @@ function Step2Measures({
               </div>
               <div>
                 <Label htmlFor="cm-desc">Description</Label>
-                <Textarea id="cm-desc" name="description" placeholder="Optional description" rows={2} />
+                <Textarea
+                  id="cm-desc"
+                  name="description"
+                  placeholder="Optional description"
+                  rows={2}
+                />
               </div>
               {/* Hidden defaults */}
               <input type="hidden" name="chartType" value="line" />
@@ -896,9 +895,7 @@ function Step2Measures({
               <input type="hidden" name="isKpi" value="false" />
               <input type="hidden" name="sortOrder" value="0" />
 
-              {createError && (
-                <p className="text-sm text-destructive">{createError}</p>
-              )}
+              {createError && <p className="text-sm text-destructive">{createError}</p>}
               <div className="flex justify-end gap-2">
                 <Button type="button" variant="outline" onClick={() => setShowCreate(false)}>
                   Cancel
@@ -930,9 +927,7 @@ function MeasureTypeCard({
     <div className={`rounded-lg border p-4 ${color}`}>
       <h4 className="font-semibold text-sm mb-1">{title}</h4>
       <p className="text-xs text-muted-foreground mb-2">{description}</p>
-      <p className="text-xs italic text-muted-foreground">
-        Example: {example}
-      </p>
+      <p className="text-xs italic text-muted-foreground">Example: {example}</p>
     </div>
   );
 }
@@ -1084,8 +1079,8 @@ function Step3Diagram({
       <CardContent className="space-y-4">
         {/* Instructions */}
         <p className="text-sm text-muted-foreground">
-          Build your improvement tree: start with an Aim node, then add Primary Drivers,
-          Secondary Drivers, and Change Ideas.
+          Build your improvement tree: start with an Aim node, then add Primary Drivers, Secondary
+          Drivers, and Change Ideas.
         </p>
 
         {/* Add top-level aim if none exists */}
@@ -1126,9 +1121,7 @@ function Step3Diagram({
                     >
                       {label}
                     </Badge>
-                    <span className="text-sm font-medium flex-1 truncate">
-                      {node.text}
-                    </span>
+                    <span className="text-sm font-medium flex-1 truncate">{node.text}</span>
                     <Button
                       variant="ghost"
                       size="sm"
@@ -1142,7 +1135,10 @@ function Step3Diagram({
 
                   {/* "Add child" button below the node, indented to show hierarchy */}
                   {childType && (
-                    <div style={{ paddingLeft: `${(node.depth + 1) * 24 + 8}px` }} className="py-0.5">
+                    <div
+                      style={{ paddingLeft: `${(node.depth + 1) * 24 + 8}px` }}
+                      className="py-0.5"
+                    >
                       <Button
                         variant="outline"
                         size="sm"
@@ -1170,14 +1166,22 @@ function Step3Diagram({
         {/* Summary with progress indicators */}
         {wizard.nodes.length > 0 && (
           <div className="flex flex-wrap items-center gap-3 text-xs">
-            <span className="text-muted-foreground">
-              {wizard.nodes.length} nodes
-            </span>
-            <span className={wizard.nodes.some((n) => n.type === "primary") ? "text-green-600" : "text-amber-600"}>
+            <span className="text-muted-foreground">{wizard.nodes.length} nodes</span>
+            <span
+              className={
+                wizard.nodes.some((n) => n.type === "primary") ? "text-green-600" : "text-amber-600"
+              }
+            >
               {wizard.nodes.filter((n) => n.type === "primary").length} primary drivers
               {!wizard.nodes.some((n) => n.type === "primary") && " (need at least 1)"}
             </span>
-            <span className={wizard.nodes.some((n) => n.type === "changeIdea") ? "text-green-600" : "text-amber-600"}>
+            <span
+              className={
+                wizard.nodes.some((n) => n.type === "changeIdea")
+                  ? "text-green-600"
+                  : "text-amber-600"
+              }
+            >
               {wizard.nodes.filter((n) => n.type === "changeIdea").length} change ideas
               {!wizard.nodes.some((n) => n.type === "changeIdea") && " (need at least 1)"}
             </span>
@@ -1201,14 +1205,15 @@ function Step3Diagram({
               Add {addNodeType ? (DRIVER_NODE_TYPE_LABELS[addNodeType] ?? addNodeType) : "Node"}
             </DialogTitle>
           </DialogHeader>
-          <form
-            action={handleAddNode}
-            className="space-y-4"
-          >
+          <form action={handleAddNode} className="space-y-4">
             <input type="hidden" name="driverDiagramId" value={wizard.diagramId ?? ""} />
             <input type="hidden" name="parentId" value={addNodeParentId ?? ""} />
             <input type="hidden" name="type" value={addNodeType ?? ""} />
-            <input type="hidden" name="sortOrder" value={wizard.nodes.filter((n) => n.parentId === addNodeParentId).length.toString()} />
+            <input
+              type="hidden"
+              name="sortOrder"
+              value={wizard.nodes.filter((n) => n.parentId === addNodeParentId).length.toString()}
+            />
 
             <div>
               <Label htmlFor="gw-node-text">
@@ -1223,8 +1228,8 @@ function Step3Diagram({
                   addNodeType === "aim"
                     ? wizard.campaignName || "Enter your aim statement"
                     : addNodeType === "changeIdea"
-                    ? "A specific, testable change you can try"
-                    : "What drives improvement in this area?"
+                      ? "A specific, testable change you can try"
+                      : "What drives improvement in this area?"
                 }
                 defaultValue={addNodeType === "aim" ? wizard.campaignName : ""}
               />
@@ -1290,20 +1295,23 @@ function Step4Pdsa({
         {changeIdeas.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
             <p className="text-sm">No change ideas found in your driver diagram.</p>
-            <p className="text-xs mt-1">Go back to Step 3 to add Change Idea nodes, then create PDSA cycles for them here.</p>
+            <p className="text-xs mt-1">
+              Go back to Step 3 to add Change Idea nodes, then create PDSA cycles for them here.
+            </p>
           </div>
         ) : (
           <>
             <p className="text-sm text-muted-foreground">
-              Select a change idea to create a PDSA cycle for. Start with one — you can add more later.
+              Select a change idea to create a PDSA cycle for. Start with one — you can add more
+              later.
             </p>
 
             {/* Change idea cards */}
             <div className="space-y-2">
               {changeIdeas.map((ci) => {
-                const hasCycle = wizard.pdsaCycleIds.some((pid) =>
-                  pid.startsWith(`for_${ci.id}`)
-                ) || wizard.pdsaCycleIds.length > 0;
+                const hasCycle =
+                  wizard.pdsaCycleIds.some((pid) => pid.startsWith(`for_${ci.id}`)) ||
+                  wizard.pdsaCycleIds.length > 0;
 
                 return (
                   <Card
@@ -1465,11 +1473,7 @@ function Step4Pdsa({
             <input type="hidden" name="status" value="planning" />
 
             <div className="flex justify-end gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setPdsaForChangeIdea(null)}
-              >
+              <Button type="button" variant="outline" onClick={() => setPdsaForChangeIdea(null)}>
                 Cancel
               </Button>
               <Button type="submit" disabled={isPending}>
@@ -1586,8 +1590,9 @@ function Step5Review({
         {/* Coaching reminder */}
         <Card className="border-nmh-teal/20 bg-nmh-teal/5 p-4">
           <p className="text-sm text-muted-foreground">
-            <strong className="text-nmh-teal">Remember:</strong> Most successful improvements require 3-5 PDSA cycles.
-            Your plan will evolve as you learn. The goal isn&apos;t perfection — it&apos;s to start testing.
+            <strong className="text-nmh-teal">Remember:</strong> Most successful improvements
+            require 3-5 PDSA cycles. Your plan will evolve as you learn. The goal isn&apos;t
+            perfection — it&apos;s to start testing.
           </p>
         </Card>
 

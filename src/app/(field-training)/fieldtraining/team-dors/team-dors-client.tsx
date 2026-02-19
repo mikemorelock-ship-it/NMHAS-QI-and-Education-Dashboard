@@ -14,13 +14,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { ClipboardCheck, Search, MessageSquare, Trash2, Send } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ClipboardCheck, Search, MessageSquare, Trash2, Send, ExternalLink } from "lucide-react";
+import Link from "next/link";
 import { addSupervisorNote, deleteSupervisorNote } from "@/actions/field-training";
 
 interface NoteEntry {
@@ -69,14 +65,18 @@ const RECOMMEND_LABELS: Record<string, string> = {
 
 function formatTimestamp(iso: string) {
   const d = new Date(iso);
-  return d.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  }) + " at " + d.toLocaleTimeString("en-US", {
-    hour: "numeric",
-    minute: "2-digit",
-  });
+  return (
+    d.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    }) +
+    " at " +
+    d.toLocaleTimeString("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+    })
+  );
 }
 
 export function TeamDorsClient({ dors, currentUserId }: TeamDorsClientProps) {
@@ -157,9 +157,7 @@ export function TeamDorsClient({ dors, currentUserId }: TeamDorsClientProps) {
         </CardHeader>
         <CardContent>
           {filtered.length === 0 ? (
-            <p className="text-center text-muted-foreground py-8">
-              No DORs found.
-            </p>
+            <p className="text-center text-muted-foreground py-8">No DORs found.</p>
           ) : (
             <div className="overflow-x-auto">
               <Table>
@@ -173,6 +171,7 @@ export function TeamDorsClient({ dors, currentUserId }: TeamDorsClientProps) {
                     <TableHead>Recommend</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="text-center">Notes</TableHead>
+                    <TableHead className="text-center">View</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -187,26 +186,16 @@ export function TeamDorsClient({ dors, currentUserId }: TeamDorsClientProps) {
                       </TableCell>
                       <TableCell>
                         <div className="font-medium">{dor.traineeName}</div>
-                        <div className="text-xs text-muted-foreground">
-                          {dor.traineeEmployeeId}
-                        </div>
+                        <div className="text-xs text-muted-foreground">{dor.traineeEmployeeId}</div>
                       </TableCell>
                       <TableCell>{dor.ftoName}</TableCell>
                       <TableCell>{dor.phaseName || "-"}</TableCell>
-                      <TableCell className="text-center font-medium">
-                        {dor.overallRating}
+                      <TableCell className="text-center font-medium">{dor.overallRating}</TableCell>
+                      <TableCell>
+                        {RECOMMEND_LABELS[dor.recommendAction] || dor.recommendAction}
                       </TableCell>
                       <TableCell>
-                        {RECOMMEND_LABELS[dor.recommendAction] ||
-                          dor.recommendAction}
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          className={
-                            STATUS_COLORS[dor.status] ||
-                            "bg-gray-100 text-gray-700"
-                          }
-                        >
+                        <Badge className={STATUS_COLORS[dor.status] || "bg-gray-100 text-gray-700"}>
                           {dor.status}
                         </Badge>
                       </TableCell>
@@ -216,15 +205,26 @@ export function TeamDorsClient({ dors, currentUserId }: TeamDorsClientProps) {
                           size="sm"
                           onClick={() => openNotes(dor)}
                           className={
-                            dor.noteEntries.length > 0
-                              ? "text-nmh-teal"
-                              : "text-muted-foreground"
+                            dor.noteEntries.length > 0 ? "text-nmh-teal" : "text-muted-foreground"
                           }
                         >
                           <MessageSquare className="h-4 w-4" />
+                          <span className="ml-1 text-xs">Comment</span>
                           {dor.noteEntries.length > 0 && (
-                            <span className="ml-1 text-xs">{dor.noteEntries.length}</span>
+                            <span className="ml-1 text-xs">({dor.noteEntries.length})</span>
                           )}
+                        </Button>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          asChild
+                          className="text-muted-foreground hover:text-nmh-teal"
+                        >
+                          <Link href={`/fieldtraining/dors/${dor.id}`}>
+                            <ExternalLink className="h-4 w-4" />
+                          </Link>
                         </Button>
                       </TableCell>
                     </TableRow>
@@ -237,10 +237,7 @@ export function TeamDorsClient({ dors, currentUserId }: TeamDorsClientProps) {
       </Card>
 
       {/* Supervisor Notes Dialog */}
-      <Dialog
-        open={!!notesDialog}
-        onOpenChange={(open) => !open && setNotesDialog(null)}
-      >
+      <Dialog open={!!notesDialog} onOpenChange={(open) => !open && setNotesDialog(null)}>
         <DialogContent className="max-w-lg max-h-[80vh] flex flex-col">
           <DialogHeader>
             <DialogTitle>Supervisor Notes</DialogTitle>
@@ -249,8 +246,7 @@ export function TeamDorsClient({ dors, currentUserId }: TeamDorsClientProps) {
             <div className="flex flex-col gap-4 min-h-0">
               <div className="text-sm text-muted-foreground">
                 DOR for <strong>{notesDialog.traineeName}</strong> on{" "}
-                {new Date(notesDialog.date).toLocaleDateString()} by{" "}
-                {notesDialog.ftoName}
+                {new Date(notesDialog.date).toLocaleDateString()} by {notesDialog.ftoName}
               </div>
 
               {/* Notes thread */}
@@ -261,20 +257,15 @@ export function TeamDorsClient({ dors, currentUserId }: TeamDorsClientProps) {
                   </p>
                 ) : (
                   notesDialog.noteEntries.map((note) => (
-                    <div
-                      key={note.id}
-                      className="rounded-lg border p-3 space-y-1"
-                    >
+                    <div key={note.id} className="rounded-lg border p-3 space-y-1">
                       <div className="flex items-start justify-between gap-2">
                         <div>
-                          <span className="text-sm font-medium">
-                            {note.authorName}
-                          </span>
+                          <span className="text-sm font-medium">{note.authorName}</span>
                           <span className="text-xs text-muted-foreground ml-2">
                             {formatTimestamp(note.createdAt)}
                           </span>
                         </div>
-                        {(note.authorId === currentUserId) && (
+                        {note.authorId === currentUserId && (
                           <Button
                             variant="ghost"
                             size="icon"

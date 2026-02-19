@@ -12,41 +12,37 @@ export default async function MetricsPage() {
     notFound();
   }
 
-  const [metrics, departments, divisions, regions, associations] =
-    await Promise.all([
-      prisma.metricDefinition.findMany({
-        orderBy: [
-          { sortOrder: "asc" },
-          { name: "asc" },
-        ],
-        include: {
-          department: { select: { id: true, name: true } },
-          parent: { select: { id: true, name: true } },
-          _count: { select: { metricEntries: true, children: true } },
-        },
-      }),
-      prisma.department.findMany({
-        orderBy: { name: "asc" },
-        select: { id: true, name: true },
-      }),
-      prisma.division.findMany({
-        where: { isActive: true },
-        orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
-        select: { id: true, name: true },
-      }),
-      prisma.region.findMany({
-        where: { isActive: true },
-        orderBy: [{ name: "asc" }],
-        select: { id: true, name: true, divisionId: true },
-      }),
-      prisma.metricAssociation.findMany({
-        select: {
-          metricDefinitionId: true,
-          divisionId: true,
-          regionId: true,
-        },
-      }),
-    ]);
+  const [metrics, departments, divisions, regions, associations] = await Promise.all([
+    prisma.metricDefinition.findMany({
+      orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
+      include: {
+        department: { select: { id: true, name: true } },
+        parent: { select: { id: true, name: true } },
+        _count: { select: { metricEntries: true, children: true } },
+      },
+    }),
+    prisma.department.findMany({
+      orderBy: { name: "asc" },
+      select: { id: true, name: true },
+    }),
+    prisma.division.findMany({
+      where: { isActive: true },
+      orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
+      select: { id: true, name: true },
+    }),
+    prisma.region.findMany({
+      where: { isActive: true },
+      orderBy: [{ name: "asc" }],
+      select: { id: true, name: true, divisionId: true },
+    }),
+    prisma.metricAssociation.findMany({
+      select: {
+        metricDefinitionId: true,
+        divisionId: true,
+        regionId: true,
+      },
+    }),
+  ]);
 
   const metricsData = metrics.map((m) => ({
     id: m.id,
@@ -81,10 +77,7 @@ export default async function MetricsPage() {
   }));
 
   // Build a map of metricId -> associations for the client
-  const associationsMap: Record<
-    string,
-    { divisionIds: string[]; regionIds: string[] }
-  > = {};
+  const associationsMap: Record<string, { divisionIds: string[]; regionIds: string[] }> = {};
   for (const a of associations) {
     if (!associationsMap[a.metricDefinitionId]) {
       associationsMap[a.metricDefinitionId] = {

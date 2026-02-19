@@ -57,9 +57,7 @@ export default async function TraineesPage() {
         status: t.traineeStatus || "active",
         divisionName: t.division?.name ?? null,
         divisionId: t.divisionId,
-        currentFtos: t.traineeAssignments.map(
-          (a) => `${a.fto.firstName} ${a.fto.lastName}`
-        ),
+        currentFtos: t.traineeAssignments.map((a) => `${a.fto.firstName} ${a.fto.lastName}`),
         currentPhase: t.traineePhases.find((tp) => tp.status === "in_progress")?.phase.name ?? null,
         phasesCompleted: t.traineePhases.filter((tp) => tp.status === "completed").length,
         totalPhases: t.traineePhases.length,

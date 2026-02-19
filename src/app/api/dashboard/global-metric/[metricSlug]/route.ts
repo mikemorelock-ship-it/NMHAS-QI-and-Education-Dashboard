@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { formatPeriod, parseDateRangeFilter } from "@/lib/utils";
-import { aggregateByPeriodWeighted, type AggregationType, type MetricDataType } from "@/lib/aggregation";
+import {
+  aggregateByPeriodWeighted,
+  type AggregationType,
+  type MetricDataType,
+} from "@/lib/aggregation";
 import { computeSPCData } from "@/lib/spc-server";
 
 export const dynamic = "force-dynamic";
@@ -27,8 +31,7 @@ export async function GET(
     const range = searchParams.get("range") ?? "ytd";
 
     const dateFilter = parseDateRangeFilter(range);
-    const periodStartFilter =
-      Object.keys(dateFilter).length > 0 ? { periodStart: dateFilter } : {};
+    const periodStartFilter = Object.keys(dateFilter).length > 0 ? { periodStart: dateFilter } : {};
 
     // Find the metric by slug
     const metric = await prisma.metricDefinition.findFirst({
@@ -41,10 +44,7 @@ export async function GET(
     });
 
     if (!metric) {
-      return NextResponse.json(
-        { error: "Metric not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Metric not found" }, { status: 404 });
     }
 
     const aggType = metric.aggregationType as AggregationType;
@@ -56,17 +56,16 @@ export async function GET(
       select: { divisionId: true },
     });
 
-    const divisionIds = [
-      ...new Set(associations.map((a) => a.divisionId!)),
-    ];
+    const divisionIds = [...new Set(associations.map((a) => a.divisionId!))];
 
-    const divisions = divisionIds.length > 0
-      ? await prisma.division.findMany({
-          where: { id: { in: divisionIds }, isActive: true },
-          orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
-          select: { id: true, name: true, slug: true },
-        })
-      : [];
+    const divisions =
+      divisionIds.length > 0
+        ? await prisma.division.findMany({
+            where: { id: { in: divisionIds }, isActive: true },
+            orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
+            select: { id: true, name: true, slug: true },
+          })
+        : [];
 
     // =========================================================================
     // BULK FETCH: all region-level entries for this metric across all divisions
@@ -80,11 +79,22 @@ export async function GET(
         ...periodStartFilter,
       },
       orderBy: { periodStart: "asc" },
-      select: { divisionId: true, periodStart: true, value: true, numerator: true, denominator: true },
+      select: {
+        divisionId: true,
+        periodStart: true,
+        value: true,
+        numerator: true,
+        denominator: true,
+      },
     });
 
     // Index by divisionId for per-division breakdown
-    type EntryRow = { periodStart: Date; value: number; numerator: number | null; denominator: number | null };
+    type EntryRow = {
+      periodStart: Date;
+      value: number;
+      numerator: number | null;
+      denominator: number | null;
+    };
     const entriesByDivision = new Map<string, EntryRow[]>();
     for (const e of allRegionEntries) {
       const divId = e.divisionId;
@@ -129,10 +139,7 @@ export async function GET(
       trend = ((current - previous) / Math.abs(previous)) * 100;
     }
 
-    const average =
-      values.length > 0
-        ? values.reduce((sum, v) => sum + v, 0) / values.length
-        : 0;
+    const average = values.length > 0 ? values.reduce((sum, v) => sum + v, 0) / values.length : 0;
     const min = values.length > 0 ? Math.min(...values) : 0;
     const max = values.length > 0 ? Math.max(...values) : 0;
 
@@ -142,14 +149,10 @@ export async function GET(
 
     let filteredAnnotations = metric.annotations;
     if (dateFilter.gte) {
-      filteredAnnotations = filteredAnnotations.filter(
-        (a) => a.date >= dateFilter.gte!
-      );
+      filteredAnnotations = filteredAnnotations.filter((a) => a.date >= dateFilter.gte!);
     }
     if (dateFilter.lte) {
-      filteredAnnotations = filteredAnnotations.filter(
-        (a) => a.date <= dateFilter.lte!
-      );
+      filteredAnnotations = filteredAnnotations.filter((a) => a.date <= dateFilter.lte!);
     }
 
     // -----------------------------------------------------------------
@@ -163,13 +166,11 @@ export async function GET(
 
         const divValues = series.map((s) => s.value);
         const divCurrent = divValues[divValues.length - 1];
-        const divPrevious =
-          divValues.length > 1 ? divValues[divValues.length - 2] : 0;
+        const divPrevious = divValues.length > 1 ? divValues[divValues.length - 2] : 0;
 
         let divTrend = 0;
         if (divPrevious !== 0) {
-          divTrend =
-            ((divCurrent - divPrevious) / Math.abs(divPrevious)) * 100;
+          divTrend = ((divCurrent - divPrevious) / Math.abs(divPrevious)) * 100;
         }
 
         return {
@@ -191,13 +192,14 @@ export async function GET(
     // Replaces N per-division region queries with 1 bulk query.
     // -----------------------------------------------------------------
 
-    const allRegions = divisionIds.length > 0
-      ? await prisma.region.findMany({
-          where: { divisionId: { in: divisionIds }, isActive: true },
-          orderBy: { name: "asc" },
-          select: { id: true, name: true, divisionId: true },
-        })
-      : [];
+    const allRegions =
+      divisionIds.length > 0
+        ? await prisma.region.findMany({
+            where: { divisionId: { in: divisionIds }, isActive: true },
+            orderBy: { name: "asc" },
+            select: { id: true, name: true, divisionId: true },
+          })
+        : [];
 
     const regionsByDivision = new Map<string, Array<{ id: string; name: string }>>();
     for (const r of allRegions) {
@@ -251,23 +253,31 @@ export async function GET(
     const childMetricIds = childMetricDefs.map((c) => c.id);
 
     // Bulk fetch all child metric entries across all divisions
-    const allChildEntries = childMetricIds.length > 0
-      ? await prisma.metricEntry.findMany({
-          where: {
-            metricDefinitionId: { in: childMetricIds },
-            divisionId: { in: divisionIds },
-            regionId: { not: null },
-            ...periodStartFilter,
-          },
-          orderBy: { periodStart: "asc" },
-          select: { metricDefinitionId: true, periodStart: true, value: true, numerator: true, denominator: true },
-        })
-      : [];
+    const allChildEntries =
+      childMetricIds.length > 0
+        ? await prisma.metricEntry.findMany({
+            where: {
+              metricDefinitionId: { in: childMetricIds },
+              divisionId: { in: divisionIds },
+              regionId: { not: null },
+              ...periodStartFilter,
+            },
+            orderBy: { periodStart: "asc" },
+            select: {
+              metricDefinitionId: true,
+              periodStart: true,
+              value: true,
+              numerator: true,
+              denominator: true,
+            },
+          })
+        : [];
 
     // Index child entries by metricDefinitionId
     const childEntriesByMetric = new Map<string, EntryRow[]>();
     for (const e of allChildEntries) {
-      if (!childEntriesByMetric.has(e.metricDefinitionId)) childEntriesByMetric.set(e.metricDefinitionId, []);
+      if (!childEntriesByMetric.has(e.metricDefinitionId))
+        childEntriesByMetric.set(e.metricDefinitionId, []);
       childEntriesByMetric.get(e.metricDefinitionId)!.push(e);
     }
 
@@ -275,15 +285,12 @@ export async function GET(
       const childEntries = childEntriesByMetric.get(child.id) ?? [];
       const childAgg = aggregateByPeriodWeighted(childEntries, dataType, aggType);
       const childValues = childAgg.map((s) => s.value);
-      const childCurrent =
-        childValues.length > 0 ? childValues[childValues.length - 1] : 0;
-      const childPrevious =
-        childValues.length > 1 ? childValues[childValues.length - 2] : 0;
+      const childCurrent = childValues.length > 0 ? childValues[childValues.length - 1] : 0;
+      const childPrevious = childValues.length > 1 ? childValues[childValues.length - 2] : 0;
 
       let childTrend = 0;
       if (childPrevious !== 0) {
-        childTrend =
-          ((childCurrent - childPrevious) / Math.abs(childPrevious)) * 100;
+        childTrend = ((childCurrent - childPrevious) / Math.abs(childPrevious)) * 100;
       }
 
       return {
@@ -390,9 +397,6 @@ export async function GET(
     return NextResponse.json(result);
   } catch (error) {
     console.error("Global metric detail error:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch metric details" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to fetch metric details" }, { status: 500 });
   }
 }

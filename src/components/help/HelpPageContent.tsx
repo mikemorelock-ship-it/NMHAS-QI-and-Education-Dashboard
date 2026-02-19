@@ -24,11 +24,13 @@ import {
   ClipboardCheck,
   TrendingUp,
   Settings,
+  ScrollText,
   Search,
   BookOpen,
   Lightbulb,
   ArrowRight,
   Sparkles,
+  ChevronDown,
   type LucideIcon,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -56,6 +58,9 @@ import {
   CHANGELOG_STORAGE_KEY,
   CATEGORY_LABELS,
   CATEGORY_COLORS,
+  groupByRelease,
+  type ChangelogEntry,
+  type ReleaseInfo,
 } from "@/lib/changelog";
 
 // ---------------------------------------------------------------------------
@@ -84,6 +89,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
   ClipboardCheck,
   TrendingUp,
   Settings,
+  ScrollText,
 };
 
 function getIcon(name: string): LucideIcon {
@@ -109,9 +115,7 @@ function FeatureItem({ feature }: { feature: HelpFeature }) {
       </AccordionTrigger>
       <AccordionContent>
         <div className="pl-11 space-y-3">
-          <p className="text-sm text-muted-foreground leading-relaxed">
-            {feature.description}
-          </p>
+          <p className="text-sm text-muted-foreground leading-relaxed">{feature.description}</p>
 
           {feature.tips && feature.tips.length > 0 && (
             <div className="space-y-1.5">
@@ -156,20 +160,145 @@ function GlossaryCard({ term }: { term: GlossaryTerm }) {
         {term.relatedTerms && term.relatedTerms.length > 0 && (
           <div className="flex items-center gap-1">
             {term.relatedTerms.map((rt) => (
-              <Badge
-                key={rt}
-                variant="secondary"
-                className="text-[10px] px-1.5 py-0"
-              >
+              <Badge key={rt} variant="secondary" className="text-[10px] px-1.5 py-0">
                 {rt}
               </Badge>
             ))}
           </div>
         )}
       </div>
-      <p className="text-sm text-muted-foreground leading-relaxed">
-        {term.definition}
-      </p>
+      <p className="text-sm text-muted-foreground leading-relaxed">{term.definition}</p>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Collapsible Release Group
+// ---------------------------------------------------------------------------
+
+function ReleaseGroup({
+  release,
+  entries,
+  isLatest,
+  defaultOpen,
+  lastSeenDate,
+}: {
+  release: ReleaseInfo;
+  entries: ChangelogEntry[];
+  isLatest: boolean;
+  defaultOpen: boolean;
+  lastSeenDate: string | null;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+
+  const featureCount = entries.filter((e) => e.category === "feature").length;
+  const improvementCount = entries.filter((e) => e.category === "improvement").length;
+  const fixCount = entries.filter((e) => e.category === "fix").length;
+  const newCount = entries.filter((e) => !lastSeenDate || e.date > lastSeenDate).length;
+
+  return (
+    <div
+      className={`rounded-lg border transition-colors ${
+        isLatest ? "border-nmh-teal/40 bg-nmh-teal/[0.02] shadow-sm" : "border-border"
+      }`}
+    >
+      {/* Clickable header */}
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-muted/50 transition-colors rounded-lg"
+      >
+        <ChevronDown
+          className={`size-4 shrink-0 text-muted-foreground transition-transform duration-200 ${
+            open ? "rotate-0" : "-rotate-90"
+          }`}
+        />
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="font-semibold text-sm">{release.version}</span>
+            {isLatest && (
+              <Badge className="bg-nmh-teal text-white text-[10px] px-1.5 py-0">Latest</Badge>
+            )}
+            {newCount > 0 && !isLatest && (
+              <Badge className="bg-nmh-teal text-white text-[10px] px-1.5 py-0 animate-pulse">
+                {newCount} New
+              </Badge>
+            )}
+            <span className="text-xs text-muted-foreground hidden sm:inline">{release.label}</span>
+          </div>
+          {/* Summary counts */}
+          <div className="flex items-center gap-3 mt-1">
+            {featureCount > 0 && (
+              <span className="text-[11px] text-muted-foreground">
+                <span
+                  className="inline-block w-2 h-2 rounded-full mr-1"
+                  style={{ backgroundColor: CATEGORY_COLORS.feature }}
+                />
+                {featureCount} feature{featureCount !== 1 ? "s" : ""}
+              </span>
+            )}
+            {improvementCount > 0 && (
+              <span className="text-[11px] text-muted-foreground">
+                <span
+                  className="inline-block w-2 h-2 rounded-full mr-1"
+                  style={{ backgroundColor: CATEGORY_COLORS.improvement }}
+                />
+                {improvementCount} improvement{improvementCount !== 1 ? "s" : ""}
+              </span>
+            )}
+            {fixCount > 0 && (
+              <span className="text-[11px] text-muted-foreground">
+                <span
+                  className="inline-block w-2 h-2 rounded-full mr-1"
+                  style={{ backgroundColor: CATEGORY_COLORS.fix }}
+                />
+                {fixCount} fix{fixCount !== 1 ? "es" : ""}
+              </span>
+            )}
+          </div>
+        </div>
+        <span className="text-xs text-muted-foreground font-mono shrink-0">
+          {entries.length} update{entries.length !== 1 ? "s" : ""}
+        </span>
+      </button>
+
+      {/* Collapsible entries */}
+      {open && (
+        <div className="px-4 pb-3 divide-y border-t">
+          {entries.map((entry, i) => {
+            const isNew = !lastSeenDate || entry.date > lastSeenDate;
+            const catColor = CATEGORY_COLORS[entry.category];
+            return (
+              <div key={i} className="py-3 first:pt-3 last:pb-0">
+                <div className="flex items-center gap-2 flex-wrap mb-1">
+                  <Badge variant="outline" className="text-[10px] font-mono px-1.5 py-0">
+                    {entry.date}
+                  </Badge>
+                  <Badge
+                    variant="secondary"
+                    className="text-[10px] px-1.5 py-0"
+                    style={{
+                      backgroundColor: `${catColor}20`,
+                      color: catColor,
+                    }}
+                  >
+                    {CATEGORY_LABELS[entry.category]}
+                  </Badge>
+                  {isNew && (
+                    <Badge className="bg-nmh-teal text-white text-[10px] px-1.5 py-0 animate-pulse">
+                      New
+                    </Badge>
+                  )}
+                </div>
+                <p className="text-sm font-semibold text-foreground">{entry.title}</p>
+                <p className="text-sm text-muted-foreground leading-relaxed mt-0.5">
+                  {entry.description}
+                </p>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
@@ -186,6 +315,7 @@ export function HelpPageContent({ portal }: { portal: PortalId }) {
   const meta = PORTAL_META[portal];
   const allFeatures = useMemo(() => getFeaturesForPortal(portal), [portal]);
   const allGlossary = useMemo(() => getGlossaryForPortal(portal), [portal]);
+  const releaseGroups = useMemo(() => groupByRelease(), []);
 
   // On mount: read last-seen date, then mark all updates as seen
   useEffect(() => {
@@ -228,52 +358,30 @@ export function HelpPageContent({ portal }: { portal: PortalId }) {
         <p className="text-muted-foreground mt-1">{meta.description}</p>
       </div>
 
-      {/* Recent Updates section */}
-      {CHANGELOG.length > 0 && (
+      {/* Updates section — collapsible by release */}
+      {releaseGroups.length > 0 && (
         <section className="space-y-4">
           <div className="flex items-center gap-2">
             <Sparkles className="size-5 text-nmh-teal" />
-            <h2 className="text-lg font-semibold">Recent Updates</h2>
+            <h2 className="text-lg font-semibold">Updates</h2>
+            <span className="text-xs text-muted-foreground">
+              {CHANGELOG.length} total across {releaseGroups.length} release
+              {releaseGroups.length !== 1 ? "s" : ""}
+            </span>
           </div>
 
-          <Card>
-            <CardContent className="pt-4 pb-2 divide-y">
-              {CHANGELOG.map((entry, i) => {
-                const isNew = !lastSeenDate || entry.date > lastSeenDate;
-                const catColor = CATEGORY_COLORS[entry.category];
-                return (
-                  <div key={i} className="py-3 first:pt-0 last:pb-0">
-                    <div className="flex items-center gap-2 flex-wrap mb-1">
-                      <Badge
-                        variant="outline"
-                        className="text-[10px] font-mono px-1.5 py-0"
-                      >
-                        {entry.date}
-                      </Badge>
-                      <Badge
-                        variant="secondary"
-                        className="text-[10px] px-1.5 py-0"
-                        style={{ backgroundColor: `${catColor}20`, color: catColor }}
-                      >
-                        {CATEGORY_LABELS[entry.category]}
-                      </Badge>
-                      {isNew && (
-                        <Badge className="bg-nmh-teal text-white text-[10px] px-1.5 py-0 animate-pulse">
-                          New
-                        </Badge>
-                      )}
-                    </div>
-                    <p className="text-sm font-semibold text-foreground">
-                      {entry.title}
-                    </p>
-                    <p className="text-sm text-muted-foreground leading-relaxed mt-0.5">
-                      {entry.description}
-                    </p>
-                  </div>
-                );
-              })}
-            </CardContent>
-          </Card>
+          <div className="space-y-3">
+            {releaseGroups.map((group, idx) => (
+              <ReleaseGroup
+                key={group.release.version}
+                release={group.release}
+                entries={group.entries}
+                isLatest={idx === 0}
+                defaultOpen={false}
+                lastSeenDate={lastSeenDate}
+              />
+            ))}
+          </div>
         </section>
       )}
 
@@ -337,9 +445,7 @@ export function HelpPageContent({ portal }: { portal: PortalId }) {
         <Card>
           <CardContent className="pt-1 pb-2 divide-y">
             {filteredGlossary.length > 0 ? (
-              filteredGlossary.map((term) => (
-                <GlossaryCard key={term.term} term={term} />
-              ))
+              filteredGlossary.map((term) => <GlossaryCard key={term.term} term={term} />)
             ) : (
               <div className="py-8 text-center text-muted-foreground text-sm">
                 No terms match &ldquo;{glossarySearch}&rdquo;

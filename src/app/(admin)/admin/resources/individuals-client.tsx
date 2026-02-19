@@ -80,23 +80,15 @@ export function IndividualsClient({
   const [formDept, setFormDept] = useState<string>("");
 
   const filteredByDept =
-    filterDept === "all"
-      ? individuals
-      : individuals.filter((i) => i.departmentId === filterDept);
+    filterDept === "all" ? individuals : individuals.filter((i) => i.departmentId === filterDept);
 
   const filtered =
-    filterDiv === "all"
-      ? filteredByDept
-      : filteredByDept.filter((i) => i.divisionId === filterDiv);
+    filterDiv === "all" ? filteredByDept : filteredByDept.filter((i) => i.divisionId === filterDiv);
 
   const filterDivisions =
-    filterDept === "all"
-      ? divisions
-      : divisions.filter((d) => d.departmentId === filterDept);
+    filterDept === "all" ? divisions : divisions.filter((d) => d.departmentId === filterDept);
 
-  const formDivisions = formDept
-    ? divisions.filter((d) => d.departmentId === formDept)
-    : [];
+  const formDivisions = formDept ? divisions.filter((d) => d.departmentId === formDept) : [];
 
   // Group filtered individuals by division for display
   const groupedByDivision = filtered.reduce<
@@ -147,10 +139,7 @@ export function IndividualsClient({
 
         <Dialog open={addOpen} onOpenChange={setAddOpen}>
           <DialogTrigger asChild>
-            <Button
-              className="bg-nmh-teal hover:bg-nmh-teal/90"
-              onClick={openAdd}
-            >
+            <Button className="bg-nmh-teal hover:bg-nmh-teal/90" onClick={openAdd}>
               <Plus className="h-4 w-4" />
               Add Individual
             </Button>
@@ -158,9 +147,7 @@ export function IndividualsClient({
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Add Individual</DialogTitle>
-              <DialogDescription>
-                Add a new person to a division.
-              </DialogDescription>
+              <DialogDescription>Add a new person to a division.</DialogDescription>
             </DialogHeader>
             <form
               action={async (formData) => {
@@ -175,17 +162,10 @@ export function IndividualsClient({
                 onDeptChange={setFormDept}
               />
               <DialogFooter className="mt-4">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setAddOpen(false)}
-                >
+                <Button type="button" variant="outline" onClick={() => setAddOpen(false)}>
                   Cancel
                 </Button>
-                <Button
-                  type="submit"
-                  className="bg-nmh-teal hover:bg-nmh-teal/90"
-                >
+                <Button type="submit" className="bg-nmh-teal hover:bg-nmh-teal/90">
                   Add Individual
                 </Button>
               </DialogFooter>
@@ -267,15 +247,10 @@ export function IndividualsClient({
                 </TableHeader>
                 <TableBody>
                   {group.items.map((ind) => (
-                    <TableRow
-                      key={ind.id}
-                      className={!ind.isActive ? "opacity-60" : undefined}
-                    >
+                    <TableRow key={ind.id} className={!ind.isActive ? "opacity-60" : undefined}>
                       <TableCell className="font-medium">{ind.name}</TableCell>
                       <TableCell>
-                        {ind.role ?? (
-                          <span className="text-muted-foreground">--</span>
-                        )}
+                        {ind.role ?? <span className="text-muted-foreground">--</span>}
                       </TableCell>
                       <TableCell>
                         <Badge
@@ -289,9 +264,7 @@ export function IndividualsClient({
                           {ind.isActive ? "Active" : "Inactive"}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-center">
-                        {ind.entriesCount}
-                      </TableCell>
+                      <TableCell className="text-center">{ind.entriesCount}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1">
                           <Button
@@ -307,11 +280,7 @@ export function IndividualsClient({
                               <Eye className="h-3.5 w-3.5" />
                             )}
                           </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => openEdit(ind)}
-                          >
+                          <Button variant="outline" size="sm" onClick={() => openEdit(ind)}>
                             <Pencil className="h-3.5 w-3.5" />
                             Edit
                           </Button>
@@ -335,16 +304,11 @@ export function IndividualsClient({
       )}
 
       {/* Edit Dialog */}
-      <Dialog
-        open={editTarget !== null}
-        onOpenChange={(open) => !open && setEditTarget(null)}
-      >
+      <Dialog open={editTarget !== null} onOpenChange={(open) => !open && setEditTarget(null)}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Edit Individual</DialogTitle>
-            <DialogDescription>
-              Update this person&apos;s information.
-            </DialogDescription>
+            <DialogDescription>Update this person&apos;s information.</DialogDescription>
           </DialogHeader>
           {editTarget && (
             <form
@@ -361,17 +325,10 @@ export function IndividualsClient({
                 defaultValues={editTarget}
               />
               <DialogFooter className="mt-4">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setEditTarget(null)}
-                >
+                <Button type="button" variant="outline" onClick={() => setEditTarget(null)}>
                   Cancel
                 </Button>
-                <Button
-                  type="submit"
-                  className="bg-nmh-teal hover:bg-nmh-teal/90"
-                >
+                <Button type="submit" className="bg-nmh-teal hover:bg-nmh-teal/90">
                   Save Changes
                 </Button>
               </DialogFooter>
@@ -381,20 +338,20 @@ export function IndividualsClient({
       </Dialog>
 
       {/* Delete Confirmation */}
-      <Dialog
-        open={deleteTarget !== null}
-        onOpenChange={(open) => !open && setDeleteTarget(null)}
-      >
+      <Dialog open={deleteTarget !== null} onOpenChange={(open) => !open && setDeleteTarget(null)}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Delete Individual</DialogTitle>
             <DialogDescription>
               Are you sure you want to delete &quot;{deleteTarget?.name}&quot;?
               {(deleteTarget?.entriesCount ?? 0) > 0 && (
-                <> This person has {deleteTarget?.entriesCount} associated data entries
-                  that will have their individual reference cleared.</>
-              )}
-              {" "}This action cannot be undone.
+                <>
+                  {" "}
+                  This person has {deleteTarget?.entriesCount} associated data entries that will
+                  have their individual reference cleared.
+                </>
+              )}{" "}
+              This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -459,11 +416,7 @@ function IndividualFormFields({
           disabled={!formDept}
         >
           <SelectTrigger className="w-full">
-            <SelectValue
-              placeholder={
-                formDept ? "Select division" : "Select a department first"
-              }
-            />
+            <SelectValue placeholder={formDept ? "Select division" : "Select a department first"} />
           </SelectTrigger>
           <SelectContent>
             {divisions.map((div) => (
@@ -486,8 +439,7 @@ function IndividualFormFields({
       </div>
       <div className="space-y-2">
         <Label htmlFor="individualRole">
-          Role{" "}
-          <span className="text-muted-foreground font-normal">(optional)</span>
+          Role <span className="text-muted-foreground font-normal">(optional)</span>
         </Label>
         <Input
           id="individualRole"

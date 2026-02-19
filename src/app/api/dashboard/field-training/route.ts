@@ -36,62 +36,59 @@ export async function GET(request: NextRequest) {
     }
 
     // Fetch DORs, active trainee count, and filter options in parallel
-    const [dors, activeTrainees, divisions, ftos, trainees, phases] =
-      await Promise.all([
-        // 1. All matching DORs
-        prisma.dailyEvaluation.findMany({
-          where: dorWhere,
-          orderBy: { date: "desc" },
-          include: {
-            trainee: { select: { firstName: true, lastName: true } },
-            fto: { select: { firstName: true, lastName: true } },
-            phase: { select: { name: true } },
-          },
-        }),
-        // 2. Active trainees count
-        prisma.user.count({
-          where: {
-            role: "trainee",
-            traineeStatus: "active",
-            ...(divisionId ? { divisionId } : {}),
-          },
-        }),
-        // 3. Filter options (always unfiltered for dropdown population)
-        prisma.division.findMany({
-          where: { isActive: true },
-          orderBy: { name: "asc" },
-          select: { id: true, name: true },
-        }),
-        prisma.user.findMany({
-          where: { role: { in: ["fto", "supervisor", "manager", "admin"] }, isActive: true },
-          orderBy: { lastName: "asc" },
-          select: { id: true, firstName: true, lastName: true, divisionId: true },
-        }),
-        prisma.user.findMany({
-          where: { role: "trainee", isActive: true },
-          orderBy: { lastName: "asc" },
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            divisionId: true,
-            traineeStatus: true,
-          },
-        }),
-        prisma.trainingPhase.findMany({
-          where: { isActive: true },
-          orderBy: { sortOrder: "asc" },
-          select: { id: true, name: true },
-        }),
-      ]);
+    const [dors, activeTrainees, divisions, ftos, trainees, phases] = await Promise.all([
+      // 1. All matching DORs
+      prisma.dailyEvaluation.findMany({
+        where: dorWhere,
+        orderBy: { date: "desc" },
+        include: {
+          trainee: { select: { firstName: true, lastName: true } },
+          fto: { select: { firstName: true, lastName: true } },
+          phase: { select: { name: true } },
+        },
+      }),
+      // 2. Active trainees count
+      prisma.user.count({
+        where: {
+          role: "trainee",
+          traineeStatus: "active",
+          ...(divisionId ? { divisionId } : {}),
+        },
+      }),
+      // 3. Filter options (always unfiltered for dropdown population)
+      prisma.division.findMany({
+        where: { isActive: true },
+        orderBy: { name: "asc" },
+        select: { id: true, name: true },
+      }),
+      prisma.user.findMany({
+        where: { role: { in: ["fto", "supervisor", "manager", "admin"] }, isActive: true },
+        orderBy: { lastName: "asc" },
+        select: { id: true, firstName: true, lastName: true, divisionId: true },
+      }),
+      prisma.user.findMany({
+        where: { role: "trainee", isActive: true },
+        orderBy: { lastName: "asc" },
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          divisionId: true,
+          traineeStatus: true,
+        },
+      }),
+      prisma.trainingPhase.findMany({
+        where: { isActive: true },
+        orderBy: { sortOrder: "asc" },
+        select: { id: true, name: true },
+      }),
+    ]);
 
     // --- KPIs ---
     const totalDors = dors.length;
 
     const avgOverallRating =
-      totalDors > 0
-        ? dors.reduce((sum, d) => sum + d.overallRating, 0) / totalDors
-        : 0;
+      totalDors > 0 ? dors.reduce((sum, d) => sum + d.overallRating, 0) / totalDors : 0;
 
     // Avg rating sparkline: group by month, last 12 months
     const monthlyRatings = new Map<string, number[]>();
@@ -110,10 +107,7 @@ export async function GET(request: NextRequest) {
     const flagCount = dors.filter((d) => d.nrtFlag || d.remFlag).length;
 
     // --- Rating Over Time (line chart) ---
-    const monthlyGroups = new Map<
-      string,
-      { total: number; count: number; sortKey: string }
-    >();
+    const monthlyGroups = new Map<string, { total: number; count: number; sortKey: string }>();
     for (const dor of dors) {
       const period = format(dor.date, "MMM yyyy");
       const sortKey = format(dor.date, "yyyy-MM");
@@ -165,10 +159,7 @@ export async function GET(request: NextRequest) {
         include: { category: { select: { id: true, name: true } } },
       });
 
-      const categoryMap = new Map<
-        string,
-        { name: string; total: number; count: number }
-      >();
+      const categoryMap = new Map<string, { name: string; total: number; count: number }>();
       for (const er of evalRatings) {
         const catId = er.category.id;
         if (!categoryMap.has(catId)) {

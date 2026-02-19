@@ -10,7 +10,7 @@ export function formatMetricValue(
   value: number,
   unit: string,
   rateMultiplier?: number | null,
-  rateSuffix?: string | null,
+  rateSuffix?: string | null
 ): string {
   switch (unit) {
     case "currency":
@@ -48,17 +48,10 @@ export function toUTCDate(date: Date | string): Date {
   return new Date(d.getTime() + d.getTimezoneOffset() * 60000);
 }
 
-export function formatPeriod(
-  date: Date | string,
-  periodType?: string
-): string {
+export function formatPeriod(date: Date | string, periodType?: string): string {
   const utcAdjusted = toUTCDate(date);
   // For sub-monthly period types, show the full date
-  if (
-    periodType === "daily" ||
-    periodType === "weekly" ||
-    periodType === "bi-weekly"
-  ) {
+  if (periodType === "daily" || periodType === "weekly" || periodType === "bi-weekly") {
     return format(utcAdjusted, "MMM d, yyyy");
   }
   return format(utcAdjusted, "MMM yyyy");

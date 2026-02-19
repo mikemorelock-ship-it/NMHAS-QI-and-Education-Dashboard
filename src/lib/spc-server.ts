@@ -40,9 +40,8 @@ export async function computeSPCData(
   }
 
   const options: SPCOptions = {
-    sigmaLevel: (spcSigmaLevel === 1 || spcSigmaLevel === 2 || spcSigmaLevel === 3)
-      ? spcSigmaLevel
-      : 3,
+    sigmaLevel:
+      spcSigmaLevel === 1 || spcSigmaLevel === 2 || spcSigmaLevel === 3 ? spcSigmaLevel : 3,
   };
 
   if (baselineStart) {
@@ -57,7 +56,11 @@ export async function computeSPCData(
   if (dt === "proportion" || dt === "rate") {
     // Fetch entries with numerator/denominator for proper aggregation
     const entries = await prisma.metricEntry.findMany({
-      where: input.entryWhereClause as Parameters<typeof prisma.metricEntry.findMany>[0] extends { where?: infer W } ? W : never,
+      where: input.entryWhereClause as Parameters<typeof prisma.metricEntry.findMany>[0] extends {
+        where?: infer W;
+      }
+        ? W
+        : never,
       orderBy: { periodStart: "asc" },
       select: {
         periodStart: true,
@@ -93,9 +96,10 @@ export async function computeSPCData(
       .map((bucket) => {
         const period = formatPeriod(bucket.date);
         if (bucket.totalDen > 0) {
-          const value = dt === "proportion"
-            ? (bucket.totalNum / bucket.totalDen) * 100
-            : bucket.totalNum / bucket.totalDen;
+          const value =
+            dt === "proportion"
+              ? (bucket.totalNum / bucket.totalDen) * 100
+              : bucket.totalNum / bucket.totalDen;
           return {
             period,
             value,

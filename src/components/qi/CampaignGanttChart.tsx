@@ -124,6 +124,23 @@ export function CampaignGanttChart({ campaigns, linkPrefix }: Props) {
   const totalDays = differenceInDays(timelineEnd, timelineStart) || 1;
   const colWidth = COL_WIDTHS[zoom];
 
+  // Compute each column's percentage width based on its actual duration
+  const columnPcts = useMemo(() => {
+    return columns.map((col, i) => {
+      const colStart = col.date;
+      const colEnd = i < columns.length - 1 ? columns[i + 1].date : timelineEnd;
+      const days = differenceInDays(colEnd, colStart);
+      return (days / totalDays) * 100;
+    });
+  }, [columns, timelineEnd, totalDays]);
+
+  // Total minimum width so columns aren't too narrow
+  const totalMinWidth = columns.reduce((sum, _, i) => {
+    const pctWidth = columnPcts[i];
+    // Ensure each column is at least colWidth pixels
+    return sum + Math.max(colWidth, (pctWidth / 100) * columns.length * colWidth);
+  }, 0);
+
   const getBarStyle = (start: string | null, end: string | null) => {
     if (!start) return null;
     const startDate = new Date(start);
@@ -131,10 +148,8 @@ export function CampaignGanttChart({ campaigns, linkPrefix }: Props) {
     const fallbackDays = zoom === "year" || zoom === "3year" ? 30 : 14;
     const endDate = end ? new Date(end) : addDays(startDate, fallbackDays);
 
-    const leftPct =
-      (differenceInDays(startDate, timelineStart) / totalDays) * 100;
-    const widthPct =
-      (differenceInDays(endDate, startDate) / totalDays) * 100;
+    const leftPct = (differenceInDays(startDate, timelineStart) / totalDays) * 100;
+    const widthPct = (differenceInDays(endDate, startDate) / totalDays) * 100;
 
     return {
       left: `${Math.max(0, leftPct)}%`,
@@ -143,8 +158,7 @@ export function CampaignGanttChart({ campaigns, linkPrefix }: Props) {
   };
 
   // Today line position
-  const todayPct =
-    (differenceInDays(new Date(), timelineStart) / totalDays) * 100;
+  const todayPct = (differenceInDays(new Date(), timelineStart) / totalDays) * 100;
 
   if (campaigns.length === 0) {
     return (
@@ -180,37 +194,29 @@ export function CampaignGanttChart({ campaigns, linkPrefix }: Props) {
             <div className="w-[200px] shrink-0 px-3 py-2 text-xs font-semibold border-r bg-card">
               Campaign
             </div>
-            <div className="flex-1 relative">
-              <div className="flex">
-                {columns.map((col, i) => (
-                  <div
-                    key={i}
-                    className={cn(
-                      "text-center text-xs py-2 border-r text-muted-foreground",
-                      zoom === "day" &&
-                        isToday(col.date) &&
-                        "bg-primary/5 font-semibold"
-                    )}
-                    style={{ width: colWidth }}
-                  >
-                    {col.label}
-                  </div>
-                ))}
-              </div>
+            <div className="flex-1 flex">
+              {columns.map((col, i) => (
+                <div
+                  key={i}
+                  className={cn(
+                    "text-center text-xs py-2 border-r text-muted-foreground overflow-hidden",
+                    zoom === "day" && isToday(col.date) && "bg-primary/5 font-semibold"
+                  )}
+                  style={{ width: `${columnPcts[i]}%` }}
+                >
+                  {col.label}
+                </div>
+              ))}
             </div>
           </div>
 
           {/* Campaign Rows */}
           {campaigns.map((campaign) => {
             const barStyle = getBarStyle(campaign.startDate, campaign.endDate);
-            const statusColor =
-              CAMPAIGN_STATUS_COLORS[campaign.status] ?? "#4b4f54";
+            const statusColor = CAMPAIGN_STATUS_COLORS[campaign.status] ?? "#4b4f54";
 
             return (
-              <div
-                key={campaign.id}
-                className="flex border-b hover:bg-muted/20"
-              >
+              <div key={campaign.id} className="flex border-b hover:bg-muted/20">
                 {/* Label */}
                 <div className="w-[200px] shrink-0 px-3 py-2 text-sm border-r flex items-center gap-2">
                   <div
@@ -228,13 +234,13 @@ export function CampaignGanttChart({ campaigns, linkPrefix }: Props) {
 
                 {/* Timeline area */}
                 <div className="flex-1 relative h-10">
-                  {/* Grid lines */}
+                  {/* Grid lines — percentage-based to match header columns */}
                   <div className="absolute inset-0 flex">
                     {columns.map((_, i) => (
                       <div
                         key={i}
-                        className="border-r border-dashed border-muted"
-                        style={{ width: colWidth }}
+                        className="border-r border-dashed border-muted h-full"
+                        style={{ width: `${columnPcts[i]}%` }}
                       />
                     ))}
                   </div>
@@ -261,9 +267,7 @@ export function CampaignGanttChart({ campaigns, linkPrefix }: Props) {
                   ) : (
                     /* No dates — show a subtle indicator */
                     <div className="absolute inset-0 flex items-center justify-center">
-                      <span className="text-xs text-muted-foreground italic">
-                        No dates set
-                      </span>
+                      <span className="text-xs text-muted-foreground italic">No dates set</span>
                     </div>
                   )}
                 </div>

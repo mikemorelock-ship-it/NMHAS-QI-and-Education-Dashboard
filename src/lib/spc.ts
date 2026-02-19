@@ -68,10 +68,7 @@ const D4 = 3.267;
 // Helpers
 // ---------------------------------------------------------------------------
 
-function getBaselineData<T extends { period: string }>(
-  data: T[],
-  options: SPCOptions
-): T[] {
+function getBaselineData<T extends { period: string }>(data: T[], options: SPCOptions): T[] {
   if (!options.baselineStart && !options.baselineEnd) return data;
 
   return data.filter((d) => {
@@ -121,22 +118,16 @@ function detectSpecialCauses(points: SPCPoint[]): void {
 // P-Chart (Proportions)
 // ---------------------------------------------------------------------------
 
-function calculatePChart(
-  data: SPCDataPoint[],
-  options: SPCOptions
-): SPCResult {
+function calculatePChart(data: SPCDataPoint[], options: SPCOptions): SPCResult {
   const z = options.sigmaLevel;
   const baseline = getBaselineData(data, options);
 
   // Center line: p̄ = Σnumerator / Σdenominator
   const totalNum = baseline.reduce(
-    (sum, d) => sum + (d.numerator ?? d.value * (d.denominator ?? 1) / 100),
+    (sum, d) => sum + (d.numerator ?? (d.value * (d.denominator ?? 1)) / 100),
     0
   );
-  const totalDen = baseline.reduce(
-    (sum, d) => sum + (d.denominator ?? 1),
-    0
-  );
+  const totalDen = baseline.reduce((sum, d) => sum + (d.denominator ?? 1), 0);
 
   // If data has proportions expressed as percentages (0-100), work in that scale
   // Detect: if values are > 1, they're likely percentages
@@ -153,10 +144,7 @@ function calculatePChart(
     }
   } else {
     // Fallback: average of values
-    pBar =
-      baseline.length > 0
-        ? baseline.reduce((s, d) => s + d.value, 0) / baseline.length
-        : 0;
+    pBar = baseline.length > 0 ? baseline.reduce((s, d) => s + d.value, 0) / baseline.length : 0;
   }
 
   const points: SPCPoint[] = data.map((d) => {
@@ -201,22 +189,13 @@ function calculatePChart(
 // U-Chart (Rates)
 // ---------------------------------------------------------------------------
 
-function calculateUChart(
-  data: SPCDataPoint[],
-  options: SPCOptions
-): SPCResult {
+function calculateUChart(data: SPCDataPoint[], options: SPCOptions): SPCResult {
   const z = options.sigmaLevel;
   const baseline = getBaselineData(data, options);
 
   // Center line: ū = Σevents / Σexposure
-  const totalEvents = baseline.reduce(
-    (sum, d) => sum + (d.numerator ?? d.value),
-    0
-  );
-  const totalExposure = baseline.reduce(
-    (sum, d) => sum + (d.denominator ?? 1),
-    0
-  );
+  const totalEvents = baseline.reduce((sum, d) => sum + (d.numerator ?? d.value), 0);
+  const totalExposure = baseline.reduce((sum, d) => sum + (d.denominator ?? 1), 0);
 
   const uBar = totalExposure > 0 ? totalEvents / totalExposure : 0;
 
@@ -250,10 +229,7 @@ function calculateUChart(
 // I-MR Chart (Individuals & Moving Range)
 // ---------------------------------------------------------------------------
 
-function calculateIMR(
-  data: SPCDataPoint[],
-  options: SPCOptions
-): SPCResult {
+function calculateIMR(data: SPCDataPoint[], options: SPCOptions): SPCResult {
   const z = options.sigmaLevel;
   const baseline = getBaselineData(data, options);
 
@@ -263,9 +239,7 @@ function calculateIMR(
 
   // Center line: x̄ = mean of baseline values
   const xBar =
-    baseline.length > 0
-      ? baseline.reduce((s, d) => s + d.value, 0) / baseline.length
-      : 0;
+    baseline.length > 0 ? baseline.reduce((s, d) => s + d.value, 0) / baseline.length : 0;
 
   // Moving ranges from baseline
   const baselineMRs: number[] = [];
@@ -274,9 +248,7 @@ function calculateIMR(
   }
 
   const mrBar =
-    baselineMRs.length > 0
-      ? baselineMRs.reduce((s, v) => s + v, 0) / baselineMRs.length
-      : 0;
+    baselineMRs.length > 0 ? baselineMRs.reduce((s, v) => s + v, 0) / baselineMRs.length : 0;
 
   // σ estimate = MR̄ / d₂
   const sigma = mrBar / D2;

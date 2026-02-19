@@ -35,11 +35,11 @@ export const QI_COACHING_STEPS: CoachingStep[] = [
     description:
       "A strong aim statement is the foundation of any improvement effort. It should be SMART: Specific, Measurable, Achievable, Relevant, and Time-bound. The aim tells your team exactly what success looks like.",
     tips: [
-      "Include a specific, numeric target (e.g., \"reduce by 20%\", \"increase to 95%\").",
+      'Include a specific, numeric target (e.g., "reduce by 20%", "increase to 95%").',
       "Set a clear timeline — when will you evaluate whether you met the aim?",
       "Focus on one problem at a time. Broad aims dilute effort.",
       "Make the aim meaningful to front-line staff, not just leadership.",
-      "Ask: \"Will achieving this aim make a real difference for our patients or crews?\"",
+      'Ask: "Will achieving this aim make a real difference for our patients or crews?"',
     ],
     examples: [
       "Reduce average on-scene time for cardiac arrest calls from 22 minutes to 18 minutes by Q4 2025.",
@@ -85,7 +85,7 @@ export const QI_COACHING_STEPS: CoachingStep[] = [
     title: "Build Your Driver Diagram",
     subtitle: "What changes can you make that will result in improvement?",
     description:
-      "A driver diagram maps the theory of change behind your improvement effort. Start with your aim, then identify Primary Drivers (the major areas that influence the aim), Secondary Drivers (actionable factors under each primary driver), and Change Ideas (specific, testable interventions). Think of it as a tree from \"why\" to \"what to try.\"",
+      'A driver diagram maps the theory of change behind your improvement effort. Start with your aim, then identify Primary Drivers (the major areas that influence the aim), Secondary Drivers (actionable factors under each primary driver), and Change Ideas (specific, testable interventions). Think of it as a tree from "why" to "what to try."',
     tips: [
       "Start broad, then narrow. Primary drivers are big categories; change ideas are specific actions.",
       "Aim for 2-4 primary drivers — too many spreads focus thin.",
@@ -94,8 +94,8 @@ export const QI_COACHING_STEPS: CoachingStep[] = [
       "It's okay to revise the diagram as you learn from PDSA cycles.",
     ],
     examples: [
-      "Primary Driver: \"Crew readiness and training\" → Secondary: \"Protocol familiarity\" → Change Idea: \"Laminated quick-reference cards in every rig\"",
-      "Primary Driver: \"Equipment availability\" → Secondary: \"Medication kit organization\" → Change Idea: \"Color-coded medication pouches by protocol\"",
+      'Primary Driver: "Crew readiness and training" → Secondary: "Protocol familiarity" → Change Idea: "Laminated quick-reference cards in every rig"',
+      'Primary Driver: "Equipment availability" → Secondary: "Medication kit organization" → Change Idea: "Color-coded medication pouches by protocol"',
     ],
     guidingQuestions: [
       "What are the 2-4 major areas that most influence this outcome?",

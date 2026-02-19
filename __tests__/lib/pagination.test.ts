@@ -159,11 +159,7 @@ describe("buildPaginationUrl", () => {
   });
 
   it("strips existing page and pageSize params", () => {
-    const url = buildPaginationUrl(
-      "/users",
-      { page: "1", pageSize: "10", search: "john" },
-      3
-    );
+    const url = buildPaginationUrl("/users", { page: "1", pageSize: "10", search: "john" }, 3);
     expect(url).toContain("search=john");
     expect(url).toContain("page=3");
     // Should not have the old page=1

@@ -147,7 +147,7 @@ export function DorDetailClient({ dor, traineeId }: Props) {
       {/* Category Ratings */}
       <Card>
         <CardHeader>
-          <CardTitle>Performance Ratings</CardTitle>
+          <CardTitle className="text-xl">Daily Observation Report</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
@@ -159,9 +159,7 @@ export function DorDetailClient({ dor, traineeId }: Props) {
                     <p className="text-xs text-muted-foreground mt-0.5">{r.comments}</p>
                   )}
                 </div>
-                <Badge className={RATING_COLORS[r.rating]}>
-                  {r.rating}/7
-                </Badge>
+                <Badge className={RATING_COLORS[r.rating]}>{r.rating}/7</Badge>
               </div>
             ))}
           </div>

@@ -12,8 +12,49 @@ export default async function FieldTrainingTeamDorsPage() {
   if (session.role === "trainee") notFound();
   if (!hasPermission(session.role, "review_approve_dors")) notFound();
 
-  // Fetch all DORs across all FTOs (for supervisor review)
+  // Fetch the current user's divisionId for scoping
+  const currentUser = await prisma.user.findUnique({
+    where: { id: session.userId },
+    select: { divisionId: true },
+  });
+
+  // Build a where filter based on role and division
+  // - Admins bypass scoping (see all DORs)
+  // - Supervisors/managers with a divisionId: only see DORs where trainee is in same division
+  //   OR trainee has an active assignment where the FTO is in the user's division (cross-division)
+  // - Users with NO divisionId: see all (backward compatible until admin assigns divisions)
+  let whereFilter: Record<string, unknown> = {};
+
+  const shouldScope = session.role !== "admin" && currentUser?.divisionId != null;
+
+  if (shouldScope) {
+    const divisionId = currentUser!.divisionId!;
+
+    // Find trainee IDs that have an active assignment where the FTO is in this division
+    const crossDivisionAssignments = await prisma.trainingAssignment.findMany({
+      where: {
+        status: "active",
+        fto: { divisionId },
+      },
+      select: { traineeId: true },
+    });
+    const crossDivisionTraineeIds = crossDivisionAssignments.map((a) => a.traineeId);
+
+    whereFilter = {
+      OR: [
+        // Trainee is in the same division
+        { trainee: { divisionId } },
+        // Trainee has a cross-division active assignment with an FTO in this division
+        ...(crossDivisionTraineeIds.length > 0
+          ? [{ traineeId: { in: crossDivisionTraineeIds } }]
+          : []),
+      ],
+    };
+  }
+
+  // Fetch DORs with division scoping applied
   const dors = await prisma.dailyEvaluation.findMany({
+    where: whereFilter,
     orderBy: { date: "desc" },
     take: 100,
     include: {

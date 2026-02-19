@@ -159,44 +159,63 @@ export function ActionItemsClient({ actionItems, campaigns, cycles, users }: Pro
             Track corrective actions across campaigns and PDSA cycles
           </p>
         </div>
-        <Button onClick={() => { setError(null); setShowCreate(true); }}>
-          <Plus className="h-4 w-4 mr-2" /> New Action Item
+        <Button
+          onClick={() => {
+            setError(null);
+            setShowCreate(true);
+          }}
+        >
+          <Plus className="h-4 w-4 mr-2" aria-hidden="true" /> New Action Item
         </Button>
       </div>
 
-      {error && (
-        <Card className="border-destructive">
-          <CardContent className="py-3 text-sm text-destructive">{error}</CardContent>
-        </Card>
-      )}
+      <div aria-live="polite">
+        {error && (
+          <Card className="border-destructive">
+            <CardContent className="py-3 text-sm text-destructive" role="alert">{error}</CardContent>
+          </Card>
+        )}
+      </div>
 
       {/* Filters */}
       <div className="flex flex-wrap gap-3">
         <Select value={filterStatus} onValueChange={setFilterStatus}>
-          <SelectTrigger className="w-[160px]"><SelectValue placeholder="All Statuses" /></SelectTrigger>
+          <SelectTrigger className="w-[160px]">
+            <SelectValue placeholder="All Statuses" />
+          </SelectTrigger>
           <SelectContent>
             <SelectItem value="__all__">All Statuses</SelectItem>
             {Object.entries(ACTION_ITEM_STATUS_LABELS).map(([val, label]) => (
-              <SelectItem key={val} value={val}>{label}</SelectItem>
+              <SelectItem key={val} value={val}>
+                {label}
+              </SelectItem>
             ))}
           </SelectContent>
         </Select>
         <Select value={filterPriority} onValueChange={setFilterPriority}>
-          <SelectTrigger className="w-[160px]"><SelectValue placeholder="All Priorities" /></SelectTrigger>
+          <SelectTrigger className="w-[160px]">
+            <SelectValue placeholder="All Priorities" />
+          </SelectTrigger>
           <SelectContent>
             <SelectItem value="__all__">All Priorities</SelectItem>
             {Object.entries(ACTION_ITEM_PRIORITY_LABELS).map(([val, label]) => (
-              <SelectItem key={val} value={val}>{label}</SelectItem>
+              <SelectItem key={val} value={val}>
+                {label}
+              </SelectItem>
             ))}
           </SelectContent>
         </Select>
         <Select value={filterCampaign} onValueChange={setFilterCampaign}>
-          <SelectTrigger className="w-[200px]"><SelectValue placeholder="All Campaigns" /></SelectTrigger>
+          <SelectTrigger className="w-[200px]">
+            <SelectValue placeholder="All Campaigns" />
+          </SelectTrigger>
           <SelectContent>
             <SelectItem value="__all__">All Campaigns</SelectItem>
             <SelectItem value="__none__">No Campaign</SelectItem>
             {campaigns.map((c) => (
-              <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+              <SelectItem key={c.id} value={c.id}>
+                {c.name}
+              </SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -231,36 +250,71 @@ export function ActionItemsClient({ actionItems, campaigns, cycles, users }: Pro
                   return (
                     <TableRow key={a.id} className={a.status === "completed" ? "opacity-60" : ""}>
                       <TableCell>
-                        <button onClick={() => handleToggle(a)} className="hover:scale-110 transition-transform">
-                          <CheckCircle2 className={`h-5 w-5 ${a.status === "completed" ? "text-green-600" : "text-muted-foreground/30"}`} />
+                        <button
+                          onClick={() => handleToggle(a)}
+                          className="hover:scale-110 transition-transform"
+                          aria-label={a.status === "completed" ? `Mark "${a.title}" as open` : `Mark "${a.title}" as completed`}
+                        >
+                          <CheckCircle2
+                            className={`h-5 w-5 ${a.status === "completed" ? "text-green-600" : "text-muted-foreground/30"}`}
+                            aria-hidden="true"
+                          />
                         </button>
                       </TableCell>
                       <TableCell>
-                        <span className={`font-medium ${a.status === "completed" ? "line-through" : ""}`}>{a.title}</span>
+                        <span
+                          className={`font-medium ${a.status === "completed" ? "line-through" : ""}`}
+                        >
+                          {a.title}
+                        </span>
                         {a.pdsaCycleName && (
-                          <span className="block text-xs text-muted-foreground">→ {a.pdsaCycleName}</span>
+                          <span className="block text-xs text-muted-foreground">
+                            → {a.pdsaCycleName}
+                          </span>
                         )}
                       </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">{a.campaignName ?? "—"}</TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {a.campaignName ?? "—"}
+                      </TableCell>
                       <TableCell>
-                        <Badge variant="secondary" style={{ backgroundColor: `${pColor}20`, color: pColor }} className="text-xs">
+                        <Badge
+                          variant="secondary"
+                          style={{ backgroundColor: `${pColor}20`, color: pColor }}
+                          className="text-xs"
+                        >
                           {ACTION_ITEM_PRIORITY_LABELS[a.priority] ?? a.priority}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">{a.assigneeName ?? "—"}</TableCell>
-                      <TableCell className="text-sm text-muted-foreground">{a.dueDate ?? "—"}</TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {a.assigneeName ?? "—"}
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {a.dueDate ?? "—"}
+                      </TableCell>
                       <TableCell>
-                        <Badge variant="secondary" style={{ backgroundColor: `${sColor}20`, color: sColor }} className="text-xs">
+                        <Badge
+                          variant="secondary"
+                          style={{ backgroundColor: `${sColor}20`, color: sColor }}
+                          className="text-xs"
+                        >
                           {ACTION_ITEM_STATUS_LABELS[a.status] ?? a.status}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1">
-                          <Button variant="ghost" size="icon" onClick={() => { setError(null); setEditTarget(a); }}>
-                            <Pencil className="h-4 w-4" />
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => {
+                              setError(null);
+                              setEditTarget(a);
+                            }}
+                            aria-label={`Edit "${a.title}"`}
+                          >
+                            <Pencil className="h-4 w-4" aria-hidden="true" />
                           </Button>
-                          <Button variant="ghost" size="icon" onClick={() => setDeleteTarget(a)}>
-                            <Trash2 className="h-4 w-4 text-destructive" />
+                          <Button variant="ghost" size="icon" onClick={() => setDeleteTarget(a)} aria-label={`Delete "${a.title}"`}>
+                            <Trash2 className="h-4 w-4 text-destructive" aria-hidden="true" />
                           </Button>
                         </div>
                       </TableCell>
@@ -276,27 +330,49 @@ export function ActionItemsClient({ actionItems, campaigns, cycles, users }: Pro
       {/* Create Dialog */}
       <Dialog open={showCreate} onOpenChange={setShowCreate}>
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-          <DialogHeader><DialogTitle>Create Action Item</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle>Create Action Item</DialogTitle>
+          </DialogHeader>
           <form action={handleCreate}>
             <ActionItemFormFields users={users} campaigns={campaigns} cycles={cycles} />
             <DialogFooter className="mt-4">
-              <Button type="button" variant="outline" onClick={() => setShowCreate(false)}>Cancel</Button>
-              <Button type="submit" disabled={isPending}>{isPending ? "Creating..." : "Create"}</Button>
+              <Button type="button" variant="outline" onClick={() => setShowCreate(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={isPending}>
+                {isPending ? "Creating..." : "Create"}
+              </Button>
             </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
 
       {/* Edit Dialog */}
-      <Dialog open={!!editTarget} onOpenChange={(open) => { if (!open) setEditTarget(null); }}>
+      <Dialog
+        open={!!editTarget}
+        onOpenChange={(open) => {
+          if (!open) setEditTarget(null);
+        }}
+      >
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-          <DialogHeader><DialogTitle>Edit Action Item</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle>Edit Action Item</DialogTitle>
+          </DialogHeader>
           {editTarget && (
             <form action={handleEdit}>
-              <ActionItemFormFields users={users} campaigns={campaigns} cycles={cycles} defaults={editTarget} />
+              <ActionItemFormFields
+                users={users}
+                campaigns={campaigns}
+                cycles={cycles}
+                defaults={editTarget}
+              />
               <DialogFooter className="mt-4">
-                <Button type="button" variant="outline" onClick={() => setEditTarget(null)}>Cancel</Button>
-                <Button type="submit" disabled={isPending}>{isPending ? "Saving..." : "Save"}</Button>
+                <Button type="button" variant="outline" onClick={() => setEditTarget(null)}>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={isPending}>
+                  {isPending ? "Saving..." : "Save"}
+                </Button>
               </DialogFooter>
             </form>
           )}
@@ -304,14 +380,23 @@ export function ActionItemsClient({ actionItems, campaigns, cycles, users }: Pro
       </Dialog>
 
       {/* Delete Dialog */}
-      <Dialog open={!!deleteTarget} onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}>
+      <Dialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => {
+          if (!open) setDeleteTarget(null);
+        }}
+      >
         <DialogContent>
-          <DialogHeader><DialogTitle>Delete Action Item</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle>Delete Action Item</DialogTitle>
+          </DialogHeader>
           <p className="text-sm text-muted-foreground">
             Are you sure you want to delete <strong>{deleteTarget?.title}</strong>?
           </p>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteTarget(null)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setDeleteTarget(null)}>
+              Cancel
+            </Button>
             <Button variant="destructive" onClick={handleDelete} disabled={isPending}>
               {isPending ? "Deleting..." : "Delete"}
             </Button>
@@ -341,20 +426,36 @@ function ActionItemFormFields({
     <div className="space-y-4">
       <div>
         <Label htmlFor="title">Title *</Label>
-        <Input id="title" name="title" defaultValue={defaults?.title ?? ""} required maxLength={200} />
+        <Input
+          id="title"
+          name="title"
+          defaultValue={defaults?.title ?? ""}
+          required
+          maxLength={200}
+        />
       </div>
       <div>
         <Label htmlFor="description">Description</Label>
-        <Textarea id="description" name="description" defaultValue={defaults?.description ?? ""} rows={3} maxLength={2000} />
+        <Textarea
+          id="description"
+          name="description"
+          defaultValue={defaults?.description ?? ""}
+          rows={3}
+          maxLength={2000}
+        />
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div>
           <Label htmlFor="status">Status</Label>
           <Select name="status" defaultValue={defaults?.status ?? "open"}>
-            <SelectTrigger id="status"><SelectValue /></SelectTrigger>
+            <SelectTrigger id="status">
+              <SelectValue />
+            </SelectTrigger>
             <SelectContent>
               {Object.entries(ACTION_ITEM_STATUS_LABELS).map(([val, label]) => (
-                <SelectItem key={val} value={val}>{label}</SelectItem>
+                <SelectItem key={val} value={val}>
+                  {label}
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -362,10 +463,14 @@ function ActionItemFormFields({
         <div>
           <Label htmlFor="priority">Priority</Label>
           <Select name="priority" defaultValue={defaults?.priority ?? "medium"}>
-            <SelectTrigger id="priority"><SelectValue /></SelectTrigger>
+            <SelectTrigger id="priority">
+              <SelectValue />
+            </SelectTrigger>
             <SelectContent>
               {Object.entries(ACTION_ITEM_PRIORITY_LABELS).map(([val, label]) => (
-                <SelectItem key={val} value={val}>{label}</SelectItem>
+                <SelectItem key={val} value={val}>
+                  {label}
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -375,11 +480,15 @@ function ActionItemFormFields({
         <div>
           <Label htmlFor="assigneeId">Assignee</Label>
           <Select name="assigneeId" defaultValue={defaults?.assigneeId ?? "__none__"}>
-            <SelectTrigger id="assigneeId"><SelectValue placeholder="Unassigned" /></SelectTrigger>
+            <SelectTrigger id="assigneeId">
+              <SelectValue placeholder="Unassigned" />
+            </SelectTrigger>
             <SelectContent>
               <SelectItem value="__none__">Unassigned</SelectItem>
               {users.map((u) => (
-                <SelectItem key={u.id} value={u.id}>{u.firstName} {u.lastName}</SelectItem>
+                <SelectItem key={u.id} value={u.id}>
+                  {u.firstName} {u.lastName}
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -393,11 +502,15 @@ function ActionItemFormFields({
         <div>
           <Label htmlFor="campaignId">Campaign</Label>
           <Select name="campaignId" defaultValue={defaults?.campaignId ?? "__none__"}>
-            <SelectTrigger id="campaignId"><SelectValue placeholder="None" /></SelectTrigger>
+            <SelectTrigger id="campaignId">
+              <SelectValue placeholder="None" />
+            </SelectTrigger>
             <SelectContent>
               <SelectItem value="__none__">None</SelectItem>
               {campaigns.map((c) => (
-                <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                <SelectItem key={c.id} value={c.id}>
+                  {c.name}
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -405,11 +518,15 @@ function ActionItemFormFields({
         <div>
           <Label htmlFor="pdsaCycleId">PDSA Cycle</Label>
           <Select name="pdsaCycleId" defaultValue={defaults?.pdsaCycleId ?? "__none__"}>
-            <SelectTrigger id="pdsaCycleId"><SelectValue placeholder="None" /></SelectTrigger>
+            <SelectTrigger id="pdsaCycleId">
+              <SelectValue placeholder="None" />
+            </SelectTrigger>
             <SelectContent>
               <SelectItem value="__none__">None</SelectItem>
               {cycles.map((c) => (
-                <SelectItem key={c.id} value={c.id}>{c.title}</SelectItem>
+                <SelectItem key={c.id} value={c.id}>
+                  {c.title}
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>

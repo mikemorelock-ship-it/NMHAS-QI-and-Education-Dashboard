@@ -55,10 +55,7 @@ export function OrgHierarchy({
       />
 
       {/* Vertical connector from root to division rail */}
-      <div
-        className="w-px h-5"
-        style={{ backgroundColor: NMH_COLORS.lightGray }}
-      />
+      <div className="w-px h-5" style={{ backgroundColor: NMH_COLORS.lightGray }} />
 
       {/* Division level */}
       <div className="relative flex items-start justify-center">
@@ -83,10 +80,7 @@ export function OrgHierarchy({
             return (
               <div key={div.id} className="flex flex-col items-center">
                 {/* Vertical drop from horizontal rail */}
-                <div
-                  className="w-px h-4"
-                  style={{ backgroundColor: NMH_COLORS.lightGray }}
-                />
+                <div className="w-px h-4" style={{ backgroundColor: NMH_COLORS.lightGray }} />
 
                 {/* Division node */}
                 <OrgNodeBox
@@ -99,10 +93,7 @@ export function OrgHierarchy({
                 {/* Department children */}
                 {div.departments.length > 0 && (
                   <>
-                    <div
-                      className="w-px h-3"
-                      style={{ backgroundColor: NMH_COLORS.lightGray }}
-                    />
+                    <div className="w-px h-3" style={{ backgroundColor: NMH_COLORS.lightGray }} />
                     <div className="flex items-start gap-1.5 flex-wrap justify-center max-w-[220px]">
                       {div.departments.map((dept) => (
                         <span
@@ -158,11 +149,7 @@ function OrgNodeBox({
       >
         {label}
       </p>
-      {isActive && (
-        <p className="text-[10px] text-[#00b0ad]/70 mt-0.5 font-medium">
-          Viewing
-        </p>
-      )}
+      {isActive && <p className="text-[10px] text-[#00b0ad]/70 mt-0.5 font-medium">Viewing</p>}
     </div>
   );
 

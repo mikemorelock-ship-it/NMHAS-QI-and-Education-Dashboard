@@ -30,10 +30,7 @@ function getAllowedOrigins(): Set<string> {
   return origins;
 }
 
-function setCorsHeaders(
-  response: NextResponse,
-  origin: string | null
-): NextResponse {
+function setCorsHeaders(response: NextResponse, origin: string | null): NextResponse {
   const allowed = getAllowedOrigins();
   if (origin && allowed.has(origin)) {
     response.headers.set("Access-Control-Allow-Origin", origin);
@@ -41,10 +38,7 @@ function setCorsHeaders(
   }
   // Never allow credentials from untrusted origins
   response.headers.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-  response.headers.set(
-    "Access-Control-Allow-Headers",
-    "Content-Type, Authorization"
-  );
+  response.headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
   response.headers.set("Access-Control-Max-Age", "86400"); // 24h preflight cache
   return response;
 }
@@ -145,9 +139,7 @@ export async function middleware(request: NextRequest) {
       });
     }
     // Clear the invalid cookie so the user isn't stuck in a redirect loop
-    const response = NextResponse.redirect(
-      new URL("/login", request.url)
-    );
+    const response = NextResponse.redirect(new URL("/login", request.url));
     if (token) response.cookies.delete("session");
     return response;
   }

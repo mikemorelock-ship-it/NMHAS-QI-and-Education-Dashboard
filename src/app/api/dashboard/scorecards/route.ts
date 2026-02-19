@@ -1,13 +1,28 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { toUTCDate } from "@/lib/utils";
-import { aggregateValues, aggregateValuesWeighted, type AggregationType, type MetricDataType } from "@/lib/aggregation";
+import {
+  aggregateValues,
+  aggregateValuesWeighted,
+  type AggregationType,
+  type MetricDataType,
+} from "@/lib/aggregation";
 
 export const dynamic = "force-dynamic";
 
 const MONTH_ABBREVS = [
-  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
 ];
 
 /**
@@ -37,9 +52,7 @@ const MONTH_ABBREVS = [
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const year = parseInt(
-      searchParams.get("year") ?? String(new Date().getFullYear())
-    );
+    const year = parseInt(searchParams.get("year") ?? String(new Date().getFullYear()));
 
     if (isNaN(year) || year < 2020 || year > 2100) {
       return NextResponse.json({ error: "Invalid year" }, { status: 400 });
@@ -51,15 +64,9 @@ export async function GET(request: NextRequest) {
     const scorecardId = searchParams.get("scorecardId") || "";
     const kpiOnly = searchParams.get("kpiOnly") === "true";
 
-    const divisionIds = divisionIdsRaw
-      ? divisionIdsRaw.split(",").filter(Boolean)
-      : [];
-    const regionIds = regionIdsRaw
-      ? regionIdsRaw.split(",").filter(Boolean)
-      : [];
-    const presetMetricIds = metricIdsRaw
-      ? metricIdsRaw.split(",").filter(Boolean)
-      : [];
+    const divisionIds = divisionIdsRaw ? divisionIdsRaw.split(",").filter(Boolean) : [];
+    const regionIds = regionIdsRaw ? regionIdsRaw.split(",").filter(Boolean) : [];
+    const presetMetricIds = metricIdsRaw ? metricIdsRaw.split(",").filter(Boolean) : [];
 
     const hasFilters = divisionIds.length > 0 || regionIds.length > 0;
 
@@ -214,17 +221,18 @@ export async function GET(request: NextRequest) {
       });
       const regionIdsForDivisions = regionsInDivisions.map((r) => r.id);
 
-      rawEntries = regionIdsForDivisions.length > 0
-        ? await prisma.metricEntry.findMany({
-            where: {
-              metricDefinitionId: { in: metricIds },
-              periodStart: { gte: yearStart, lte: yearEnd },
-              regionId: { in: regionIdsForDivisions },
-            },
-            orderBy: { periodStart: "asc" },
-            select: entrySelect,
-          })
-        : [];
+      rawEntries =
+        regionIdsForDivisions.length > 0
+          ? await prisma.metricEntry.findMany({
+              where: {
+                metricDefinitionId: { in: metricIds },
+                periodStart: { gte: yearStart, lte: yearEnd },
+                regionId: { in: regionIdsForDivisions },
+              },
+              orderBy: { periodStart: "asc" },
+              select: entrySelect,
+            })
+          : [];
     } else {
       // No filter → fetch ALL region-level entries for aggregation
       rawEntries = await prisma.metricEntry.findMany({
@@ -277,12 +285,11 @@ export async function GET(request: NextRequest) {
         const entries = entriesByMetricMonth.get(key);
         return {
           month: abbrev,
-          periodStart: new Date(
-            Date.UTC(year, idx, 1, 12, 0, 0)
-          ).toISOString(),
-          value: entries && entries.length > 0
-            ? aggregateValuesWeighted(entries, dataType, aggType)
-            : null,
+          periodStart: new Date(Date.UTC(year, idx, 1, 12, 0, 0)).toISOString(),
+          value:
+            entries && entries.length > 0
+              ? aggregateValuesWeighted(entries, dataType, aggType)
+              : null,
         };
       });
 
@@ -303,9 +310,7 @@ export async function GET(request: NextRequest) {
 
       const targetYtd = metric.target;
       const meetsTarget =
-        metric.target !== null && actualYtd !== null
-          ? actualYtd >= metric.target
-          : null;
+        metric.target !== null && actualYtd !== null ? actualYtd >= metric.target : null;
 
       return {
         metricId: metric.id,
@@ -364,9 +369,6 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error("Scorecards API error:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch scorecards" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to fetch scorecards" }, { status: 500 });
   }
 }

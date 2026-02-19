@@ -54,8 +54,7 @@ export default async function GlobalMetricDetailPage({ params }: PageProps) {
 
   // Default date range
   const dateFilter = parseDateRangeFilter("ytd");
-  const periodStartFilter =
-    Object.keys(dateFilter).length > 0 ? { periodStart: dateFilter } : {};
+  const periodStartFilter = Object.keys(dateFilter).length > 0 ? { periodStart: dateFilter } : {};
 
   // Find all divisions associated with this metric
   const associations = await prisma.metricAssociation.findMany({
@@ -104,10 +103,7 @@ export default async function GlobalMetricDetailPage({ params }: PageProps) {
   // Per-division series (for breakdown display only)
   // -----------------------------------------------------------------------
 
-  const perDivisionSeries: Map<
-    string,
-    { periodStart: Date; value: number }[]
-  > = new Map();
+  const perDivisionSeries: Map<string, { periodStart: Date; value: number }[]> = new Map();
 
   for (const div of divisions) {
     const regionEntries = await prisma.metricEntry.findMany({
@@ -137,10 +133,7 @@ export default async function GlobalMetricDetailPage({ params }: PageProps) {
     trend = ((current - previous) / Math.abs(previous)) * 100;
   }
 
-  const average =
-    values.length > 0
-      ? values.reduce((sum, v) => sum + v, 0) / values.length
-      : 0;
+  const average = values.length > 0 ? values.reduce((sum, v) => sum + v, 0) / values.length : 0;
 
   // -----------------------------------------------------------------------
   // Division breakdown
@@ -153,13 +146,11 @@ export default async function GlobalMetricDetailPage({ params }: PageProps) {
 
       const divValues = series.map((s) => s.value);
       const divCurrent = divValues[divValues.length - 1];
-      const divPrevious =
-        divValues.length > 1 ? divValues[divValues.length - 2] : 0;
+      const divPrevious = divValues.length > 1 ? divValues[divValues.length - 2] : 0;
 
       let divTrend = 0;
       if (divPrevious !== 0) {
-        divTrend =
-          ((divCurrent - divPrevious) / Math.abs(divPrevious)) * 100;
+        divTrend = ((divCurrent - divPrevious) / Math.abs(divPrevious)) * 100;
       }
 
       return {
@@ -243,15 +234,12 @@ export default async function GlobalMetricDetailPage({ params }: PageProps) {
 
       const childAgg = aggregateByPeriodWeighted(childEntries, dataType, aggType);
       const childValues = childAgg.map((s) => s.value);
-      const childCurrent =
-        childValues.length > 0 ? childValues[childValues.length - 1] : 0;
-      const childPrevious =
-        childValues.length > 1 ? childValues[childValues.length - 2] : 0;
+      const childCurrent = childValues.length > 0 ? childValues[childValues.length - 1] : 0;
+      const childPrevious = childValues.length > 1 ? childValues[childValues.length - 2] : 0;
 
       let childTrend = 0;
       if (childPrevious !== 0) {
-        childTrend =
-          ((childCurrent - childPrevious) / Math.abs(childPrevious)) * 100;
+        childTrend = ((childCurrent - childPrevious) / Math.abs(childPrevious)) * 100;
       }
 
       return {
@@ -274,14 +262,10 @@ export default async function GlobalMetricDetailPage({ params }: PageProps) {
 
   let filteredAnnotations = metric.annotations;
   if (dateFilter.gte) {
-    filteredAnnotations = filteredAnnotations.filter(
-      (a) => a.date >= dateFilter.gte!
-    );
+    filteredAnnotations = filteredAnnotations.filter((a) => a.date >= dateFilter.gte!);
   }
   if (dateFilter.lte) {
-    filteredAnnotations = filteredAnnotations.filter(
-      (a) => a.date <= dateFilter.lte!
-    );
+    filteredAnnotations = filteredAnnotations.filter((a) => a.date <= dateFilter.lte!);
   }
 
   const annotations: MetricAnnotation[] = filteredAnnotations.map((a) => ({
@@ -347,11 +331,7 @@ export default async function GlobalMetricDetailPage({ params }: PageProps) {
       {/* Back button */}
       <div className="flex items-center gap-4">
         <Link href="/">
-          <Button
-            variant="outline"
-            size="sm"
-            className="gap-2 min-h-12 touch-manipulation"
-          >
+          <Button variant="outline" size="sm" className="gap-2 min-h-12 touch-manipulation">
             <ArrowLeft className="size-4" />
             Back to All Divisions
           </Button>
@@ -404,6 +384,7 @@ export default async function GlobalMetricDetailPage({ params }: PageProps) {
             count: values.length,
           },
           annotations,
+          qiAnnotations: [],
           resources: metric.resources.map((r) => ({
             id: r.id,
             title: r.title,

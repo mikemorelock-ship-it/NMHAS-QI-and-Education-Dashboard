@@ -20,7 +20,9 @@ export default async function TraineeDetailPage({ params }: { params: Promise<{ 
       division: { select: { id: true, name: true } },
       traineeAssignments: {
         orderBy: { startDate: "desc" },
-        include: { fto: { select: { id: true, firstName: true, lastName: true, employeeId: true } } },
+        include: {
+          fto: { select: { id: true, firstName: true, lastName: true, employeeId: true } },
+        },
       },
       traineePhases: {
         orderBy: { phase: { sortOrder: "asc" } },
@@ -124,7 +126,9 @@ export default async function TraineeDetailPage({ params }: { params: Promise<{ 
         startDate: tp.startDate?.toISOString() ?? null,
         endDate: tp.endDate?.toISOString() ?? null,
         status: tp.status,
-        ftoSignoffName: tp.ftoSignoff ? `${tp.ftoSignoff.firstName} ${tp.ftoSignoff.lastName}` : null,
+        ftoSignoffName: tp.ftoSignoff
+          ? `${tp.ftoSignoff.firstName} ${tp.ftoSignoff.lastName}`
+          : null,
         notes: tp.notes,
       }))}
       dors={trainee.traineeDailyEvals.map((d) => ({

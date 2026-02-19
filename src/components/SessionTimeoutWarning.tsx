@@ -80,12 +80,9 @@ export function SessionTimeoutWarning({
           <div className="flex items-start gap-3">
             <Clock className="h-5 w-5 text-red-600 shrink-0 mt-0.5" />
             <div className="flex-1">
-              <p className="text-sm font-medium text-red-800">
-                Session Expired
-              </p>
+              <p className="text-sm font-medium text-red-800">Session Expired</p>
               <p className="text-xs text-red-600 mt-1">
-                Your {sessionDurationLabel} session has expired. Please log in
-                again to continue.
+                Your {sessionDurationLabel} session has expired. Please log in again to continue.
               </p>
               <Link
                 href={loginPath}
@@ -108,9 +105,7 @@ export function SessionTimeoutWarning({
         <div className="flex items-start gap-3">
           <Clock className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
           <div className="flex-1">
-            <p className="text-sm font-medium text-amber-800">
-              Session Expiring Soon
-            </p>
+            <p className="text-sm font-medium text-amber-800">Session Expiring Soon</p>
             <p className="text-xs text-amber-600 mt-1">
               Your session expires in{" "}
               <span className="font-mono font-medium">

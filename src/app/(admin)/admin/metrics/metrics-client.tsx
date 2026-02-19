@@ -63,6 +63,8 @@ import {
   Trash2,
   Eye,
   EyeOff,
+  Archive,
+  ArchiveRestore,
   Settings2,
   ClipboardEdit,
   ChevronRight,
@@ -72,7 +74,19 @@ import {
   Save,
   Check,
 } from "lucide-react";
-import { METRIC_UNITS, CHART_TYPES, PERIOD_TYPES, AGGREGATION_TYPES, AGGREGATION_TYPE_LABELS, defaultAggregationType, DATA_TYPES, DATA_TYPE_LABELS, SPC_SIGMA_LEVELS, SPC_SIGMA_LABELS, defaultDataType } from "@/lib/constants";
+import {
+  METRIC_UNITS,
+  CHART_TYPES,
+  PERIOD_TYPES,
+  AGGREGATION_TYPES,
+  AGGREGATION_TYPE_LABELS,
+  defaultAggregationType,
+  DATA_TYPES,
+  DATA_TYPE_LABELS,
+  SPC_SIGMA_LEVELS,
+  SPC_SIGMA_LABELS,
+  defaultDataType,
+} from "@/lib/constants";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -126,10 +140,7 @@ interface RegionOption {
   divisionId: string;
 }
 
-type AssociationsMap = Record<
-  string,
-  { divisionIds: string[]; regionIds: string[] }
->;
+type AssociationsMap = Record<string, { divisionIds: string[]; regionIds: string[] }>;
 
 // ---------------------------------------------------------------------------
 // Main Component
@@ -152,12 +163,11 @@ export function MetricsClient({
   const [editTarget, setEditTarget] = useState<MetricRow | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<MetricRow | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
+  const [filterStatus, setFilterStatus] = useState<"active" | "archived">("active");
   const [filterKpi, setFilterKpi] = useState<string>("all");
   const [filterCategory, setFilterCategory] = useState<string>("all");
   const [filterDivision, setFilterDivision] = useState<string>("all");
-  const [collapsedParents, setCollapsedParents] = useState<Set<string>>(
-    new Set()
-  );
+  const [collapsedParents, setCollapsedParents] = useState<Set<string>>(new Set());
   const [isPending, startTransition] = useTransition();
 
   // DnD state
@@ -204,7 +214,9 @@ export function MetricsClient({
     return map;
   }, [associationsMap, regions]);
 
-  let filtered = localMetrics;
+  const archivedCount = localMetrics.filter((m) => !m.isActive).length;
+
+  let filtered = localMetrics.filter((m) => (filterStatus === "active" ? m.isActive : !m.isActive));
   if (filterKpi === "kpi") {
     filtered = filtered.filter((m) => m.isKpi);
   } else if (filterKpi === "non-kpi") {
@@ -351,21 +363,15 @@ export function MetricsClient({
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-nmh-gray">
-            Metric Definitions
-          </h1>
+          <h1 className="text-2xl font-bold text-nmh-gray">Metric Definitions</h1>
           <p className="text-muted-foreground mt-1">
-            Define what metrics are tracked and their division/department
-            associations.
+            Define what metrics are tracked and their division/department associations.
           </p>
         </div>
 
         <Dialog open={addOpen} onOpenChange={setAddOpen}>
           <DialogTrigger asChild>
-            <Button
-              className="bg-nmh-teal hover:bg-nmh-teal/90"
-              onClick={openAddDialog}
-            >
+            <Button className="bg-nmh-teal hover:bg-nmh-teal/90" onClick={openAddDialog}>
               <Plus className="h-4 w-4" />
               Add Metric
             </Button>
@@ -373,9 +379,7 @@ export function MetricsClient({
           <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Add Metric Definition</DialogTitle>
-              <DialogDescription>
-                Define a new metric to track in the dashboard.
-              </DialogDescription>
+              <DialogDescription>Define a new metric to track in the dashboard.</DialogDescription>
             </DialogHeader>
             <form
               action={async (formData) => {
@@ -412,10 +416,7 @@ export function MetricsClient({
                 >
                   Cancel
                 </Button>
-                <Button
-                  type="submit"
-                  className="bg-nmh-teal hover:bg-nmh-teal/90"
-                >
+                <Button type="submit" className="bg-nmh-teal hover:bg-nmh-teal/90">
                   Create Metric
                 </Button>
               </DialogFooter>
@@ -424,12 +425,37 @@ export function MetricsClient({
         </Dialog>
       </div>
 
-      {/* Filters + Save Order */}
+      {/* Status Tabs + Filters + Save Order */}
+      <div className="flex items-center gap-1 mb-2">
+        <Button
+          variant={filterStatus === "active" ? "default" : "ghost"}
+          size="sm"
+          className={filterStatus === "active" ? "bg-nmh-teal hover:bg-nmh-teal/90" : ""}
+          onClick={() => setFilterStatus("active")}
+        >
+          Active
+        </Button>
+        <Button
+          variant={filterStatus === "archived" ? "default" : "ghost"}
+          size="sm"
+          className={
+            filterStatus === "archived"
+              ? "bg-muted-foreground hover:bg-muted-foreground/90 text-white"
+              : ""
+          }
+          onClick={() => setFilterStatus("archived")}
+        >
+          Archived
+          {archivedCount > 0 && (
+            <Badge variant="secondary" className="ml-1.5 text-[10px] px-1.5 py-0">
+              {archivedCount}
+            </Badge>
+          )}
+        </Button>
+      </div>
       <div className="flex items-center gap-4 flex-wrap">
         <div className="flex items-center gap-2">
-          <Label className="text-sm text-muted-foreground whitespace-nowrap">
-            Type:
-          </Label>
+          <Label className="text-sm text-muted-foreground whitespace-nowrap">Type:</Label>
           <Select value={filterKpi} onValueChange={setFilterKpi}>
             <SelectTrigger className="w-[150px]">
               <SelectValue />
@@ -443,9 +469,7 @@ export function MetricsClient({
         </div>
         {categories.length > 0 && (
           <div className="flex items-center gap-2">
-            <Label className="text-sm text-muted-foreground whitespace-nowrap">
-              Category:
-            </Label>
+            <Label className="text-sm text-muted-foreground whitespace-nowrap">Category:</Label>
             <Select value={filterCategory} onValueChange={setFilterCategory}>
               <SelectTrigger className="w-[180px]">
                 <SelectValue />
@@ -462,9 +486,7 @@ export function MetricsClient({
           </div>
         )}
         <div className="flex items-center gap-2">
-          <Label className="text-sm text-muted-foreground whitespace-nowrap">
-            Division:
-          </Label>
+          <Label className="text-sm text-muted-foreground whitespace-nowrap">Division:</Label>
           <Select value={filterDivision} onValueChange={setFilterDivision}>
             <SelectTrigger className="w-[180px]">
               <SelectValue />
@@ -506,9 +528,7 @@ export function MetricsClient({
         </div>
         <span className="text-xs text-muted-foreground w-full">
           {filtered.length} of {localMetrics.length} metrics
-          {childrenByParent.size > 0 && (
-            <> ({topLevelMetrics.length} top-level)</>
-          )}
+          {childrenByParent.size > 0 && <> ({topLevelMetrics.length} top-level)</>}
           {hasOrderChanges && (
             <span className="text-amber-600 ml-2">
               — drag rows to reorder, then click Save Order
@@ -543,10 +563,7 @@ export function MetricsClient({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                <SortableContext
-                  items={sortableIds}
-                  strategy={verticalListSortingStrategy}
-                >
+                <SortableContext items={sortableIds} strategy={verticalListSortingStrategy}>
                   {orderedRows.map(({ metric, isChild }) => (
                     <SortableMetricRow
                       key={metric.id}
@@ -591,10 +608,7 @@ export function MetricsClient({
               key={editTarget.id}
               action={async (formData) => {
                 setFormError(null);
-                const result = await updateMetricDefinition(
-                  editTarget.id,
-                  formData
-                );
+                const result = await updateMetricDefinition(editTarget.id, formData);
                 if (result.success) {
                   // Save associations
                   const associations: {
@@ -639,10 +653,7 @@ export function MetricsClient({
                 >
                   Cancel
                 </Button>
-                <Button
-                  type="submit"
-                  className="bg-nmh-teal hover:bg-nmh-teal/90"
-                >
+                <Button type="submit" className="bg-nmh-teal hover:bg-nmh-teal/90">
                   Save Changes
                 </Button>
               </DialogFooter>
@@ -652,21 +663,18 @@ export function MetricsClient({
       </Dialog>
 
       {/* Delete Confirmation */}
-      <Dialog
-        open={deleteTarget !== null}
-        onOpenChange={(open) => !open && setDeleteTarget(null)}
-      >
+      <Dialog open={deleteTarget !== null} onOpenChange={(open) => !open && setDeleteTarget(null)}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Delete Metric</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete &quot;{deleteTarget?.name}&quot;?
-              This will also delete {deleteTarget?.entriesCount ?? 0} associated
-              data entries. This action cannot be undone.
+              Are you sure you want to delete &quot;{deleteTarget?.name}&quot;? This will also
+              delete {deleteTarget?.entriesCount ?? 0} associated data entries. This action cannot
+              be undone.
               {(deleteTarget?.childrenCount ?? 0) > 0 && (
                 <span className="block mt-2 text-amber-600 font-medium">
-                  This metric has {deleteTarget?.childrenCount} sub-metric(s)
-                  that will become standalone metrics.
+                  This metric has {deleteTarget?.childrenCount} sub-metric(s) that will become
+                  standalone metrics.
                 </span>
               )}
             </DialogDescription>
@@ -721,14 +729,9 @@ function SortableMetricRow({
   setDeleteTarget: (m: MetricRow) => void;
   isPending: boolean;
 }) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: metric.id });
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: metric.id,
+  });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -785,18 +788,17 @@ function SortableMetricRow({
             {isChild && (
               <CornerDownRight className="size-3.5 text-muted-foreground/60 -ml-1 shrink-0" />
             )}
-            <span
-              className={
-                isChild ? "font-normal text-sm" : "font-medium"
-              }
-            >
-              {metric.name}
-            </span>
-            {hasChildren && (
+            <span className={isChild ? "font-normal text-sm" : "font-medium"}>{metric.name}</span>
+            {!metric.isActive && (
               <Badge
-                variant="secondary"
-                className="text-[10px] px-1.5 py-0"
+                variant="outline"
+                className="text-[10px] px-1.5 py-0 border-muted-foreground/40 text-muted-foreground"
               >
+                Archived
+              </Badge>
+            )}
+            {hasChildren && (
+              <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
                 {childCount} sub
               </Badge>
             )}
@@ -804,12 +806,7 @@ function SortableMetricRow({
           {metric.category && (
             <p
               className={
-                "text-xs text-muted-foreground mt-0.5" +
-                (isChild
-                  ? ""
-                  : hasChildren
-                    ? " ml-7"
-                    : "")
+                "text-xs text-muted-foreground mt-0.5" + (isChild ? "" : hasChildren ? " ml-7" : "")
               }
             >
               {metric.category}
@@ -826,9 +823,7 @@ function SortableMetricRow({
             {assocSummary}
           </span>
         ) : (
-          <span className="text-xs text-muted-foreground/40">
-            None
-          </span>
+          <span className="text-xs text-muted-foreground/40">None</span>
         )}
       </TableCell>
       <TableCell>
@@ -837,39 +832,35 @@ function SortableMetricRow({
             {metric.unit}
           </Badge>
           <Badge variant="secondary" className="text-[10px] px-1.5 py-0 capitalize">
-            {metric.aggregationType === "sum" ? "Σ" : metric.aggregationType === "average" ? "x̄" : metric.aggregationType}
+            {metric.aggregationType === "sum"
+              ? "Σ"
+              : metric.aggregationType === "average"
+                ? "x̄"
+                : metric.aggregationType}
           </Badge>
         </div>
       </TableCell>
-      <TableCell>
-        {metric.isKpi && (
-          <Badge className="bg-nmh-teal text-white">KPI</Badge>
-        )}
-      </TableCell>
+      <TableCell>{metric.isKpi && <Badge className="bg-nmh-teal text-white">KPI</Badge>}</TableCell>
       <TableCell className="text-right font-mono">
-        {metric.target !== null ? (
-          metric.target
-        ) : (
-          <span className="text-muted-foreground">--</span>
-        )}
+        {metric.target !== null ? metric.target : <span className="text-muted-foreground">--</span>}
       </TableCell>
-      <TableCell className="text-center">
-        {metric.entriesCount}
-      </TableCell>
+      <TableCell className="text-center">{metric.entriesCount}</TableCell>
       <TableCell className="text-right">
         <div className="flex items-center justify-end gap-1">
           <Button
             variant="ghost"
             size="sm"
-            title={metric.isActive ? "Deactivate" : "Activate"}
+            title={metric.isActive ? "Archive metric" : "Unarchive metric"}
             onClick={() => handleToggleActive(metric)}
             disabled={isPending}
+            className={!metric.isActive ? "text-nmh-teal" : ""}
           >
             {metric.isActive ? (
-              <EyeOff className="h-3.5 w-3.5" />
+              <Archive className="h-3.5 w-3.5" />
             ) : (
-              <Eye className="h-3.5 w-3.5" />
+              <ArchiveRestore className="h-3.5 w-3.5" />
             )}
+            <span className="text-xs ml-0.5">{metric.isActive ? "Archive" : "Unarchive"}</span>
           </Button>
           <Button variant="outline" size="sm" asChild>
             <Link href={`/admin/metrics/${metric.id}`}>
@@ -878,18 +869,12 @@ function SortableMetricRow({
             </Link>
           </Button>
           <Button variant="outline" size="sm" asChild>
-            <Link
-              href={`/admin/data-entry?metricId=${metric.id}&periodType=${metric.periodType}`}
-            >
+            <Link href={`/admin/data-entry?metricId=${metric.id}&periodType=${metric.periodType}`}>
               <ClipboardEdit className="h-3.5 w-3.5" />
               Data
             </Link>
           </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => openEditDialog(metric)}
-          >
+          <Button variant="outline" size="sm" onClick={() => openEditDialog(metric)}>
             <Pencil className="h-3.5 w-3.5" />
             Edit
           </Button>
@@ -926,15 +911,10 @@ function MetricFormFields({
   divisions: DivisionOption[];
   regions: RegionOption[];
   formAssociations: { divisionIds: Set<string>; regionIds: Set<string> };
-  onAssociationsChange: (value: {
-    divisionIds: Set<string>;
-    regionIds: Set<string>;
-  }) => void;
+  onAssociationsChange: (value: { divisionIds: Set<string>; regionIds: Set<string> }) => void;
 }) {
   const parentCandidates = allMetrics.filter(
-    (m) =>
-      m.parentId === null &&
-      m.id !== defaultValues?.id
+    (m) => m.parentId === null && m.id !== defaultValues?.id
   );
 
   const toggleDivision = useCallback(
@@ -1012,10 +992,7 @@ function MetricFormFields({
       </div>
       <div className="space-y-2">
         <Label htmlFor="parentId">Parent Metric</Label>
-        <Select
-          name="parentId"
-          defaultValue={defaultValues?.parentId ?? "none"}
-        >
+        <Select name="parentId" defaultValue={defaultValues?.parentId ?? "none"}>
           <SelectTrigger className="w-full">
             <SelectValue placeholder="None (standalone metric)" />
           </SelectTrigger>
@@ -1029,8 +1006,7 @@ function MetricFormFields({
           </SelectContent>
         </Select>
         <p className="text-xs text-muted-foreground">
-          Set a parent to make this a sub-metric. Only single-level nesting is
-          allowed.
+          Set a parent to make this a sub-metric. Only single-level nesting is allowed.
         </p>
       </div>
       <div className="grid grid-cols-3 gap-4">
@@ -1059,10 +1035,7 @@ function MetricFormFields({
         </div>
         <div className="space-y-2">
           <Label htmlFor="chartType">Chart Type</Label>
-          <Select
-            name="chartType"
-            defaultValue={defaultValues?.chartType ?? "line"}
-          >
+          <Select name="chartType" defaultValue={defaultValues?.chartType ?? "line"}>
             <SelectTrigger className="w-full capitalize">
               <SelectValue />
             </SelectTrigger>
@@ -1077,10 +1050,7 @@ function MetricFormFields({
         </div>
         <div className="space-y-2">
           <Label htmlFor="periodType">Reporting Frequency</Label>
-          <Select
-            name="periodType"
-            defaultValue={defaultValues?.periodType ?? "monthly"}
-          >
+          <Select name="periodType" defaultValue={defaultValues?.periodType ?? "monthly"}>
             <SelectTrigger className="w-full capitalize">
               <SelectValue />
             </SelectTrigger>
@@ -1097,10 +1067,7 @@ function MetricFormFields({
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="aggregationType">Aggregation</Label>
-          <Select
-            name="aggregationType"
-            defaultValue={defaultValues?.aggregationType ?? "average"}
-          >
+          <Select name="aggregationType" defaultValue={defaultValues?.aggregationType ?? "average"}>
             <SelectTrigger className="w-full">
               <SelectValue />
             </SelectTrigger>
@@ -1130,11 +1097,7 @@ function MetricFormFields({
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="dataType">Data Type (SPC)</Label>
-          <Select
-            name="dataType"
-            value={formDataType}
-            onValueChange={setFormDataType}
-          >
+          <Select name="dataType" value={formDataType} onValueChange={setFormDataType}>
             <SelectTrigger className="w-full">
               <SelectValue />
             </SelectTrigger>
@@ -1152,10 +1115,7 @@ function MetricFormFields({
         </div>
         <div className="space-y-2">
           <Label htmlFor="spcSigmaLevel">Control Limit (σ)</Label>
-          <Select
-            name="spcSigmaLevel"
-            defaultValue={String(defaultValues?.spcSigmaLevel ?? 3)}
-          >
+          <Select name="spcSigmaLevel" defaultValue={String(defaultValues?.spcSigmaLevel ?? 3)}>
             <SelectTrigger className="w-full">
               <SelectValue />
             </SelectTrigger>
@@ -1167,16 +1127,15 @@ function MetricFormFields({
               ))}
             </SelectContent>
           </Select>
-          <p className="text-xs text-muted-foreground">
-            Width of control limits on SPC charts.
-          </p>
+          <p className="text-xs text-muted-foreground">Width of control limits on SPC charts.</p>
         </div>
       </div>
       {/* SPC Baseline Freeze */}
       <div className="space-y-2">
         <Label className="text-sm font-medium">SPC Baseline Period (Optional)</Label>
         <p className="text-xs text-muted-foreground">
-          Freeze the baseline period for control limit calculations. Leave blank for auto-calculated limits using all data.
+          Freeze the baseline period for control limit calculations. Leave blank for auto-calculated
+          limits using all data.
         </p>
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1">
@@ -1315,9 +1274,7 @@ function MetricFormFields({
       {/* Associations Picker */}
       <div className="space-y-3 border rounded-lg p-4 bg-muted/30">
         <div>
-          <Label className="text-sm font-semibold">
-            Division & Department Associations
-          </Label>
+          <Label className="text-sm font-semibold">Division & Department Associations</Label>
           <p className="text-xs text-muted-foreground mt-0.5">
             Select which divisions and/or departments this metric applies to.
           </p>
@@ -1338,14 +1295,9 @@ function MetricFormFields({
                     <Checkbox
                       id={`div-${div.id}`}
                       checked={isDivChecked}
-                      onCheckedChange={(checked) =>
-                        toggleDivision(div.id, !!checked)
-                      }
+                      onCheckedChange={(checked) => toggleDivision(div.id, !!checked)}
                     />
-                    <label
-                      htmlFor={`div-${div.id}`}
-                      className="text-sm font-medium cursor-pointer"
-                    >
+                    <label htmlFor={`div-${div.id}`} className="text-sm font-medium cursor-pointer">
                       {div.name}
                     </label>
                     {divRegions.length > 0 && (
@@ -1362,14 +1314,9 @@ function MetricFormFields({
                           <Checkbox
                             id={`reg-${reg.id}`}
                             checked={formAssociations.regionIds.has(reg.id)}
-                            onCheckedChange={(checked) =>
-                              toggleRegion(reg.id, !!checked)
-                            }
+                            onCheckedChange={(checked) => toggleRegion(reg.id, !!checked)}
                           />
-                          <label
-                            htmlFor={`reg-${reg.id}`}
-                            className="text-xs cursor-pointer"
-                          >
+                          <label htmlFor={`reg-${reg.id}`} className="text-xs cursor-pointer">
                             {reg.name}
                           </label>
                         </div>

@@ -8,9 +8,6 @@ export async function POST() {
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Logout error:", error);
-    return NextResponse.json(
-      { error: "Failed to log out" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to log out" }, { status: 500 });
   }
 }

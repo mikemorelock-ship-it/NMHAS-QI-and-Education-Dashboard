@@ -73,9 +73,7 @@ function revalidateAll() {
 // Actions
 // ---------------------------------------------------------------------------
 
-export async function createScorecard(
-  formData: FormData
-): Promise<ActionResult> {
+export async function createScorecard(formData: FormData): Promise<ActionResult> {
   let session;
   try {
     session = await requireAdmin("manage_scorecards");
@@ -169,10 +167,7 @@ export async function createScorecard(
   return { success: true };
 }
 
-export async function updateScorecard(
-  id: string,
-  formData: FormData
-): Promise<ActionResult> {
+export async function updateScorecard(id: string, formData: FormData): Promise<ActionResult> {
   let session;
   try {
     session = await requireAdmin("manage_scorecards");
@@ -311,10 +306,7 @@ export async function deleteScorecard(id: string): Promise<ActionResult> {
   return { success: true };
 }
 
-export async function toggleScorecardActive(
-  id: string,
-  isActive: boolean
-): Promise<ActionResult> {
+export async function toggleScorecardActive(id: string, isActive: boolean): Promise<ActionResult> {
   let session;
   try {
     session = await requireAdmin("manage_scorecards");

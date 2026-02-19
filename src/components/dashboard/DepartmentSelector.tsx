@@ -22,11 +22,7 @@ interface DepartmentSelectorProps {
  * Scrolls horizontally on small screens with the active tab auto-centered.
  * Minimum 48px tap targets for kiosk/touch-screen usage.
  */
-export function DepartmentSelector({
-  departments,
-  activeSlug,
-  onChange,
-}: DepartmentSelectorProps) {
+export function DepartmentSelector({ departments, activeSlug, onChange }: DepartmentSelectorProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const activeRef = useRef<HTMLButtonElement>(null);
 
@@ -72,10 +68,7 @@ export function DepartmentSelector({
             {dept.type && (
               <Badge
                 variant={isActive ? "default" : "secondary"}
-                className={cn(
-                  "text-[10px] uppercase tracking-wider",
-                  isActive && "bg-[#00b0ad]"
-                )}
+                className={cn("text-[10px] uppercase tracking-wider", isActive && "bg-[#00b0ad]")}
               >
                 {dept.type === "quality"
                   ? "Quality"

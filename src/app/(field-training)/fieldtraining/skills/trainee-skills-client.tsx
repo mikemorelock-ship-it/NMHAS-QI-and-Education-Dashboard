@@ -5,19 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
-import {
-  Table,
-  TableBody,
-  TableRow,
-  TableCell,
-} from "@/components/ui/table";
-import {
-  CheckCircle2,
-  Circle,
-  ChevronDown,
-  ChevronRight,
-  AlertTriangle,
-} from "lucide-react";
+import { Table, TableBody, TableRow, TableCell } from "@/components/ui/table";
+import { CheckCircle2, Circle, ChevronDown, ChevronRight, AlertTriangle } from "lucide-react";
 
 type SkillStep = {
   id: string;
@@ -89,9 +78,8 @@ export function TraineeSkillsClient({
       {/* Skill categories */}
       {skillCategories.map((cat) => {
         const catCompleted = cat.skills.filter((s) => s.signedOff).length;
-        const catPct = cat.skills.length > 0
-          ? Math.round((catCompleted / cat.skills.length) * 100)
-          : 0;
+        const catPct =
+          cat.skills.length > 0 ? Math.round((catCompleted / cat.skills.length) * 100) : 0;
 
         return (
           <Card key={cat.id}>
@@ -152,12 +140,7 @@ function SkillRow({
         <TableCell>
           <div className="flex items-center gap-2">
             {skill.steps.length > 0 && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-6 w-6"
-                onClick={onToggle}
-              >
+              <Button variant="ghost" size="icon" className="h-6 w-6" onClick={onToggle}>
                 {expanded ? (
                   <ChevronDown className="h-3.5 w-3.5" />
                 ) : (

@@ -90,12 +90,7 @@ export function QiWorkflowClient({
 
   // Shared back button
   const backButton = (
-    <Button
-      variant="ghost"
-      size="sm"
-      onClick={() => setMode("select")}
-      className="mb-4"
-    >
+    <Button variant="ghost" size="sm" onClick={() => setMode("select")} className="mb-4">
       <ArrowLeft className="h-4 w-4 mr-2" />
       Back to QI Workflow
     </Button>
@@ -108,7 +103,8 @@ export function QiWorkflowClient({
         <div>
           <h1 className="text-2xl font-bold">QI Workflow</h1>
           <p className="text-muted-foreground mt-1">
-            Choose a workflow mode to build, manage, or explore your quality improvement initiatives.
+            Choose a workflow mode to build, manage, or explore your quality improvement
+            initiatives.
           </p>
         </div>
 
@@ -149,9 +145,7 @@ export function QiWorkflowClient({
                 </div>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  {m.description}
-                </p>
+                <p className="text-sm text-muted-foreground leading-relaxed">{m.description}</p>
               </CardContent>
             </Card>
           ))}

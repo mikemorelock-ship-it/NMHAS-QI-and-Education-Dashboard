@@ -59,9 +59,9 @@ export function FtoDorViewClient({ dor }: { dor: DorData }) {
   return (
     <div className="space-y-6 max-w-3xl mx-auto">
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" asChild>
+        <Button variant="ghost" size="icon" asChild aria-label="Go back">
           <Link href="/fieldtraining/dors">
-            <ArrowLeft className="h-4 w-4" />
+            <ArrowLeft className="h-4 w-4" aria-hidden="true" />
           </Link>
         </Button>
         <div>
@@ -139,7 +139,7 @@ export function FtoDorViewClient({ dor }: { dor: DorData }) {
       {/* Category Ratings */}
       <Card>
         <CardHeader>
-          <CardTitle>Performance Ratings</CardTitle>
+          <CardTitle className="text-xl">Daily Observation Report</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-2">

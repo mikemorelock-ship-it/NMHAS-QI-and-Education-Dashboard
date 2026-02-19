@@ -20,11 +20,7 @@ interface DivisionSelectorProps {
  * Scrolls horizontally on small screens with the active tab auto-centered.
  * Minimum 48px tap targets for kiosk/touch-screen usage.
  */
-export function DivisionSelector({
-  divisions,
-  activeSlug,
-  onChange,
-}: DivisionSelectorProps) {
+export function DivisionSelector({ divisions, activeSlug, onChange }: DivisionSelectorProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const activeRef = useRef<HTMLButtonElement>(null);
 

@@ -225,12 +225,10 @@ export function UsersClient({ users, currentUserId }: UsersClientProps) {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-nmh-gray flex items-center gap-2">
-            <Shield className="h-6 w-6 text-nmh-teal" />
-            Admin Users
+            <Shield className="h-6 w-6 text-nmh-teal" aria-hidden="true" />
+            Users
           </h1>
-          <p className="text-muted-foreground mt-1">
-            Manage admin accounts and pending requests.
-          </p>
+          <p className="text-muted-foreground mt-1">Manage admin accounts and pending requests.</p>
         </div>
         <Button
           className="bg-nmh-teal hover:bg-nmh-dark-teal shrink-0 self-start sm:self-auto"
@@ -239,27 +237,31 @@ export function UsersClient({ users, currentUserId }: UsersClientProps) {
             setError(null);
           }}
         >
-          <UserPlus className="h-4 w-4 mr-2" />
+          <UserPlus className="h-4 w-4 mr-2" aria-hidden="true" />
           Create User
         </Button>
       </div>
 
       {/* Error banner */}
-      {error && (
-        <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
-          {error}
-        </div>
-      )}
+      <div aria-live="polite">
+        {error && (
+          <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive" role="alert">
+            {error}
+          </div>
+        )}
+      </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 border-b">
-        {([
+      <div className="flex gap-1 border-b" role="tablist">
+        {[
           { key: "pending" as Tab, label: "Pending", count: pendingCount },
           { key: "active" as Tab, label: "Active", count: activeCount },
           { key: "disabled" as Tab, label: "Disabled", count: disabledCount },
-        ]).map((t) => (
+        ].map((t) => (
           <button
             key={t.key}
+            role="tab"
+            aria-selected={tab === t.key}
             onClick={() => setTab(t.key)}
             className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
               tab === t.key
@@ -269,9 +271,7 @@ export function UsersClient({ users, currentUserId }: UsersClientProps) {
           >
             {t.label}
             {t.count > 0 && (
-              <span className="ml-1.5 text-xs bg-muted rounded-full px-1.5 py-0.5">
-                {t.count}
-              </span>
+              <span className="ml-1.5 text-xs bg-muted rounded-full px-1.5 py-0.5">{t.count}</span>
             )}
           </button>
         ))}
@@ -280,12 +280,13 @@ export function UsersClient({ users, currentUserId }: UsersClientProps) {
       {/* Search & Filter */}
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" aria-hidden="true" />
           <Input
             placeholder="Search by name or email..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-9"
+            aria-label="Search users by name or email"
           />
         </div>
         <Select value={roleFilter} onValueChange={setRoleFilter}>
@@ -330,13 +331,9 @@ export function UsersClient({ users, currentUserId }: UsersClientProps) {
                   <TableRow key={user.id} className={isSelf ? "bg-nmh-teal/5" : undefined}>
                     <TableCell className="font-medium">
                       {user.firstName} {user.lastName}
-                      {isSelf && (
-                        <span className="ml-2 text-xs text-muted-foreground">(you)</span>
-                      )}
+                      {isSelf && <span className="ml-2 text-xs text-muted-foreground">(you)</span>}
                     </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {user.email}
-                    </TableCell>
+                    <TableCell className="text-muted-foreground">{user.email}</TableCell>
                     <TableCell>{roleBadge(user.role)}</TableCell>
                     <TableCell>{statusBadge(user.status)}</TableCell>
                     <TableCell className="text-muted-foreground text-sm">
@@ -357,7 +354,7 @@ export function UsersClient({ users, currentUserId }: UsersClientProps) {
                               onClick={() => handleApprove(user)}
                               disabled={isPending}
                             >
-                              <Check className="h-3.5 w-3.5 mr-1" />
+                              <Check className="h-3.5 w-3.5 mr-1" aria-hidden="true" />
                               Approve
                             </Button>
                             <Button
@@ -367,7 +364,7 @@ export function UsersClient({ users, currentUserId }: UsersClientProps) {
                               onClick={() => handleReject(user.id)}
                               disabled={isPending}
                             >
-                              <X className="h-3.5 w-3.5 mr-1" />
+                              <X className="h-3.5 w-3.5 mr-1" aria-hidden="true" />
                               Reject
                             </Button>
                           </>
@@ -393,30 +390,30 @@ export function UsersClient({ users, currentUserId }: UsersClientProps) {
                             <Button
                               variant="ghost"
                               size="sm"
-                              title="Reset password"
+                              aria-label={`Reset password for ${user.firstName} ${user.lastName}`}
                               onClick={() => openPasswordReset(user)}
                               disabled={isPending}
                             >
-                              <KeyRound className="h-4 w-4 text-muted-foreground" />
+                              <KeyRound className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
                             </Button>
                             <Button
                               variant="ghost"
                               size="sm"
-                              title="Disable account"
+                              aria-label={`Disable account for ${user.firstName} ${user.lastName}`}
                               onClick={() => handleToggleStatus(user)}
                               disabled={isPending}
                             >
-                              <UserX className="h-4 w-4 text-muted-foreground" />
+                              <UserX className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
                             </Button>
                             <Button
                               variant="ghost"
                               size="sm"
-                              title="Delete user"
+                              aria-label={`Delete ${user.firstName} ${user.lastName}`}
                               className="text-destructive hover:text-destructive"
                               onClick={() => handleDelete(user.id)}
                               disabled={isPending}
                             >
-                              <Trash2 className="h-4 w-4" />
+                              <Trash2 className="h-4 w-4" aria-hidden="true" />
                             </Button>
                           </>
                         )}
@@ -429,27 +426,27 @@ export function UsersClient({ users, currentUserId }: UsersClientProps) {
                               onClick={() => handleToggleStatus(user)}
                               disabled={isPending}
                             >
-                              <UserCheck className="h-3.5 w-3.5 mr-1" />
+                              <UserCheck className="h-3.5 w-3.5 mr-1" aria-hidden="true" />
                               Re-enable
                             </Button>
                             <Button
                               variant="ghost"
                               size="sm"
-                              title="Reset password"
+                              aria-label={`Reset password for ${user.firstName} ${user.lastName}`}
                               onClick={() => openPasswordReset(user)}
                               disabled={isPending}
                             >
-                              <KeyRound className="h-4 w-4 text-muted-foreground" />
+                              <KeyRound className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
                             </Button>
                             <Button
                               variant="ghost"
                               size="sm"
-                              title="Delete user"
+                              aria-label={`Delete ${user.firstName} ${user.lastName}`}
                               className="text-destructive hover:text-destructive"
                               onClick={() => handleDelete(user.id)}
                               disabled={isPending}
                             >
-                              <Trash2 className="h-4 w-4" />
+                              <Trash2 className="h-4 w-4" aria-hidden="true" />
                             </Button>
                           </>
                         )}
@@ -464,7 +461,10 @@ export function UsersClient({ users, currentUserId }: UsersClientProps) {
       </div>
 
       {/* Approve Dialog */}
-      <Dialog open={approveTarget !== null} onOpenChange={(open) => !open && setApproveTarget(null)}>
+      <Dialog
+        open={approveTarget !== null}
+        onOpenChange={(open) => !open && setApproveTarget(null)}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Approve Account</DialogTitle>
@@ -472,12 +472,19 @@ export function UsersClient({ users, currentUserId }: UsersClientProps) {
           {approveTarget && (
             <div className="space-y-4 py-2">
               <p className="text-sm text-muted-foreground">
-                Approve <strong>{approveTarget.firstName} {approveTarget.lastName}</strong> ({approveTarget.email}) and assign a role:
+                Approve{" "}
+                <strong>
+                  {approveTarget.firstName} {approveTarget.lastName}
+                </strong>{" "}
+                ({approveTarget.email}) and assign a role:
               </p>
               <div className="space-y-2">
-                <Label>Role</Label>
-                <Select value={approveRole} onValueChange={(val) => setApproveRole(val as AdminRole)}>
-                  <SelectTrigger>
+                <Label htmlFor="approve-role">Role</Label>
+                <Select
+                  value={approveRole}
+                  onValueChange={(val) => setApproveRole(val as AdminRole)}
+                >
+                  <SelectTrigger id="approve-role">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -489,7 +496,9 @@ export function UsersClient({ users, currentUserId }: UsersClientProps) {
                   </SelectContent>
                 </Select>
               </div>
-              {error && <p className="text-sm text-destructive">{error}</p>}
+              <div aria-live="polite">
+                {error && <p className="text-sm text-destructive" role="alert">{error}</p>}
+              </div>
             </div>
           )}
           <DialogFooter>
@@ -508,19 +517,25 @@ export function UsersClient({ users, currentUserId }: UsersClientProps) {
       </Dialog>
 
       {/* Reset Password Dialog */}
-      <Dialog open={passwordTarget !== null} onOpenChange={(open) => !open && setPasswordTarget(null)}>
+      <Dialog
+        open={passwordTarget !== null}
+        onOpenChange={(open) => !open && setPasswordTarget(null)}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <KeyRound className="h-5 w-5 text-nmh-teal" />
+              <KeyRound className="h-5 w-5 text-nmh-teal" aria-hidden="true" />
               Reset Password
             </DialogTitle>
           </DialogHeader>
           {passwordTarget && (
             <div className="space-y-4 py-2">
               <p className="text-sm text-muted-foreground">
-                Set a new password for <strong>{passwordTarget.firstName} {passwordTarget.lastName}</strong> ({passwordTarget.email}).
-                This will immediately log them out of all active sessions.
+                Set a new password for{" "}
+                <strong>
+                  {passwordTarget.firstName} {passwordTarget.lastName}
+                </strong>{" "}
+                ({passwordTarget.email}). This will immediately log them out of all active sessions.
               </p>
               <div className="space-y-2">
                 <Label htmlFor="reset-password">New Password</Label>
@@ -541,15 +556,18 @@ export function UsersClient({ users, currentUserId }: UsersClientProps) {
                     className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
                     onClick={() => setShowPassword(!showPassword)}
                     tabIndex={-1}
+                    aria-label={showPassword ? "Hide password" : "Show password"}
                   >
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    {showPassword ? <EyeOff className="h-4 w-4" aria-hidden="true" /> : <Eye className="h-4 w-4" aria-hidden="true" />}
                   </Button>
                 </div>
                 <p className="text-xs text-muted-foreground">
                   Must be at least 8 characters with uppercase, lowercase, and a number.
                 </p>
               </div>
-              {error && <p className="text-sm text-destructive">{error}</p>}
+              <div aria-live="polite">
+                {error && <p className="text-sm text-destructive" role="alert">{error}</p>}
+              </div>
             </div>
           )}
           <DialogFooter>
@@ -613,7 +631,7 @@ export function UsersClient({ users, currentUserId }: UsersClientProps) {
             <div className="space-y-2">
               <Label htmlFor="create-role">Role</Label>
               <Select name="role" defaultValue="data_entry">
-                <SelectTrigger>
+                <SelectTrigger id="create-role">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -625,7 +643,9 @@ export function UsersClient({ users, currentUserId }: UsersClientProps) {
                 </SelectContent>
               </Select>
             </div>
-            {error && <p className="text-sm text-destructive">{error}</p>}
+            <div aria-live="polite">
+              {error && <p className="text-sm text-destructive" role="alert">{error}</p>}
+            </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setCreateOpen(false)}>
                 Cancel

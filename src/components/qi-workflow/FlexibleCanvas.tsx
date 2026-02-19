@@ -17,12 +17,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
@@ -32,10 +27,7 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { assignDiagramToCampaign } from "@/actions/campaigns";
-import {
-  CAMPAIGN_STATUS_LABELS,
-  CAMPAIGN_STATUS_COLORS,
-} from "@/lib/constants";
+import { CAMPAIGN_STATUS_LABELS, CAMPAIGN_STATUS_COLORS } from "@/lib/constants";
 import type {
   CampaignSummary,
   DiagramSummary,
@@ -58,11 +50,7 @@ interface FlexibleCanvasProps {
 // Component
 // ---------------------------------------------------------------------------
 
-export function FlexibleCanvas({
-  campaigns,
-  diagrams,
-  pdsaCycles,
-}: FlexibleCanvasProps) {
+export function FlexibleCanvas({ campaigns, diagrams, pdsaCycles }: FlexibleCanvasProps) {
   const [isPending, startTransition] = useTransition();
   const [linkDiagramId, setLinkDiagramId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -250,11 +238,7 @@ export function FlexibleCanvas({
                 </Select>
               </div>
               <div className="flex justify-end gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setLinkDiagramId(null)}
-                >
+                <Button type="button" variant="outline" onClick={() => setLinkDiagramId(null)}>
                   Cancel
                 </Button>
                 <Button type="submit" disabled={isPending}>

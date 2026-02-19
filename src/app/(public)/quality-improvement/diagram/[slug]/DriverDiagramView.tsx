@@ -14,11 +14,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import {
-  PDSA_STATUS_LABELS,
-  PDSA_STATUS_COLORS,
-  PDSA_OUTCOME_LABELS,
-} from "@/lib/constants";
+import { PDSA_STATUS_LABELS, PDSA_STATUS_COLORS, PDSA_OUTCOME_LABELS } from "@/lib/constants";
 
 interface PdsaCycleData {
   id: string;
@@ -152,9 +148,7 @@ function PhaseSection({
         <span className="text-xs font-semibold uppercase tracking-wide" style={{ color }}>
           {label}
         </span>
-        {date && (
-          <span className="text-xs text-muted-foreground">{formatDate(date)}</span>
-        )}
+        {date && <span className="text-xs text-muted-foreground">{formatDate(date)}</span>}
       </div>
       {content && <p className="text-sm text-foreground ml-4">{content}</p>}
       {extra?.map(
@@ -272,8 +266,7 @@ function DiagramNode({
   const config = typeConfig[node.type] ?? typeConfig.changeIdea;
   const hasChildren = node.children.length > 0;
   const isCollapsible = hasChildren && node.type !== "changeIdea";
-  const isClickableChangeIdea =
-    node.type === "changeIdea" && node.pdsaCycleCount > 0;
+  const isClickableChangeIdea = node.type === "changeIdea" && node.pdsaCycleCount > 0;
 
   function handleClick() {
     if (isClickableChangeIdea) {
@@ -322,10 +315,7 @@ function DiagramNode({
                   {config.label}
                 </Badge>
                 {node.type === "changeIdea" && node.pdsaCycleCount > 0 && (
-                  <Badge
-                    variant="secondary"
-                    className="text-[10px] shrink-0"
-                  >
+                  <Badge variant="secondary" className="text-[10px] shrink-0">
                     <RefreshCcw className="h-2.5 w-2.5 mr-0.5" />
                     {node.pdsaCycleCount} PDSA
                   </Badge>
@@ -348,9 +338,7 @@ function DiagramNode({
                 {node.text}
               </p>
               {node.description && (
-                <p className="text-xs text-muted-foreground mt-1">
-                  {node.description}
-                </p>
+                <p className="text-xs text-muted-foreground mt-1">{node.description}</p>
               )}
             </div>
           </div>
@@ -399,9 +387,7 @@ export function DriverDiagramView({
           Quality Improvement
         </Link>
         <h1 className="text-2xl font-bold text-nmh-gray">{name}</h1>
-        {description && (
-          <p className="text-muted-foreground mt-1">{description}</p>
-        )}
+        {description && <p className="text-muted-foreground mt-1">{description}</p>}
         {metricName && (
           <Badge
             variant="outline"
@@ -423,12 +409,7 @@ export function DriverDiagramView({
       ) : (
         <div className="space-y-2">
           {tree.map((node) => (
-            <DiagramNode
-              key={node.id}
-              node={node}
-              depth={0}
-              onChangeIdeaClick={setSelectedNode}
-            />
+            <DiagramNode key={node.id} node={node} depth={0} onChangeIdeaClick={setSelectedNode} />
           ))}
         </div>
       )}
@@ -465,15 +446,12 @@ export function DriverDiagramView({
             </DialogTitle>
             <DialogDescription>
               {selectedNode?.pdsaCycleCount} PDSA cycle
-              {selectedNode?.pdsaCycleCount !== 1 ? "s" : ""} linked to this
-              change idea
+              {selectedNode?.pdsaCycleCount !== 1 ? "s" : ""} linked to this change idea
             </DialogDescription>
           </DialogHeader>
 
           {selectedNode?.description && (
-            <p className="text-sm text-muted-foreground -mt-2">
-              {selectedNode.description}
-            </p>
+            <p className="text-sm text-muted-foreground -mt-2">{selectedNode.description}</p>
           )}
 
           {selectedNode && selectedNode.pdsaCycles.length === 1 ? (

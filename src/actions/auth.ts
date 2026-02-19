@@ -15,13 +15,11 @@ import { requireAdmin } from "@/lib/require-auth";
 import { prisma } from "@/lib/db";
 import { logLoginAttempt } from "@/lib/login-audit";
 import { checkLoginAllowed } from "@/lib/rate-limit";
-import {
-  validatePasswordStrength,
-  PASSWORD_REQUIREMENTS,
-} from "@/lib/password-validation";
+import { validatePasswordStrength, PASSWORD_REQUIREMENTS } from "@/lib/password-validation";
 import { validateCsrf } from "@/lib/csrf";
 import { headers } from "next/headers";
 import type { UserRole } from "@/lib/permissions";
+import { createAuditLog, computeChanges } from "@/lib/audit";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -45,26 +43,28 @@ const LoginSchema = z.object({
   password: z.string().min(1, "Password is required"),
 });
 
-const RegisterSchema = z.object({
-  email: z.string().email("Valid email is required"),
-  password: z.string().min(1, "Password is required").refine(
-    (val) => validatePasswordStrength(val).valid,
-    { message: PASSWORD_REQUIREMENTS }
-  ),
-  confirmPassword: z.string(),
-  firstName: z.string().min(1, "First name is required").max(50),
-  lastName: z.string().min(1, "Last name is required").max(50),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "Passwords do not match",
-  path: ["confirmPassword"],
-});
+const RegisterSchema = z
+  .object({
+    email: z.string().email("Valid email is required"),
+    password: z
+      .string()
+      .min(1, "Password is required")
+      .refine((val) => validatePasswordStrength(val).valid, { message: PASSWORD_REQUIREMENTS }),
+    confirmPassword: z.string(),
+    firstName: z.string().min(1, "First name is required").max(50),
+    lastName: z.string().min(1, "Last name is required").max(50),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords do not match",
+    path: ["confirmPassword"],
+  });
 
 const CreateAdminUserSchema = z.object({
   email: z.string().email("Valid email is required"),
-  password: z.string().min(1, "Password is required").refine(
-    (val) => validatePasswordStrength(val).valid,
-    { message: PASSWORD_REQUIREMENTS }
-  ),
+  password: z
+    .string()
+    .min(1, "Password is required")
+    .refine((val) => validatePasswordStrength(val).valid, { message: PASSWORD_REQUIREMENTS }),
   firstName: z.string().min(1, "First name is required").max(50),
   lastName: z.string().min(1, "Last name is required").max(50),
   role: z.enum(["admin", "manager", "data_entry", "supervisor", "fto", "trainee"]),
@@ -113,23 +113,39 @@ export async function loginAction(
   });
 
   if (!user) {
-    await logLoginAttempt({ identifier: parsed.data.email, success: false, reason: "invalid_credentials" });
+    await logLoginAttempt({
+      identifier: parsed.data.email,
+      success: false,
+      reason: "invalid_credentials",
+    });
     return { error: "Invalid email or password" };
   }
 
   if (user.status === "pending") {
-    await logLoginAttempt({ identifier: parsed.data.email, success: false, reason: "account_pending" });
+    await logLoginAttempt({
+      identifier: parsed.data.email,
+      success: false,
+      reason: "account_pending",
+    });
     return { error: "Your account is pending approval by an administrator" };
   }
 
   if (user.status === "disabled") {
-    await logLoginAttempt({ identifier: parsed.data.email, success: false, reason: "account_disabled" });
+    await logLoginAttempt({
+      identifier: parsed.data.email,
+      success: false,
+      reason: "account_disabled",
+    });
     return { error: "Your account has been disabled" };
   }
 
   const valid = await verifyPassword(parsed.data.password, user.passwordHash);
   if (!valid) {
-    await logLoginAttempt({ identifier: parsed.data.email, success: false, reason: "invalid_credentials" });
+    await logLoginAttempt({
+      identifier: parsed.data.email,
+      success: false,
+      reason: "invalid_credentials",
+    });
     return { error: "Invalid email or password" };
   }
 
@@ -149,7 +165,9 @@ export async function loginAction(
   try {
     const h = await headers();
     clientIp = h.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null;
-  } catch { /* headers unavailable */ }
+  } catch {
+    /* headers unavailable */
+  }
   await prisma.user.update({
     where: { id: user.id },
     data: { lastLoginAt: new Date(), lastLoginIp: clientIp },
@@ -242,10 +260,7 @@ export async function registerAction(
 // Account Management (admin only)
 // ---------------------------------------------------------------------------
 
-export async function approveAccountAction(
-  userId: string,
-  role: UserRole
-): Promise<ActionResult> {
+export async function approveAccountAction(userId: string, role: UserRole): Promise<ActionResult> {
   let session;
   try {
     session = await requireAdmin("manage_users");
@@ -287,9 +302,7 @@ export async function approveAccountAction(
   return { success: true };
 }
 
-export async function rejectAccountAction(
-  userId: string
-): Promise<ActionResult> {
+export async function rejectAccountAction(userId: string): Promise<ActionResult> {
   let session;
   try {
     session = await requireAdmin("manage_users");
@@ -328,9 +341,7 @@ export async function rejectAccountAction(
   return { success: true };
 }
 
-export async function createAdminUserAction(
-  formData: FormData
-): Promise<ActionResult> {
+export async function createAdminUserAction(formData: FormData): Promise<ActionResult> {
   let session;
   try {
     session = await requireAdmin("manage_users");
@@ -418,10 +429,7 @@ export async function updateAdminUserAction(
     }
 
     // Prevent disabling the last admin
-    if (
-      user.role === "admin" &&
-      (data.role !== "admin" || data.status === "disabled")
-    ) {
+    if (user.role === "admin" && (data.role !== "admin" || data.status === "disabled")) {
       const superAdminCount = await prisma.user.count({
         where: { role: "admin", status: "active" },
       });
@@ -465,15 +473,19 @@ export async function updateAdminUserAction(
       data: updateData,
     });
 
-    await prisma.auditLog.create({
-      data: {
-        action: "UPDATE",
-        entity: "User",
-        entityId: userId,
-        details: `Updated admin user ${user.email}: ${changes.join(", ")}`,
-        actorId: session.userId,
-        actorType: "user",
-      },
+    const auditChanges = computeChanges(
+      { role: user.role, status: user.status },
+      { role: data.role ?? user.role, status: data.status ?? user.status },
+    );
+
+    await createAuditLog({
+      action: "UPDATE",
+      entity: "User",
+      entityId: userId,
+      details: `Updated admin user ${user.email}: ${changes.join(", ")}`,
+      changes: auditChanges ?? undefined,
+      actorId: session.userId,
+      actorType: "user",
     });
   } catch (err) {
     console.error("updateAdminUser error:", err);
@@ -485,9 +497,7 @@ export async function updateAdminUserAction(
   return { success: true };
 }
 
-export async function deleteAdminUserAction(
-  userId: string
-): Promise<ActionResult> {
+export async function deleteAdminUserAction(userId: string): Promise<ActionResult> {
   let session;
   try {
     session = await requireAdmin("manage_users");

@@ -107,7 +107,9 @@ export function buildDorNotificationEmail(data: DorEmailData): {
           </td>
         </tr>
 
-        ${isUrgent ? `
+        ${
+          isUrgent
+            ? `
         <!-- Alert Banner -->
         <tr>
           <td style="background-color: ${data.nrtFlag ? "#fef2f2" : "#fff7ed"}; padding: 14px 24px; border-bottom: 2px solid ${data.nrtFlag ? "#fca5a5" : "#fdba74"};">
@@ -118,7 +120,9 @@ export function buildDorNotificationEmail(data: DorEmailData): {
             </p>
           </td>
         </tr>
-        ` : ""}
+        `
+            : ""
+        }
 
         <!-- DOR Summary -->
         <tr>
@@ -154,18 +158,30 @@ export function buildDorNotificationEmail(data: DorEmailData): {
               </tr>
             </table>
 
-            ${data.mostSatisfactory || data.leastSatisfactory ? `
+            ${
+              data.mostSatisfactory || data.leastSatisfactory
+                ? `
             <table width="100%" cellpadding="0" cellspacing="0" style="margin-top: 16px;">
-              ${data.mostSatisfactory ? `<tr>
+              ${
+                data.mostSatisfactory
+                  ? `<tr>
                 <td style="padding: 6px 0; font-size: 14px; color: #6b7280; width: 180px;">Most Satisfactory:</td>
                 <td style="padding: 6px 0; font-size: 14px; color: #16a34a; font-weight: 500;">${escapeHtml(data.mostSatisfactory)}</td>
-              </tr>` : ""}
-              ${data.leastSatisfactory ? `<tr>
+              </tr>`
+                  : ""
+              }
+              ${
+                data.leastSatisfactory
+                  ? `<tr>
                 <td style="padding: 6px 0; font-size: 14px; color: #6b7280; width: 180px;">Least Satisfactory:</td>
                 <td style="padding: 6px 0; font-size: 14px; color: #dc2626; font-weight: 500;">${escapeHtml(data.leastSatisfactory)}</td>
-              </tr>` : ""}
+              </tr>`
+                  : ""
+              }
             </table>
-            ` : ""}
+            `
+                : ""
+            }
           </td>
         </tr>
 
@@ -184,7 +200,9 @@ export function buildDorNotificationEmail(data: DorEmailData): {
           </td>
         </tr>
 
-        ${data.narrative ? `
+        ${
+          data.narrative
+            ? `
         <!-- Narrative -->
         <tr>
           <td style="padding: 0 24px 24px;">
@@ -194,7 +212,9 @@ export function buildDorNotificationEmail(data: DorEmailData): {
             </div>
           </td>
         </tr>
-        ` : ""}
+        `
+            : ""
+        }
 
         <!-- CTA Button -->
         <tr>

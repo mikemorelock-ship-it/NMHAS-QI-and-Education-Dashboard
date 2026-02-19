@@ -3,13 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -39,7 +33,16 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, Pencil, Trash2, AlertTriangle, ArrowLeft, ChevronDown, ChevronRight, ListOrdered } from "lucide-react";
+import {
+  Plus,
+  Pencil,
+  Trash2,
+  AlertTriangle,
+  ArrowLeft,
+  ChevronDown,
+  ChevronRight,
+  ListOrdered,
+} from "lucide-react";
 import {
   createSkillCategory,
   updateSkillCategory,
@@ -162,8 +165,10 @@ export function SkillsClient({ categories }: { categories: SkillCategory[] }) {
     <div className="space-y-8">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" asChild>
-            <Link href="/admin/field-training"><ArrowLeft className="h-4 w-4" /></Link>
+          <Button variant="ghost" size="icon" asChild aria-label="Go back">
+            <Link href="/admin/field-training">
+              <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+            </Link>
           </Button>
           <div>
             <h1 className="text-2xl font-bold tracking-tight">Skills Management</h1>
@@ -193,9 +198,7 @@ export function SkillsClient({ categories }: { categories: SkillCategory[] }) {
             <DialogContent>
               <form action={handleCatSubmit}>
                 <DialogHeader>
-                  <DialogTitle>
-                    {editingCat ? "Edit Category" : "Add Category"}
-                  </DialogTitle>
+                  <DialogTitle>{editingCat ? "Edit Category" : "Add Category"}</DialogTitle>
                   <DialogDescription>
                     {editingCat
                       ? "Update the skill category details."
@@ -203,17 +206,12 @@ export function SkillsClient({ categories }: { categories: SkillCategory[] }) {
                   </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 py-4">
-                  {error && (
-                    <p className="text-sm text-destructive">{error}</p>
-                  )}
+                  <div aria-live="polite">
+                    {error && <p className="text-sm text-destructive" role="alert">{error}</p>}
+                  </div>
                   <div className="space-y-2">
                     <Label htmlFor="cat-name">Name</Label>
-                    <Input
-                      id="cat-name"
-                      name="name"
-                      defaultValue={editingCat?.name}
-                      required
-                    />
+                    <Input id="cat-name" name="name" defaultValue={editingCat?.name} required />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="cat-description">Description</Label>
@@ -234,9 +232,7 @@ export function SkillsClient({ categories }: { categories: SkillCategory[] }) {
                   </div>
                 </div>
                 <DialogFooter>
-                  <Button type="submit">
-                    {editingCat ? "Update" : "Create"}
-                  </Button>
+                  <Button type="submit">{editingCat ? "Update" : "Create"}</Button>
                 </DialogFooter>
               </form>
             </DialogContent>
@@ -262,9 +258,7 @@ export function SkillsClient({ categories }: { categories: SkillCategory[] }) {
             <DialogContent>
               <form action={handleSkillSubmit}>
                 <DialogHeader>
-                  <DialogTitle>
-                    {editingSkill ? "Edit Skill" : "Add Skill"}
-                  </DialogTitle>
+                  <DialogTitle>{editingSkill ? "Edit Skill" : "Add Skill"}</DialogTitle>
                   <DialogDescription>
                     {editingSkill
                       ? "Update the skill details."
@@ -272,15 +266,12 @@ export function SkillsClient({ categories }: { categories: SkillCategory[] }) {
                   </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 py-4">
-                  {error && (
-                    <p className="text-sm text-destructive">{error}</p>
-                  )}
+                  <div aria-live="polite">
+                    {error && <p className="text-sm text-destructive" role="alert">{error}</p>}
+                  </div>
                   <div className="space-y-2">
                     <Label htmlFor="skill-categoryId">Category</Label>
-                    <Select
-                      name="categoryId"
-                      defaultValue={editingSkill?.categoryId}
-                    >
+                    <Select name="categoryId" defaultValue={editingSkill?.categoryId}>
                       <SelectTrigger id="skill-categoryId">
                         <SelectValue placeholder="Select a category" />
                       </SelectTrigger>
@@ -295,12 +286,7 @@ export function SkillsClient({ categories }: { categories: SkillCategory[] }) {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="skill-name">Name</Label>
-                    <Input
-                      id="skill-name"
-                      name="name"
-                      defaultValue={editingSkill?.name}
-                      required
-                    />
+                    <Input id="skill-name" name="name" defaultValue={editingSkill?.name} required />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="skill-description">Description</Label>
@@ -336,9 +322,7 @@ export function SkillsClient({ categories }: { categories: SkillCategory[] }) {
                   </div>
                 </div>
                 <DialogFooter>
-                  <Button type="submit">
-                    {editingSkill ? "Update" : "Create"}
-                  </Button>
+                  <Button type="submit">{editingSkill ? "Update" : "Create"}</Button>
                 </DialogFooter>
               </form>
             </DialogContent>
@@ -359,9 +343,7 @@ export function SkillsClient({ categories }: { categories: SkillCategory[] }) {
           <CardHeader className="flex flex-row items-center justify-between">
             <div>
               <CardTitle>{category.name}</CardTitle>
-              {category.description && (
-                <CardDescription>{category.description}</CardDescription>
-              )}
+              {category.description && <CardDescription>{category.description}</CardDescription>}
             </div>
             <div className="flex items-center gap-1">
               <Button
@@ -375,11 +357,7 @@ export function SkillsClient({ categories }: { categories: SkillCategory[] }) {
                 <Pencil className="h-4 w-4" />
               </Button>
               {category.skills.length === 0 && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => handleDeleteCat(category.id)}
-                >
+                <Button variant="ghost" size="icon" onClick={() => handleDeleteCat(category.id)}>
                   <Trash2 className="h-4 w-4" />
                 </Button>
               )}
@@ -407,9 +385,11 @@ export function SkillsClient({ categories }: { categories: SkillCategory[] }) {
                       <TableCell>{skill.sortOrder}</TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
-                          {expandedSkill === skill.id
-                            ? <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
-                            : <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />}
+                          {expandedSkill === skill.id ? (
+                            <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
+                          ) : (
+                            <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+                          )}
                           <div>
                             <span className="font-medium">{skill.name}</span>
                             {skill.description && (
@@ -438,7 +418,10 @@ export function SkillsClient({ categories }: { categories: SkillCategory[] }) {
                         <Badge variant="secondary">{skill.signoffCount}</Badge>
                       </TableCell>
                       <TableCell>
-                        <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                        <div
+                          className="flex items-center gap-1"
+                          onClick={(e) => e.stopPropagation()}
+                        >
                           <Button
                             variant="ghost"
                             size="icon"
@@ -485,19 +468,25 @@ export function SkillsClient({ categories }: { categories: SkillCategory[] }) {
                             </div>
                             {skill.steps.length === 0 ? (
                               <p className="text-sm text-muted-foreground py-2">
-                                No steps defined. Add steps to create a procedure checklist for this skill.
+                                No steps defined. Add steps to create a procedure checklist for this
+                                skill.
                               </p>
                             ) : (
                               <ol className="space-y-2">
                                 {skill.steps.map((step) => (
-                                  <li key={step.id} className="flex items-start gap-3 p-2 rounded border bg-background">
+                                  <li
+                                    key={step.id}
+                                    className="flex items-start gap-3 p-2 rounded border bg-background"
+                                  >
                                     <span className="font-mono text-sm font-bold text-muted-foreground w-6 shrink-0 pt-0.5">
                                       {step.stepNumber}.
                                     </span>
                                     <div className="flex-1">
                                       <p className="text-sm">{step.description}</p>
                                       {!step.isRequired && (
-                                        <Badge variant="outline" className="text-[10px] mt-1">optional</Badge>
+                                        <Badge variant="outline" className="text-[10px] mt-1">
+                                          optional
+                                        </Badge>
                                       )}
                                     </div>
                                     <div className="flex items-center gap-1 shrink-0">
@@ -539,10 +528,7 @@ export function SkillsClient({ categories }: { categories: SkillCategory[] }) {
                 ))}
                 {category.skills.length === 0 && (
                   <TableRow>
-                    <TableCell
-                      colSpan={6}
-                      className="text-center text-muted-foreground py-8"
-                    >
+                    <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
                       No skills in this category yet.
                     </TableCell>
                   </TableRow>
@@ -568,9 +554,7 @@ export function SkillsClient({ categories }: { categories: SkillCategory[] }) {
         <DialogContent>
           <form action={handleStepSubmit}>
             <DialogHeader>
-              <DialogTitle>
-                {editingStep ? "Edit Step" : "Add Step"}
-              </DialogTitle>
+              <DialogTitle>{editingStep ? "Edit Step" : "Add Step"}</DialogTitle>
               <DialogDescription>
                 {editingStep
                   ? "Update the step details."
@@ -578,9 +562,9 @@ export function SkillsClient({ categories }: { categories: SkillCategory[] }) {
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
-              {error && (
-                <p className="text-sm text-destructive">{error}</p>
-              )}
+              <div aria-live="polite">
+                {error && <p className="text-sm text-destructive" role="alert">{error}</p>}
+              </div>
               <input type="hidden" name="skillId" value={stepSkillId ?? ""} />
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -619,9 +603,7 @@ export function SkillsClient({ categories }: { categories: SkillCategory[] }) {
               <input type="hidden" name="sortOrder" value={editingStep?.sortOrder ?? 0} />
             </div>
             <DialogFooter>
-              <Button type="submit">
-                {editingStep ? "Update" : "Create"}
-              </Button>
+              <Button type="submit">{editingStep ? "Update" : "Create"}</Button>
             </DialogFooter>
           </form>
         </DialogContent>

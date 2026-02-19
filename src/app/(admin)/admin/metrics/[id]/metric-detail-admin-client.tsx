@@ -42,15 +42,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  ArrowLeft,
-  Plus,
-  Pencil,
-  Trash2,
-  Activity,
-  BookOpen,
-  User,
-} from "lucide-react";
+import { ArrowLeft, Plus, Pencil, Trash2, Activity, BookOpen, User } from "lucide-react";
 import { ANNOTATION_TYPES, RESOURCE_TYPES } from "@/lib/constants";
 
 // ---------------------------------------------------------------------------
@@ -137,9 +129,7 @@ export function MetricDetailAdminClient({
           </Link>
         </Button>
         <div>
-          <h1 className="text-2xl font-bold text-nmh-gray">
-            Manage: {metric.name}
-          </h1>
+          <h1 className="text-2xl font-bold text-nmh-gray">Manage: {metric.name}</h1>
           <p className="text-muted-foreground mt-1">
             {metric.departmentName} — Annotations, resources, and responsible parties.
           </p>
@@ -186,10 +176,7 @@ export function MetricDetailAdminClient({
                     <TableCell className="whitespace-nowrap">{a.date}</TableCell>
                     <TableCell className="font-medium">{a.title}</TableCell>
                     <TableCell>
-                      <Badge
-                        variant="outline"
-                        className={ANNOTATION_BADGE[a.type] || ""}
-                      >
+                      <Badge variant="outline" className={ANNOTATION_BADGE[a.type] || ""}>
                         {a.type}
                       </Badge>
                     </TableCell>
@@ -198,11 +185,7 @@ export function MetricDetailAdminClient({
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-1">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setEditAnnotation(a)}
-                        >
+                        <Button variant="outline" size="sm" onClick={() => setEditAnnotation(a)}>
                           <Pencil className="h-3.5 w-3.5" />
                         </Button>
                         <Button
@@ -293,18 +276,25 @@ export function MetricDetailAdminClient({
           <DialogHeader>
             <DialogTitle>Delete Annotation</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete &quot;{deleteAnnotationTarget?.title}&quot;? This cannot be undone.
+              Are you sure you want to delete &quot;{deleteAnnotationTarget?.title}&quot;? This
+              cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteAnnotationTarget(null)}>Cancel</Button>
-            <form action={async () => {
-              if (deleteAnnotationTarget) {
-                await deleteAnnotation(deleteAnnotationTarget.id);
-                setDeleteAnnotationTarget(null);
-              }
-            }}>
-              <Button type="submit" variant="destructive">Delete</Button>
+            <Button variant="outline" onClick={() => setDeleteAnnotationTarget(null)}>
+              Cancel
+            </Button>
+            <form
+              action={async () => {
+                if (deleteAnnotationTarget) {
+                  await deleteAnnotation(deleteAnnotationTarget.id);
+                  setDeleteAnnotationTarget(null);
+                }
+              }}
+            >
+              <Button type="submit" variant="destructive">
+                Delete
+              </Button>
             </form>
           </DialogFooter>
         </DialogContent>
@@ -348,10 +338,17 @@ export function MetricDetailAdminClient({
                   <TableRow key={r.id}>
                     <TableCell className="font-medium">{r.title}</TableCell>
                     <TableCell>
-                      <Badge variant="outline" className="capitalize">{r.type}</Badge>
+                      <Badge variant="outline" className="capitalize">
+                        {r.type}
+                      </Badge>
                     </TableCell>
                     <TableCell className="max-w-[200px] truncate text-muted-foreground">
-                      <a href={r.url} target="_blank" rel="noopener noreferrer" className="hover:text-[#00b0ad]">
+                      <a
+                        href={r.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="hover:text-[#00b0ad]"
+                      >
                         {r.url}
                       </a>
                     </TableCell>
@@ -394,18 +391,19 @@ export function MetricDetailAdminClient({
             <input type="hidden" name="metricDefinitionId" value={metric.id} />
             <ResourceFormFields />
             <DialogFooter className="mt-4">
-              <Button type="button" variant="outline" onClick={() => setAddResourceOpen(false)}>Cancel</Button>
-              <Button type="submit" className="bg-nmh-teal hover:bg-nmh-teal/90">Create</Button>
+              <Button type="button" variant="outline" onClick={() => setAddResourceOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" className="bg-nmh-teal hover:bg-nmh-teal/90">
+                Create
+              </Button>
             </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
 
       {/* Edit Resource Dialog */}
-      <Dialog
-        open={editResource !== null}
-        onOpenChange={(open) => !open && setEditResource(null)}
-      >
+      <Dialog open={editResource !== null} onOpenChange={(open) => !open && setEditResource(null)}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>Edit Resource</DialogTitle>
@@ -421,8 +419,12 @@ export function MetricDetailAdminClient({
               <input type="hidden" name="metricDefinitionId" value={metric.id} />
               <ResourceFormFields defaults={editResource} />
               <DialogFooter className="mt-4">
-                <Button type="button" variant="outline" onClick={() => setEditResource(null)}>Cancel</Button>
-                <Button type="submit" className="bg-nmh-teal hover:bg-nmh-teal/90">Save Changes</Button>
+                <Button type="button" variant="outline" onClick={() => setEditResource(null)}>
+                  Cancel
+                </Button>
+                <Button type="submit" className="bg-nmh-teal hover:bg-nmh-teal/90">
+                  Save Changes
+                </Button>
               </DialogFooter>
             </form>
           )}
@@ -438,18 +440,25 @@ export function MetricDetailAdminClient({
           <DialogHeader>
             <DialogTitle>Delete Resource</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete &quot;{deleteResourceTarget?.title}&quot;? This cannot be undone.
+              Are you sure you want to delete &quot;{deleteResourceTarget?.title}&quot;? This cannot
+              be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteResourceTarget(null)}>Cancel</Button>
-            <form action={async () => {
-              if (deleteResourceTarget) {
-                await deleteResource(deleteResourceTarget.id);
-                setDeleteResourceTarget(null);
-              }
-            }}>
-              <Button type="submit" variant="destructive">Delete</Button>
+            <Button variant="outline" onClick={() => setDeleteResourceTarget(null)}>
+              Cancel
+            </Button>
+            <form
+              action={async () => {
+                if (deleteResourceTarget) {
+                  await deleteResource(deleteResourceTarget.id);
+                  setDeleteResourceTarget(null);
+                }
+              }}
+            >
+              <Button type="submit" variant="destructive">
+                Delete
+              </Button>
             </form>
           </DialogFooter>
         </DialogContent>
@@ -533,18 +542,19 @@ export function MetricDetailAdminClient({
             <input type="hidden" name="metricDefinitionId" value={metric.id} />
             <PartyFormFields />
             <DialogFooter className="mt-4">
-              <Button type="button" variant="outline" onClick={() => setAddPartyOpen(false)}>Cancel</Button>
-              <Button type="submit" className="bg-nmh-teal hover:bg-nmh-teal/90">Create</Button>
+              <Button type="button" variant="outline" onClick={() => setAddPartyOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" className="bg-nmh-teal hover:bg-nmh-teal/90">
+                Create
+              </Button>
             </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
 
       {/* Edit Party Dialog */}
-      <Dialog
-        open={editParty !== null}
-        onOpenChange={(open) => !open && setEditParty(null)}
-      >
+      <Dialog open={editParty !== null} onOpenChange={(open) => !open && setEditParty(null)}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>Edit Responsible Party</DialogTitle>
@@ -560,8 +570,12 @@ export function MetricDetailAdminClient({
               <input type="hidden" name="metricDefinitionId" value={metric.id} />
               <PartyFormFields defaults={editParty} />
               <DialogFooter className="mt-4">
-                <Button type="button" variant="outline" onClick={() => setEditParty(null)}>Cancel</Button>
-                <Button type="submit" className="bg-nmh-teal hover:bg-nmh-teal/90">Save Changes</Button>
+                <Button type="button" variant="outline" onClick={() => setEditParty(null)}>
+                  Cancel
+                </Button>
+                <Button type="submit" className="bg-nmh-teal hover:bg-nmh-teal/90">
+                  Save Changes
+                </Button>
               </DialogFooter>
             </form>
           )}
@@ -577,18 +591,25 @@ export function MetricDetailAdminClient({
           <DialogHeader>
             <DialogTitle>Delete Responsible Party</DialogTitle>
             <DialogDescription>
-              Are you sure you want to remove &quot;{deletePartyTarget?.name}&quot;? This cannot be undone.
+              Are you sure you want to remove &quot;{deletePartyTarget?.name}&quot;? This cannot be
+              undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDeletePartyTarget(null)}>Cancel</Button>
-            <form action={async () => {
-              if (deletePartyTarget) {
-                await deleteResponsibleParty(deletePartyTarget.id);
-                setDeletePartyTarget(null);
-              }
-            }}>
-              <Button type="submit" variant="destructive">Delete</Button>
+            <Button variant="outline" onClick={() => setDeletePartyTarget(null)}>
+              Cancel
+            </Button>
+            <form
+              action={async () => {
+                if (deletePartyTarget) {
+                  await deleteResponsibleParty(deletePartyTarget.id);
+                  setDeletePartyTarget(null);
+                }
+              }}
+            >
+              <Button type="submit" variant="destructive">
+                Delete
+              </Button>
             </form>
           </DialogFooter>
         </DialogContent>
@@ -601,23 +622,13 @@ export function MetricDetailAdminClient({
 // Form Fields
 // ---------------------------------------------------------------------------
 
-function AnnotationFormFields({
-  defaults,
-}: {
-  defaults?: AnnotationRow;
-}) {
+function AnnotationFormFields({ defaults }: { defaults?: AnnotationRow }) {
   return (
     <div className="space-y-4 py-2">
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="date">Date</Label>
-          <Input
-            id="date"
-            name="date"
-            type="date"
-            defaultValue={defaults?.date ?? ""}
-            required
-          />
+          <Input id="date" name="date" type="date" defaultValue={defaults?.date ?? ""} required />
         </div>
         <div className="space-y-2">
           <Label htmlFor="type">Type</Label>
@@ -659,11 +670,7 @@ function AnnotationFormFields({
   );
 }
 
-function ResourceFormFields({
-  defaults,
-}: {
-  defaults?: ResourceRow;
-}) {
+function ResourceFormFields({ defaults }: { defaults?: ResourceRow }) {
   return (
     <div className="space-y-4 py-2">
       <div className="space-y-2">
@@ -718,11 +725,7 @@ function ResourceFormFields({
   );
 }
 
-function PartyFormFields({
-  defaults,
-}: {
-  defaults?: ResponsiblePartyRow;
-}) {
+function PartyFormFields({ defaults }: { defaults?: ResponsiblePartyRow }) {
   return (
     <div className="space-y-4 py-2">
       <div className="space-y-2">

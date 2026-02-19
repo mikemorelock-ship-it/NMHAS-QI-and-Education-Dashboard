@@ -84,9 +84,7 @@ async function getDefaultOrganizationId(): Promise<string> {
 // Division CRUD Actions (for the new "Divisions & Departments" UI)
 // ---------------------------------------------------------------------------
 
-export async function createDivisionAction(
-  formData: FormData
-): Promise<ActionResult> {
+export async function createDivisionAction(formData: FormData): Promise<ActionResult> {
   let session;
   try {
     session = await requireAdmin("manage_departments");
@@ -148,10 +146,7 @@ export async function createDivisionAction(
   return { success: true };
 }
 
-export async function updateDivisionAction(
-  id: string,
-  formData: FormData
-): Promise<ActionResult> {
+export async function updateDivisionAction(id: string, formData: FormData): Promise<ActionResult> {
   let session;
   try {
     session = await requireAdmin("manage_departments");
@@ -223,10 +218,7 @@ export async function updateDivisionAction(
   return { success: true };
 }
 
-export async function toggleDivisionActive(
-  id: string,
-  isActive: boolean
-): Promise<ActionResult> {
+export async function toggleDivisionActive(id: string, isActive: boolean): Promise<ActionResult> {
   let session;
   try {
     session = await requireAdmin("manage_departments");
@@ -259,9 +251,7 @@ export async function toggleDivisionActive(
   return { success: true };
 }
 
-export async function deleteDivisionAction(
-  id: string
-): Promise<ActionResult> {
+export async function deleteDivisionAction(id: string): Promise<ActionResult> {
   let session;
   try {
     session = await requireAdmin("manage_departments");
