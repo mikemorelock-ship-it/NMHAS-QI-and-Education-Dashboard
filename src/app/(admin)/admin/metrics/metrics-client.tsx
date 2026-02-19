@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition, useCallback, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import {
   createMetricDefinition,
   updateMetricDefinition,
@@ -169,6 +170,7 @@ export function MetricsClient({
   const [filterDivision, setFilterDivision] = useState<string>("all");
   const [collapsedParents, setCollapsedParents] = useState<Set<string>>(new Set());
   const [isPending, startTransition] = useTransition();
+  const router = useRouter();
 
   // DnD state
   const [localMetrics, setLocalMetrics] = useState<MetricRow[]>(metrics);
@@ -387,6 +389,7 @@ export function MetricsClient({
                 const result = await createMetricDefinition(formData);
                 if (result.success) {
                   setAddOpen(false);
+                  router.refresh();
                 } else {
                   setFormError(result.error || "Failed to create metric.");
                 }
@@ -623,6 +626,7 @@ export function MetricsClient({
                   }
                   await setMetricAssociations(editTarget.id, associations);
                   setEditTarget(null);
+                  router.refresh();
                 } else {
                   setFormError(result.error || "Failed to update metric.");
                 }
@@ -688,6 +692,7 @@ export function MetricsClient({
                 if (deleteTarget) {
                   await deleteMetricDefinition(deleteTarget.id);
                   setDeleteTarget(null);
+                  router.refresh();
                 }
               }}
             >

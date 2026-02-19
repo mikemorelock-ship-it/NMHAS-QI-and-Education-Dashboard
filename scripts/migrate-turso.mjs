@@ -8,7 +8,7 @@
  *   node --env-file=.env.turso scripts/migrate-turso.mjs
  */
 
-import { createClient } from "@libsql/client";
+import { createClient } from "@libsql/client/web";
 
 const url = process.env.TURSO_URL || process.env.DATABASE_URL;
 const authToken = process.env.TURSO_AUTH_TOKEN;
