@@ -1,5 +1,4 @@
 import { PrismaClient } from "@/generated/prisma/client";
-import { PrismaLibSql } from "@prisma/adapter-libsql/web";
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
@@ -9,7 +8,8 @@ function createPrismaClient() {
   const dbUrl = process.env.DATABASE_URL;
   if (!dbUrl) {
     throw new Error(
-      "Missing DATABASE_URL environment variable. " + "Set it in your .env file (see .env.example)."
+      "Missing DATABASE_URL environment variable. " +
+        "Set it in your .env file (see .env.example).",
     );
   }
 
@@ -18,7 +18,8 @@ function createPrismaClient() {
 
   // Use Turso (libsql) for remote URLs, better-sqlite3 for local file: URLs
   if (dbUrl.startsWith("libsql://") || dbUrl.startsWith("https://")) {
-    // Web-compatible adapter (HTTP-only, no native binary required)
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { PrismaLibSql } = require("@prisma/adapter-libsql");
     adapter = new PrismaLibSql({
       url: dbUrl,
       authToken: process.env.TURSO_AUTH_TOKEN,

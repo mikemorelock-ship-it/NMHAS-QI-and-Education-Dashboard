@@ -24,17 +24,22 @@ export interface AuditLogEntry {
 // ---------------------------------------------------------------------------
 
 export async function createAuditLog(entry: AuditLogEntry): Promise<void> {
-  await prisma.auditLog.create({
-    data: {
-      action: entry.action,
-      entity: entry.entity,
-      entityId: entry.entityId,
-      details: entry.details ?? null,
-      changes: entry.changes ? JSON.stringify(entry.changes) : null,
-      actorId: entry.actorId ?? null,
-      actorType: entry.actorType ?? null,
-    },
-  });
+  try {
+    await prisma.auditLog.create({
+      data: {
+        action: entry.action,
+        entity: entry.entity,
+        entityId: entry.entityId,
+        details: entry.details ?? null,
+        changes: entry.changes ? JSON.stringify(entry.changes) : null,
+        actorId: entry.actorId ?? null,
+        actorType: entry.actorType ?? null,
+      },
+    });
+  } catch (err) {
+    // Don't let audit log failures crash the main operation
+    console.error("[audit] Failed to write audit log:", err);
+  }
 }
 
 // ---------------------------------------------------------------------------
