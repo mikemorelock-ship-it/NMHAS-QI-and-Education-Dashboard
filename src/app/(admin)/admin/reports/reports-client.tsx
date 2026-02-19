@@ -158,11 +158,39 @@ export function ReportsClient({ lookup }: ReportsClientProps) {
     if (data.length === 0) return;
     const timestamp = format(new Date(), "yyyy-MM-dd_HHmmss");
     const filename = `${activeTab}-report_${timestamp}.csv`;
-    downloadCsv(data as Record<string, unknown>[], filename);
+
+    if (activeTab === "metrics") {
+      // Build sectioned CSV with custom headers per metric
+      const csvContent = buildSectionedMetricCsv(data as MetricDataRow[]);
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = filename;
+      link.style.display = "none";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } else {
+      downloadCsv(data as Record<string, unknown>[], filename);
+    }
   }, [data, activeTab]);
 
   // Get column headers from data
-  const columns = data.length > 0 ? Object.keys(data[0] as Record<string, unknown>) : [];
+  // For metrics, hide metadata columns and use custom labels for numerator/denominator
+  const metricMetaCols = new Set(["dataType", "numeratorLabel", "denominatorLabel"]);
+  const rawColumns = data.length > 0 ? Object.keys(data[0] as Record<string, unknown>) : [];
+  const columns =
+    activeTab === "metrics" ? rawColumns.filter((c) => !metricMetaCols.has(c)) : rawColumns;
+
+  // For metrics, derive custom header labels from first row
+  const metricCustomHeaders: Record<string, string> = {};
+  if (activeTab === "metrics" && data.length > 0) {
+    const firstRow = data[0] as MetricDataRow;
+    metricCustomHeaders["numerator"] = firstRow.numeratorLabel || "Numerator";
+    metricCustomHeaders["denominator"] = firstRow.denominatorLabel || "Denominator";
+  }
 
   // Preview is first 10 rows
   const previewData = data.slice(0, 10);
@@ -678,7 +706,7 @@ export function ReportsClient({ lookup }: ReportsClientProps) {
                   <TableRow>
                     {columns.map((col) => (
                       <TableHead key={col} className="whitespace-nowrap text-xs font-semibold">
-                        {formatColumnHeader(col)}
+                        {metricCustomHeaders[col] || formatColumnHeader(col)}
                       </TableHead>
                     ))}
                   </TableRow>
@@ -700,6 +728,17 @@ export function ReportsClient({ lookup }: ReportsClientProps) {
                 </TableBody>
               </Table>
             </div>
+            {activeTab === "metrics" &&
+              data.length > 0 &&
+              (() => {
+                const uniqueMetrics = new Set((data as MetricDataRow[]).map((r) => r.metricName));
+                return uniqueMetrics.size > 1 ? (
+                  <p className="text-xs text-muted-foreground mt-3">
+                    <strong>{uniqueMetrics.size} metrics</strong> selected &mdash; the downloaded
+                    CSV will be sectioned by metric, each with its own custom column headers.
+                  </p>
+                ) : null;
+              })()}
             {data.length > 10 && (
               <p className="text-xs text-muted-foreground mt-3">
                 Showing first 10 rows. Download the CSV to see all {totalCount.toLocaleString()}{" "}
@@ -724,6 +763,98 @@ export function ReportsClient({ lookup }: ReportsClientProps) {
       )}
     </div>
   );
+}
+
+// ---------------------------------------------------------------------------
+// Metric CSV builder — sectioned by metric with custom headers
+// ---------------------------------------------------------------------------
+
+function buildSectionedMetricCsv(rows: MetricDataRow[]): string {
+  // Group rows by metric name (preserving order from server)
+  const metricGroups = new Map<
+    string,
+    { dataType: string; numLabel: string; denLabel: string; rows: MetricDataRow[] }
+  >();
+
+  for (const row of rows) {
+    const key = row.metricName;
+    if (!metricGroups.has(key)) {
+      metricGroups.set(key, {
+        dataType: row.dataType,
+        numLabel: row.numeratorLabel,
+        denLabel: row.denominatorLabel,
+        rows: [],
+      });
+    }
+    metricGroups.get(key)!.rows.push(row);
+  }
+
+  const uniqueMetrics = metricGroups.size;
+  const lines: string[] = [];
+
+  for (const [metricName, group] of metricGroups) {
+    const isContinuous = group.dataType === "continuous";
+
+    // Add section header if multiple metrics
+    if (uniqueMetrics > 1) {
+      const typeLabel =
+        group.dataType === "proportion"
+          ? "Proportion"
+          : group.dataType === "rate"
+            ? "Rate"
+            : "Continuous";
+      lines.push(`--- ${metricName} (${typeLabel}) ---`);
+    }
+
+    // Build headers — use custom labels for numerator/denominator
+    const headers = [
+      "Metric",
+      "Department",
+      "Division",
+      "Region",
+      "Period Type",
+      "Period Start",
+      "Value",
+    ];
+    if (!isContinuous) {
+      headers.push(group.numLabel, group.denLabel);
+    }
+    headers.push("Notes");
+    lines.push(headers.map(csvEscapeField).join(","));
+
+    // Build data rows
+    for (const row of group.rows) {
+      const fields: string[] = [
+        row.metricName,
+        row.department,
+        row.division,
+        row.region,
+        row.periodType,
+        row.periodStart,
+        String(row.value),
+      ];
+      if (!isContinuous) {
+        fields.push(row.numerator, row.denominator);
+      }
+      fields.push(row.notes);
+      lines.push(fields.map(csvEscapeField).join(","));
+    }
+
+    // Blank line between sections
+    if (uniqueMetrics > 1) {
+      lines.push("");
+    }
+  }
+
+  return lines.join("\n");
+}
+
+/** Escape a CSV field value — wrap in quotes if it contains commas, quotes, or newlines */
+function csvEscapeField(value: string): string {
+  if (value.includes(",") || value.includes('"') || value.includes("\n")) {
+    return `"${value.replace(/"/g, '""')}"`;
+  }
+  return value;
 }
 
 // ---------------------------------------------------------------------------

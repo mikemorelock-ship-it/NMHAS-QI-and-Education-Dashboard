@@ -10,6 +10,9 @@ import { format } from "date-fns";
 
 export type MetricDataRow = {
   metricName: string;
+  dataType: string;
+  numeratorLabel: string;
+  denominatorLabel: string;
   department: string;
   division: string;
   region: string;
@@ -175,26 +178,47 @@ export async function exportMetricData(filters: MetricDataFilters): Promise<Metr
         : {}),
     },
     include: {
-      metricDefinition: { select: { name: true } },
+      metricDefinition: {
+        select: {
+          name: true,
+          dataType: true,
+          numeratorLabel: true,
+          denominatorLabel: true,
+        },
+      },
       department: { select: { name: true } },
       division: { select: { name: true } },
       region: { select: { name: true } },
     },
-    orderBy: [{ periodStart: "desc" }, { metricDefinition: { name: "asc" } }],
+    orderBy: [{ metricDefinition: { name: "asc" } }, { periodStart: "desc" }],
   });
 
-  return entries.map((e) => ({
-    metricName: e.metricDefinition.name,
-    department: e.department.name,
-    division: e.division?.name ?? "",
-    region: e.region?.name ?? "",
-    periodType: e.periodType,
-    periodStart: formatDate(e.periodStart),
-    value: e.value,
-    numerator: e.numerator != null ? String(e.numerator) : "",
-    denominator: e.denominator != null ? String(e.denominator) : "",
-    notes: e.notes ?? "",
-  }));
+  return entries.map((e) => {
+    const dt = e.metricDefinition.dataType ?? "continuous";
+    // Default labels based on data type
+    const numLabel =
+      e.metricDefinition.numeratorLabel ||
+      (dt === "proportion" ? "Compliant" : dt === "rate" ? "Events" : "Numerator");
+    const denLabel =
+      e.metricDefinition.denominatorLabel ||
+      (dt === "proportion" ? "Total" : dt === "rate" ? "Exposure" : "Denominator");
+
+    return {
+      metricName: e.metricDefinition.name,
+      dataType: dt,
+      numeratorLabel: numLabel,
+      denominatorLabel: denLabel,
+      department: e.department.name,
+      division: e.division?.name ?? "",
+      region: e.region?.name ?? "",
+      periodType: e.periodType,
+      periodStart: formatDate(e.periodStart),
+      value: e.value,
+      numerator: e.numerator != null ? String(e.numerator) : "",
+      denominator: e.denominator != null ? String(e.denominator) : "",
+      notes: e.notes ?? "",
+    };
+  });
 }
 
 // ---------------------------------------------------------------------------
