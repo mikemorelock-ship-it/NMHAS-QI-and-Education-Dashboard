@@ -398,6 +398,22 @@ export function MetricsClient({
                 setFormError(null);
                 const result = await createMetricDefinition(formData);
                 if (result.success) {
+                  // Save associations (divisions/departments)
+                  if (result.data?.id) {
+                    const associations: {
+                      divisionId?: string | null;
+                      regionId?: string | null;
+                    }[] = [];
+                    for (const divId of formAssociations.divisionIds) {
+                      associations.push({ divisionId: divId, regionId: null });
+                    }
+                    for (const regId of formAssociations.regionIds) {
+                      associations.push({ divisionId: null, regionId: regId });
+                    }
+                    if (associations.length > 0) {
+                      await setMetricAssociations(result.data.id, associations);
+                    }
+                  }
                   setAddOpen(false);
                   router.refresh();
                 } else {
