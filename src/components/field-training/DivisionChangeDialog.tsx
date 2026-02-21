@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { ArrowRightLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -37,8 +37,9 @@ export function DivisionChangeDialog() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
-  useEffect(() => {
-    if (open) {
+  function handleOpenChange(newOpen: boolean) {
+    setOpen(newOpen);
+    if (newOpen) {
       setError(null);
       setSuccess(false);
       setSelectedDivisionId("");
@@ -56,7 +57,7 @@ export function DivisionChangeDialog() {
         }
       });
     }
-  }, [open]);
+  }
 
   function handleSubmit() {
     if (!selectedDivisionId) {
@@ -76,7 +77,7 @@ export function DivisionChangeDialog() {
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button
           variant="ghost"

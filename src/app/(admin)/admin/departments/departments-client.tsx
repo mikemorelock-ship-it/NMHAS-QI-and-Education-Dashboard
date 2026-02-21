@@ -563,7 +563,7 @@ function DepartmentsSection({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {Object.entries(grouped).map(([_divisionId, { divisionName, departments: depts }]) =>
+              {Object.entries(grouped).map(([, { divisionName, departments: depts }]) =>
                 depts.map((dept, idx) => (
                   <TableRow key={dept.id} className={!dept.isActive ? "opacity-60" : undefined}>
                     <TableCell>

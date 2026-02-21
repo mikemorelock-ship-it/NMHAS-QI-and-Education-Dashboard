@@ -5,11 +5,10 @@ import type { KpiData } from "@/types";
 
 interface KpiGridProps {
   kpis: KpiData[];
-  departmentSlug?: string;
   divisionSlug?: string;
 }
 
-export function KpiGrid({ kpis, departmentSlug, divisionSlug }: KpiGridProps) {
+export function KpiGrid({ kpis, divisionSlug }: KpiGridProps) {
   if (kpis.length === 0) {
     return <div className="text-center py-12 text-muted-foreground">No KPI data available.</div>;
   }

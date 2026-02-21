@@ -67,7 +67,6 @@ const statusColors: Record<string, string> = {
 export function TraineesClient({
   trainees,
   divisions,
-  ftos: _ftos,
 }: {
   trainees: TraineeRow[];
   divisions: { id: string; name: string }[];

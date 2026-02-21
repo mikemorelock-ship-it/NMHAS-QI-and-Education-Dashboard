@@ -25,7 +25,6 @@ import {
   Eye,
   ExternalLink,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { RatingBadge } from "@/components/field-training/RatingBadge";
 import { deleteDailyObservationReport } from "@/actions/field-training";
 

@@ -48,7 +48,6 @@ import {
   ChevronRight,
   Copy,
 } from "lucide-react";
-import Link from "next/link";
 
 // ---------------------------------------------------------------------------
 // Types

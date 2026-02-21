@@ -68,8 +68,6 @@ export async function GET(request: NextRequest) {
     const regionIds = regionIdsRaw ? regionIdsRaw.split(",").filter(Boolean) : [];
     const presetMetricIds = metricIdsRaw ? metricIdsRaw.split(",").filter(Boolean) : [];
 
-    const hasFilters = divisionIds.length > 0 || regionIds.length > 0;
-
     const yearStart = new Date(Date.UTC(year, 0, 1, 12, 0, 0));
     const yearEnd = new Date(Date.UTC(year, 11, 31, 23, 59, 59));
 

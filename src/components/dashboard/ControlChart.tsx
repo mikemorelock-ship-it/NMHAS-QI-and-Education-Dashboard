@@ -295,7 +295,6 @@ export function ControlChart({
               />
               <Tooltip
                 formatter={
-                   
                   ((value: number | undefined, name: string | undefined) => [
                     formatMetricValue(Number(value ?? 0), unit, rateMultiplier, rateSuffix),
                     name === "ucl" ? "UCL" : name === "centerLine" ? "CL" : "MR",

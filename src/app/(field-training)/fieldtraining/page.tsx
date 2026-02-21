@@ -16,8 +16,6 @@ import {
   Clock,
   AlertCircle,
   ArrowRight,
-  Bell,
-  UserPlus,
   BookOpen,
 } from "lucide-react";
 import { RequestTraineeButton } from "@/components/field-training/RequestTraineeButton";

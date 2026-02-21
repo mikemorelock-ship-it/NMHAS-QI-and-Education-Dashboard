@@ -38,5 +38,5 @@ export default async function SnapshotPage({ params }: PageProps) {
     notFound();
   }
 
-  return <SnapshotReportClient data={data} token={token} />;
+  return <SnapshotReportClient data={data} />;
 }

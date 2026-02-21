@@ -10,7 +10,6 @@ import {
   GraduationCap,
   HelpCircle,
   LogOut,
-  User,
 } from "lucide-react";
 import { NMH_COLORS } from "@/lib/constants";
 import { logoutAction } from "@/actions/auth";

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Target, GitBranchPlus, RefreshCcw, ArrowRight, BarChart3, ListChecks } from "lucide-react";
+import { Target, GitBranchPlus, RefreshCcw, ArrowRight, BarChart3 } from "lucide-react";
 import { PDSA_STATUS_LABELS, PDSA_STATUS_COLORS } from "@/lib/constants";
 import { QICampaignsSection } from "@/components/qi/QICampaignsSection";
 

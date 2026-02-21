@@ -30,16 +30,6 @@ const RATING_COLORS: Record<number, string> = {
   7: "bg-emerald-700",
 };
 
-const RATING_LABELS: Record<number, string> = {
-  1: "Not Acceptable",
-  2: "Not Acceptable",
-  3: "Below Standard",
-  4: "Acceptable",
-  5: "Above Standard",
-  6: "Superior",
-  7: "Superior",
-};
-
 const RECOMMEND_LABELS: Record<string, string> = {
   continue: "Continue",
   advance: "Advance",
@@ -76,12 +66,10 @@ function ratingColor(avg: number): string {
 
 interface SnapshotReportClientProps {
   data: SnapshotData;
-  token: string;
 }
 
-export function SnapshotReportClient({ data, token }: SnapshotReportClientProps) {
+export function SnapshotReportClient({ data }: SnapshotReportClientProps) {
   const { profile, dorSummary, phaseProgress, skillProgress, coachingProgress } = data;
-  const currentUrl = typeof window !== "undefined" ? window.location.href : "";
 
   return (
     <div className="min-h-screen bg-gray-50 print:bg-white">

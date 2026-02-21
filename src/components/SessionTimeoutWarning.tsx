@@ -51,12 +51,15 @@ export function SessionTimeoutWarning({
   }, [expiresAt]);
 
   useEffect(() => {
-    // Initial check
-    check();
+    // Initial check via setTimeout to avoid synchronous setState in effect
+    const timeout = setTimeout(check, 0);
 
     // Check every 30 seconds (good balance of responsiveness vs perf)
     const interval = setInterval(check, 30_000);
-    return () => clearInterval(interval);
+    return () => {
+      clearTimeout(timeout);
+      clearInterval(interval);
+    };
   }, [check]);
 
   // Update countdown more frequently once warning is shown

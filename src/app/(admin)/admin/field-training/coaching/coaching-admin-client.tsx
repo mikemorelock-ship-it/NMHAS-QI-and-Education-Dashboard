@@ -1064,45 +1064,49 @@ interface QuizQuestion {
 function PreviewContent({ type, content }: { type: string; content: string }) {
   // Quiz type: try to parse JSON and render a read-only quiz view
   if (type === "quiz") {
+    let questions: QuizQuestion[] | null = null;
     try {
       const parsed = JSON.parse(content);
-      const questions: QuizQuestion[] = parsed.questions || parsed;
-
-      if (Array.isArray(questions) && questions.length > 0) {
-        return (
-          <div className="space-y-4">
-            {questions.map((q, qi) => (
-              <div key={qi} className="rounded-lg border bg-background p-4 space-y-2">
-                <p className="font-medium text-sm">
-                  {qi + 1}. {q.question}
-                </p>
-                <div className="space-y-1.5">
-                  {q.options.map((opt, oi) => (
-                    <div
-                      key={oi}
-                      className={`px-3 py-2 rounded-md text-sm ${
-                        oi === q.correctIndex
-                          ? "bg-green-100 border border-green-300 text-green-900 font-medium"
-                          : "bg-muted/50 border border-transparent"
-                      }`}
-                    >
-                      {oi === q.correctIndex && <Check className="h-3.5 w-3.5 inline mr-1.5" />}
-                      {opt}
-                    </div>
-                  ))}
-                </div>
-                {q.explanation && (
-                  <p className="text-xs text-muted-foreground bg-muted p-2 rounded mt-1">
-                    {q.explanation}
-                  </p>
-                )}
-              </div>
-            ))}
-          </div>
-        );
+      const raw: QuizQuestion[] = parsed.questions || parsed;
+      if (Array.isArray(raw) && raw.length > 0) {
+        questions = raw;
       }
     } catch {
       // Not valid JSON — fall through to markdown
+    }
+
+    if (questions) {
+      return (
+        <div className="space-y-4">
+          {questions.map((q, qi) => (
+            <div key={qi} className="rounded-lg border bg-background p-4 space-y-2">
+              <p className="font-medium text-sm">
+                {qi + 1}. {q.question}
+              </p>
+              <div className="space-y-1.5">
+                {q.options.map((opt, oi) => (
+                  <div
+                    key={oi}
+                    className={`px-3 py-2 rounded-md text-sm ${
+                      oi === q.correctIndex
+                        ? "bg-green-100 border border-green-300 text-green-900 font-medium"
+                        : "bg-muted/50 border border-transparent"
+                    }`}
+                  >
+                    {oi === q.correctIndex && <Check className="h-3.5 w-3.5 inline mr-1.5" />}
+                    {opt}
+                  </div>
+                ))}
+              </div>
+              {q.explanation && (
+                <p className="text-xs text-muted-foreground bg-muted p-2 rounded mt-1">
+                  {q.explanation}
+                </p>
+              )}
+            </div>
+          ))}
+        </div>
+      );
     }
   }
 

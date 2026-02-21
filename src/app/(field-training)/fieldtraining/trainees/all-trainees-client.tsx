@@ -109,6 +109,27 @@ type SortField = "name" | "department" | "status" | "phase" | "progress" | "dorC
 type SortDir = "asc" | "desc";
 
 // ---------------------------------------------------------------------------
+// SortIcon (extracted to avoid re-creation on every render)
+// ---------------------------------------------------------------------------
+
+function SortIcon({
+  field,
+  sortField,
+  sortDir,
+}: {
+  field: SortField;
+  sortField: SortField;
+  sortDir: SortDir;
+}) {
+  if (sortField !== field) return <ArrowUpDown className="h-3 w-3 ml-1 opacity-40" />;
+  return sortDir === "asc" ? (
+    <ChevronUp className="h-3 w-3 ml-1" />
+  ) : (
+    <ChevronDown className="h-3 w-3 ml-1" />
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 
@@ -231,15 +252,6 @@ export function AllTraineesClient({
       setSortField(field);
       setSortDir("asc");
     }
-  }
-
-  function SortIcon({ field }: { field: SortField }) {
-    if (sortField !== field) return <ArrowUpDown className="h-3 w-3 ml-1 opacity-40" />;
-    return sortDir === "asc" ? (
-      <ChevronUp className="h-3 w-3 ml-1" />
-    ) : (
-      <ChevronDown className="h-3 w-3 ml-1" />
-    );
   }
 
   function handleAssign() {
@@ -522,7 +534,7 @@ export function AllTraineesClient({
                         className="flex items-center hover:text-foreground"
                       >
                         Name
-                        <SortIcon field="name" />
+                        <SortIcon field="name" sortField={sortField} sortDir={sortDir} />
                       </button>
                     </TableHead>
                     <TableHead>
@@ -532,7 +544,7 @@ export function AllTraineesClient({
                         className="flex items-center hover:text-foreground"
                       >
                         Department
-                        <SortIcon field="department" />
+                        <SortIcon field="department" sortField={sortField} sortDir={sortDir} />
                       </button>
                     </TableHead>
                     <TableHead>
@@ -542,7 +554,7 @@ export function AllTraineesClient({
                         className="flex items-center hover:text-foreground"
                       >
                         Status
-                        <SortIcon field="status" />
+                        <SortIcon field="status" sortField={sortField} sortDir={sortDir} />
                       </button>
                     </TableHead>
                     <TableHead>Current FTO(s)</TableHead>
@@ -553,7 +565,7 @@ export function AllTraineesClient({
                         className="flex items-center hover:text-foreground"
                       >
                         Phase
-                        <SortIcon field="phase" />
+                        <SortIcon field="phase" sortField={sortField} sortDir={sortDir} />
                       </button>
                     </TableHead>
                     <TableHead>
@@ -563,7 +575,7 @@ export function AllTraineesClient({
                         className="flex items-center hover:text-foreground"
                       >
                         Progress
-                        <SortIcon field="progress" />
+                        <SortIcon field="progress" sortField={sortField} sortDir={sortDir} />
                       </button>
                     </TableHead>
                     <TableHead className="text-center">
@@ -573,7 +585,7 @@ export function AllTraineesClient({
                         className="flex items-center justify-center hover:text-foreground w-full"
                       >
                         DORs
-                        <SortIcon field="dorCount" />
+                        <SortIcon field="dorCount" sortField={sortField} sortDir={sortDir} />
                       </button>
                     </TableHead>
                     <TableHead className="text-center">
@@ -583,7 +595,7 @@ export function AllTraineesClient({
                         className="flex items-center justify-center hover:text-foreground w-full"
                       >
                         Avg Rating
-                        <SortIcon field="avgRating" />
+                        <SortIcon field="avgRating" sortField={sortField} sortDir={sortDir} />
                       </button>
                     </TableHead>
                     {canManageAssignments && <TableHead className="text-right">Actions</TableHead>}
