@@ -159,10 +159,6 @@ export function ControlChart({
   const yMax = Math.max(...allValues);
   const yPadding = (yMax - yMin) * 0.1 || 1;
 
-  // For P/U charts, control limits vary per point — use Line elements
-  // For I-MR, limits are constant — but we use Lines for consistency
-  const hasVariableLimits = spcData.chartType === "p-chart" || spcData.chartType === "u-chart";
-
   const specialCauseCount = spcData.points.filter((p) => p.specialCause).length;
 
   return (
@@ -297,15 +293,16 @@ export function ControlChart({
                   formatMetricValue(v, unit, rateMultiplier, rateSuffix)
                 }
               />
-              {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
               <Tooltip
                 formatter={
-                  ((value: any, name: any) => [
+                   
+                  ((value: number | undefined, name: string | undefined) => [
                     formatMetricValue(Number(value ?? 0), unit, rateMultiplier, rateSuffix),
                     name === "ucl" ? "UCL" : name === "centerLine" ? "CL" : "MR",
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                   ]) as any
                 }
-                labelFormatter={(label: any) => String(label ?? "")}
+                labelFormatter={(label) => String(label ?? "")}
               />
 
               {/* MR UCL line */}
