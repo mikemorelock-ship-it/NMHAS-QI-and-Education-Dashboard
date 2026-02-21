@@ -1,10 +1,5 @@
 import { describe, it, expect } from "vitest";
-import {
-  calculateSPC,
-  spcChartTypeForDataType,
-  type SPCDataPoint,
-  type SPCResult,
-} from "@/lib/spc";
+import { calculateSPC, spcChartTypeForDataType, type SPCDataPoint } from "@/lib/spc";
 
 // ---------------------------------------------------------------------------
 // spcChartTypeForDataType

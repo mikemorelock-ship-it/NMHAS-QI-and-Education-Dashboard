@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
 // mock-native.cjs - Preload script to mock missing native libsql module on Windows ARM64
 // Usage: node --require ./scripts/mock-native.cjs --import tsx prisma/seed.mjs
 const Module = require("module");

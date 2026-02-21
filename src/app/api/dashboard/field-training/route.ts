@@ -15,7 +15,8 @@ export async function GET(request: NextRequest) {
     const phaseId = searchParams.get("phaseId") || undefined;
 
     // Build where clause for DOR queries
-    const dorWhere: any = {};
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const dorWhere: Record<string, any> = {};
 
     // Date filter from parseDateRangeFilter
     const dateFilter = parseDateRangeFilter(range);

@@ -70,7 +70,15 @@ function getRatingBadgeClass(rating: number): string {
 // Custom Tooltips
 // ---------------------------------------------------------------------------
 
-function RatingTooltip({ active, payload, label }: any) {
+function RatingTooltip({
+  active,
+  payload,
+  label,
+}: {
+  active?: boolean;
+  payload?: { value: number }[];
+  label?: string;
+}) {
   if (!active || !payload?.length) return null;
   return (
     <div className="rounded-lg border bg-background p-3 shadow-md text-sm">
@@ -80,7 +88,15 @@ function RatingTooltip({ active, payload, label }: any) {
   );
 }
 
-function CountTooltip({ active, payload, label }: any) {
+function CountTooltip({
+  active,
+  payload,
+  label,
+}: {
+  active?: boolean;
+  payload?: { value: number }[];
+  label?: string;
+}) {
   if (!active || !payload?.length) return null;
   return (
     <div className="rounded-lg border bg-background p-3 shadow-md text-sm">
@@ -90,7 +106,13 @@ function CountTooltip({ active, payload, label }: any) {
   );
 }
 
-function CategoryTooltip({ active, payload }: any) {
+function CategoryTooltip({
+  active,
+  payload,
+}: {
+  active?: boolean;
+  payload?: { value: number; payload: { categoryName: string; count: number } }[];
+}) {
   if (!active || !payload?.length) return null;
   return (
     <div className="rounded-lg border bg-background p-3 shadow-md text-sm">

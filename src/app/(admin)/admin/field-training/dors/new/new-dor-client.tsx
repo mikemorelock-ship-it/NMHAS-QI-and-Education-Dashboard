@@ -542,7 +542,7 @@ export function NewDorClient({ trainees, ftos, phases, dorCategories, defaultTra
           <div className="space-y-3 overflow-hidden">
             {commentDialog &&
               categoryRatings[commentDialog.catId]?.rating !== null &&
-              categoryRatings[commentDialog.catId]?.rating! < 4 && (
+              (categoryRatings[commentDialog.catId]?.rating ?? 4) < 4 && (
                 <div className="flex items-center gap-2 text-sm text-amber-700 bg-amber-50 rounded-md px-3 py-2 border border-amber-200">
                   <AlertCircle className="h-4 w-4 shrink-0" />
                   <span>

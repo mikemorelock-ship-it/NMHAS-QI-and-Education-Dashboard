@@ -803,7 +803,7 @@ async function main() {
       status: "active",
     },
   });
-  const manager1 = await prisma.user.create({
+  await prisma.user.create({
     data: {
       email: "sarah.chen@nmhealth.org",
       passwordHash: seedPasswordHash,
@@ -816,7 +816,7 @@ async function main() {
       divisionId: groundAmbDivId,
     },
   });
-  const manager2 = await prisma.user.create({
+  await prisma.user.create({
     data: {
       email: "david.martinez@nmhealth.org",
       passwordHash: seedPasswordHash,
@@ -882,7 +882,7 @@ async function main() {
       divisionId: groundAmbDivId,
     },
   });
-  const sup2 = await prisma.user.create({
+  await prisma.user.create({
     data: {
       email: "jennifer.walsh@nmhealth.org",
       passwordHash: seedPasswordHash,
@@ -895,7 +895,7 @@ async function main() {
       divisionId: groundAmbDivId,
     },
   });
-  const sup3 = await prisma.user.create({
+  await prisma.user.create({
     data: {
       email: "derek.Thompson@nmhealth.org",
       passwordHash: seedPasswordHash,
@@ -908,7 +908,7 @@ async function main() {
       divisionId: airCareDivId,
     },
   });
-  const sup4 = await prisma.user.create({
+  await prisma.user.create({
     data: {
       email: "maria.gonzalez@nmhealth.org",
       passwordHash: seedPasswordHash,
