@@ -491,7 +491,9 @@ model User {
   assignedActions       ActionItem[]         @relation("ActionItemAssignee")
 
   // Coaching / remedial activity relations
-  coachingAssignments   TraineeCoachingAssignment[] @relation("TraineeCoachingAssignments")
+  coachingAssignments        TraineeCoachingAssignment[] @relation("TraineeCoachingAssignments")
+  uploadedResources          ResourceDocument[]          @relation("ResourceDocUploader")
+  reviewedCoachingActivities CoachingActivity[]           @relation("CoachingActivityReviewer")
 
   // Trainee snapshot relations
   traineeSnapshots      TraineeSnapshot[]    @relation("TraineeSnapshots")
@@ -632,7 +634,7 @@ model DailyEvaluation {
   ftoId                String
   phaseId              String?
   date                 DateTime
-  overallRating        Int      // 1-7 (1=Not Acceptable, 4=Acceptable, 7=Superior)
+  overallRating        Float    // 1-7 average of category scores (e.g. 3.5)
   narrative            String?
   mostSatisfactory     String?  // FTEP: best performance area this shift
   leastSatisfactory    String?  // FTEP: area needing most improvement
@@ -800,6 +802,32 @@ model LoginAttempt {
 }
 
 // ---------------------------------------------------------------------------
+// Resource Documents — uploaded organizational docs for AI coaching generation
+// ---------------------------------------------------------------------------
+
+model ResourceDocument {
+  id            String   @id @default(cuid())
+  title         String
+  fileName      String                              // original upload filename
+  fileType      String                              // "pdf" | "txt"
+  fileSize      Int                                 // bytes
+  filePath      String                              // relative path under storage dir
+  textContent   String?                             // extracted full text (for AI context)
+  textLength    Int      @default(0)                // character count of extracted text
+  description   String?                             // admin-provided description
+  uploadedById  String
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  uploadedBy         User               @relation("ResourceDocUploader", fields: [uploadedById], references: [id], onDelete: Cascade)
+  coachingActivities CoachingActivity[] @relation("ActivitySourceDocument")
+
+  @@index([uploadedById])
+  @@index([isActive])
+}
+
+// ---------------------------------------------------------------------------
 // Coaching Activities — remedial/educational content triggered by poor DOR scores
 // ---------------------------------------------------------------------------
 
@@ -816,11 +844,25 @@ model CoachingActivity {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  category    EvaluationCategory          @relation(fields: [categoryId], references: [id])
-  assignments TraineeCoachingAssignment[]
+  // AI generation provenance
+  sourceDocumentId String?                          // FK to ResourceDocument that sourced this
+  generationStatus String   @default("manual")      // "manual" | "draft" | "approved" | "rejected"
+  generationPrompt String?                          // the prompt used to generate (for reproducibility)
+  generatedAt      DateTime?                        // when AI generated this
+  reviewedById     String?                          // admin who approved/rejected
+  reviewedAt       DateTime?
+  reviewNotes      String?                          // admin notes on approval/rejection
+
+  category       EvaluationCategory          @relation(fields: [categoryId], references: [id])
+  sourceDocument ResourceDocument?           @relation("ActivitySourceDocument", fields: [sourceDocumentId], references: [id], onDelete: SetNull)
+  reviewedBy     User?                       @relation("CoachingActivityReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+  assignments    TraineeCoachingAssignment[]
 
   @@index([categoryId])
   @@index([type])
+  @@index([sourceDocumentId])
+  @@index([generationStatus])
+  @@index([reviewedById])
 }
 
 model TraineeCoachingAssignment {

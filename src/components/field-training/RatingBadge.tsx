@@ -12,27 +12,32 @@ const RATING_LABELS: Record<number, string> = {
 };
 
 export function RatingBadge({ rating }: { rating: number }) {
-  const label = RATING_LABELS[rating] ?? "Unknown";
+  const rounded = Math.round(rating);
+  const label = RATING_LABELS[rounded] ?? "Unknown";
   const color =
-    rating === 1
+    rounded === 1
       ? "bg-red-200 text-red-900"
-      : rating === 2
+      : rounded === 2
         ? "bg-red-100 text-red-800"
-        : rating === 3
+        : rounded === 3
           ? "bg-orange-100 text-orange-800"
-          : rating === 4
+          : rounded === 4
             ? "bg-gray-100 text-gray-800"
-            : rating === 5
+            : rounded === 5
               ? "bg-green-100 text-green-800"
-              : rating === 6
+              : rounded === 6
                 ? "bg-green-200 text-green-900"
                 : "bg-emerald-200 text-emerald-900";
+
+  // Display with one decimal if it's not a whole number
+  const displayValue = rating % 1 !== 0 ? rating.toFixed(1) : rating;
+
   return (
     <Badge
       className={cn("font-mono text-xs", color)}
-      aria-label={`${rating} out of 7 – ${label}`}
+      aria-label={`${displayValue} out of 7 – ${label}`}
     >
-      {rating}/7
+      {displayValue}/7
     </Badge>
   );
 }

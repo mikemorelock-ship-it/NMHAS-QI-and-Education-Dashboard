@@ -94,7 +94,11 @@ export default function RegisterPage() {
               />
             </div>
             <div aria-live="polite">
-              {state?.error && <p className="text-sm text-destructive" role="alert">{state.error}</p>}
+              {state?.error && (
+                <p className="text-sm text-destructive" role="alert">
+                  {state.error}
+                </p>
+              )}
             </div>
             <Button
               type="submit"

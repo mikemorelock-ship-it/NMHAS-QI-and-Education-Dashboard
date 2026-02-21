@@ -3,14 +3,7 @@
 import { Fragment, useState } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { format } from "date-fns";
-import {
-  ScrollText,
-  Search,
-  Filter,
-  RotateCcw,
-  ChevronDown,
-  ChevronRight,
-} from "lucide-react";
+import { ScrollText, Search, Filter, RotateCcw, ChevronDown, ChevronRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -58,11 +51,16 @@ function parseAuditChanges(changesJson: string | null): AuditChanges | null {
 
 function actionBadgeVariant(action: string): string {
   const upper = action.toUpperCase();
-  if (upper.includes("CREATE")) return "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400";
-  if (upper.includes("UPDATE")) return "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400";
-  if (upper.includes("DELETE")) return "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400";
-  if (upper.includes("LOGIN")) return "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400";
-  if (upper.includes("SECURITY")) return "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400";
+  if (upper.includes("CREATE"))
+    return "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400";
+  if (upper.includes("UPDATE"))
+    return "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400";
+  if (upper.includes("DELETE"))
+    return "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400";
+  if (upper.includes("LOGIN"))
+    return "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400";
+  if (upper.includes("SECURITY"))
+    return "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400";
   return "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400";
 }
 
@@ -322,10 +320,7 @@ export function AuditLogClient({ items, pagination, lookup, filters }: Props) {
                             {format(new Date(row.createdAt), "MMM d, yyyy h:mm a")}
                           </TableCell>
                           <TableCell>
-                            <Badge
-                              variant="secondary"
-                              className={actionBadgeVariant(row.action)}
-                            >
+                            <Badge variant="secondary" className={actionBadgeVariant(row.action)}>
                               {row.action}
                             </Badge>
                           </TableCell>

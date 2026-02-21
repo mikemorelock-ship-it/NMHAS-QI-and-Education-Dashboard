@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -113,30 +113,46 @@ function RatingInput({
   value,
   onChange,
   showLabel = false,
+  readOnly = false,
 }: {
-  value: number;
+  value: number | null;
   onChange: (v: number) => void;
   showLabel?: boolean;
+  readOnly?: boolean;
 }) {
+  const isDecimal = value !== null && value % 1 !== 0;
+  const roundedValue = value !== null ? Math.round(value) : null;
+
   return (
     <div className="flex items-center gap-1.5">
-      {[1, 2, 3, 4, 5, 6, 7].map((i) => (
-        <button
-          key={i}
-          type="button"
-          onClick={() => onChange(i)}
-          className={cn(
-            "w-10 h-10 rounded-md text-sm font-bold transition-all",
-            i <= value
-              ? `${RATING_COLORS[i]} text-white shadow-sm`
-              : "bg-muted text-muted-foreground hover:bg-muted-foreground/20"
-          )}
-        >
-          {i}
-        </button>
-      ))}
-      {showLabel && (
-        <span className="ml-2 text-xs text-muted-foreground">{RATING_LABELS[value]}</span>
+      {[1, 2, 3, 4, 5, 6, 7].map((i) => {
+        const isSelected = roundedValue !== null && i === roundedValue && isDecimal;
+        const isFilled = value !== null && i <= (roundedValue ?? 0);
+        return (
+          <button
+            key={i}
+            type="button"
+            onClick={() => !readOnly && onChange(i)}
+            disabled={readOnly}
+            className={cn(
+              "rounded-md font-bold transition-all",
+              isSelected
+                ? "w-12 h-12 text-base ring-2 ring-offset-1 ring-white/50"
+                : "w-10 h-10 text-sm",
+              isFilled
+                ? `${RATING_COLORS[i]} text-white shadow-sm`
+                : "bg-muted text-muted-foreground hover:bg-muted-foreground/20",
+              readOnly && "cursor-default"
+            )}
+          >
+            {isSelected && value !== null ? value.toFixed(1) : i}
+          </button>
+        );
+      })}
+      {showLabel && value !== null && (
+        <span className="ml-2 text-xs text-muted-foreground">
+          {RATING_LABELS[roundedValue ?? 0]}
+        </span>
       )}
     </div>
   );
@@ -168,7 +184,6 @@ export function EditDorClient({
 }: Props) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
-  const [overallRating, setOverallRating] = useState(existingData.overallRating);
   const [categoryRatings, setCategoryRatings] = useState<
     Record<string, { rating: number; comments: string }>
   >(
@@ -179,6 +194,16 @@ export function EditDorClient({
       ])
     )
   );
+
+  // Overall rating is auto-calculated as the average of all category scores
+  const overallRating = useMemo(() => {
+    const ratings = Object.values(categoryRatings)
+      .map((r) => r.rating)
+      .filter((r): r is number => r !== null);
+    if (ratings.length === 0) return null;
+    const avg = ratings.reduce((sum, r) => sum + r, 0) / ratings.length;
+    return Math.round(avg * 10) / 10;
+  }, [categoryRatings]);
   const [nrtFlag, setNrtFlag] = useState(existingData.nrtFlag);
   const [remFlag, setRemFlag] = useState(existingData.remFlag);
   const [submitting, setSubmitting] = useState(false);
@@ -317,7 +342,7 @@ export function EditDorClient({
   function buildFormData(form: HTMLFormElement) {
     const formData = new FormData(form);
     formData.set("ftoId", fto.id);
-    formData.set("overallRating", overallRating.toString());
+    formData.set("overallRating", (overallRating ?? 4).toString());
     formData.set("nrtFlag", nrtFlag.toString());
     formData.set("remFlag", remFlag.toString());
     return formData;
@@ -561,8 +586,11 @@ export function EditDorClient({
                       <TableCell>{dor.ftoName}</TableCell>
                       <TableCell>{dor.phaseName || "—"}</TableCell>
                       <TableCell>
-                        <Badge className={RATING_BADGE_COLORS[dor.overallRating]}>
-                          {dor.overallRating}/7
+                        <Badge className={RATING_BADGE_COLORS[Math.round(dor.overallRating)]}>
+                          {dor.overallRating % 1 !== 0
+                            ? dor.overallRating.toFixed(1)
+                            : dor.overallRating}
+                          /7
                         </Badge>
                       </TableCell>
                       <TableCell className="text-xs">
@@ -732,8 +760,13 @@ export function EditDorClient({
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label>Overall Rating</Label>
-              <RatingInput value={overallRating} onChange={setOverallRating} showLabel />
+              <Label>
+                Overall Rating{" "}
+                <span className="text-muted-foreground font-normal text-xs">
+                  (auto-calculated average)
+                </span>
+              </Label>
+              <RatingInput value={overallRating} onChange={() => {}} readOnly showLabel />
             </div>
             <div className="space-y-2">
               <Label>Recommendation</Label>

@@ -91,10 +91,11 @@ async function applyMigration({ name, sql }) {
   const id = randomUUID();
 
   // Split on semicolons and execute each statement (libsql doesn't support multi-statement execute)
+  // Strip comment lines before filtering, since Prisma migration SQL has "-- CreateTable" etc.
   const statements = sql
     .split(";")
-    .map((s) => s.trim())
-    .filter((s) => s.length > 0 && !s.startsWith("--"));
+    .map((s) => s.split("\n").filter((line) => !line.trimStart().startsWith("--")).join("\n").trim())
+    .filter((s) => s.length > 0);
 
   for (const stmt of statements) {
     try {

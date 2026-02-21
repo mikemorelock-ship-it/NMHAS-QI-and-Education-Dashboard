@@ -154,8 +154,12 @@ export function IdleTimeout({
       aria-labelledby="idle-timeout-title"
     >
       <div className="bg-white rounded-lg shadow-xl p-6 max-w-md mx-4 text-center">
-        <div className="text-amber-500 text-4xl mb-3" aria-hidden="true">⏱</div>
-        <h2 id="idle-timeout-title" className="text-lg font-semibold text-gray-900 mb-2">Session Timeout Warning</h2>
+        <div className="text-amber-500 text-4xl mb-3" aria-hidden="true">
+          ⏱
+        </div>
+        <h2 id="idle-timeout-title" className="text-lg font-semibold text-gray-900 mb-2">
+          Session Timeout Warning
+        </h2>
         <p className="text-gray-600 mb-4">
           You&apos;ve been inactive for {timeoutMinutes} minutes. You&apos;ll be logged out in{" "}
           <span className="font-bold text-red-600">{countdown}</span> seconds.

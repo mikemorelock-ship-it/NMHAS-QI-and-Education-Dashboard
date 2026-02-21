@@ -308,7 +308,7 @@ export async function updateMetricDefinition(
         unit: data.unit,
         chartType: data.chartType,
         periodType: data.periodType,
-      },
+      }
     );
 
     await createAuditLog({

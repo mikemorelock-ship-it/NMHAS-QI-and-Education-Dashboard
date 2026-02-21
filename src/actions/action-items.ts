@@ -180,7 +180,7 @@ export async function updateActionItem(id: string, formData: FormData): Promise<
         priority: data.priority,
         assigneeId: data.assigneeId || null,
         dueDate: data.dueDate ?? null,
-      },
+      }
     );
 
     await createAuditLog({

@@ -56,7 +56,10 @@ export function KpiCard({
           <p className="text-sm text-muted-foreground truncate leading-tight">
             {name}
             {href && (
-              <ArrowRight className="inline-block size-3 ml-1 opacity-0 group-hover:opacity-100 transition-opacity text-[#00b0ad]" aria-hidden="true" />
+              <ArrowRight
+                className="inline-block size-3 ml-1 opacity-0 group-hover:opacity-100 transition-opacity text-[#00b0ad]"
+                aria-hidden="true"
+              />
             )}
           </p>
           <p className="text-3xl font-bold tracking-tight mt-1 lg:text-4xl">
@@ -113,9 +116,7 @@ export function KpiCard({
             )}
           >
             Target: {formatMetricValue(target, unit, rateMultiplier, rateSuffix)}
-            <span className="sr-only">
-              {atOrAboveTarget ? " (on target)" : " (below target)"}
-            </span>
+            <span className="sr-only">{atOrAboveTarget ? " (on target)" : " (below target)"}</span>
           </span>
         )}
       </div>

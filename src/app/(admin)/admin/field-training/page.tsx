@@ -95,7 +95,11 @@ export default async function FieldTrainingOverviewPage() {
           <h1 className="text-2xl font-bold tracking-tight">Field Training Program</h1>
           <p className="text-muted-foreground">Overview of the FTEP field training program.</p>
         </div>
-        <Button asChild size="lg" className="bg-nmh-teal hover:bg-nmh-teal/90 text-white gap-2 shadow-md">
+        <Button
+          asChild
+          size="lg"
+          className="bg-nmh-teal hover:bg-nmh-teal/90 text-white gap-2 shadow-md"
+        >
           <Link href="/fieldtraining">
             <GraduationCap className="h-5 w-5" />
             Open FTO/Trainee Portal

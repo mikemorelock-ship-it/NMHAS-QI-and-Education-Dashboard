@@ -245,7 +245,10 @@ export function UsersClient({ users, currentUserId }: UsersClientProps) {
       {/* Error banner */}
       <div aria-live="polite">
         {error && (
-          <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive" role="alert">
+          <div
+            className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive"
+            role="alert"
+          >
             {error}
           </div>
         )}
@@ -280,7 +283,10 @@ export function UsersClient({ users, currentUserId }: UsersClientProps) {
       {/* Search & Filter */}
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" aria-hidden="true" />
+          <Search
+            className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground"
+            aria-hidden="true"
+          />
           <Input
             placeholder="Search by name or email..."
             value={searchQuery}
@@ -394,7 +400,10 @@ export function UsersClient({ users, currentUserId }: UsersClientProps) {
                               onClick={() => openPasswordReset(user)}
                               disabled={isPending}
                             >
-                              <KeyRound className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+                              <KeyRound
+                                className="h-4 w-4 text-muted-foreground"
+                                aria-hidden="true"
+                              />
                             </Button>
                             <Button
                               variant="ghost"
@@ -436,7 +445,10 @@ export function UsersClient({ users, currentUserId }: UsersClientProps) {
                               onClick={() => openPasswordReset(user)}
                               disabled={isPending}
                             >
-                              <KeyRound className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+                              <KeyRound
+                                className="h-4 w-4 text-muted-foreground"
+                                aria-hidden="true"
+                              />
                             </Button>
                             <Button
                               variant="ghost"
@@ -497,7 +509,11 @@ export function UsersClient({ users, currentUserId }: UsersClientProps) {
                 </Select>
               </div>
               <div aria-live="polite">
-                {error && <p className="text-sm text-destructive" role="alert">{error}</p>}
+                {error && (
+                  <p className="text-sm text-destructive" role="alert">
+                    {error}
+                  </p>
+                )}
               </div>
             </div>
           )}
@@ -558,7 +574,11 @@ export function UsersClient({ users, currentUserId }: UsersClientProps) {
                     tabIndex={-1}
                     aria-label={showPassword ? "Hide password" : "Show password"}
                   >
-                    {showPassword ? <EyeOff className="h-4 w-4" aria-hidden="true" /> : <Eye className="h-4 w-4" aria-hidden="true" />}
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4" aria-hidden="true" />
+                    ) : (
+                      <Eye className="h-4 w-4" aria-hidden="true" />
+                    )}
                   </Button>
                 </div>
                 <p className="text-xs text-muted-foreground">
@@ -566,7 +586,11 @@ export function UsersClient({ users, currentUserId }: UsersClientProps) {
                 </p>
               </div>
               <div aria-live="polite">
-                {error && <p className="text-sm text-destructive" role="alert">{error}</p>}
+                {error && (
+                  <p className="text-sm text-destructive" role="alert">
+                    {error}
+                  </p>
+                )}
               </div>
             </div>
           )}
@@ -644,7 +668,11 @@ export function UsersClient({ users, currentUserId }: UsersClientProps) {
               </Select>
             </div>
             <div aria-live="polite">
-              {error && <p className="text-sm text-destructive" role="alert">{error}</p>}
+              {error && (
+                <p className="text-sm text-destructive" role="alert">
+                  {error}
+                </p>
+              )}
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setCreateOpen(false)}>

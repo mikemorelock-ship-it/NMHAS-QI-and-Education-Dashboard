@@ -30,6 +30,10 @@ export const PERMISSIONS = {
   view_dashboard: ["admin", "manager", "data_entry"],
   view_admin: ["admin", "manager", "data_entry"],
 
+  // Coaching & resource management
+  manage_coaching: ["admin"],
+  manage_resources: ["admin"],
+
   // Field training permissions
   create_edit_own_dors: ["fto", "supervisor", "manager", "admin"],
   view_own_trainees: ["fto", "supervisor", "manager", "admin"],

@@ -140,15 +140,11 @@ export function EntityHistory({ entity, entityId, label = "History" }: EntityHis
 
                   {/* Actor */}
                   {entry.actorName && (
-                    <p className="text-xs text-muted-foreground mb-0.5">
-                      by {entry.actorName}
-                    </p>
+                    <p className="text-xs text-muted-foreground mb-0.5">by {entry.actorName}</p>
                   )}
 
                   {/* Details */}
-                  {entry.details && (
-                    <p className="text-sm text-foreground">{entry.details}</p>
-                  )}
+                  {entry.details && <p className="text-sm text-foreground">{entry.details}</p>}
 
                   {/* Changes diff */}
                   {changedFields.length > 0 && changes && (

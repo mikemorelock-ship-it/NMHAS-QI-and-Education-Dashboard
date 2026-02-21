@@ -601,7 +601,10 @@ export function TraineeDetailClient({
                             </p>
                             {dor.traineeAcknowledged ? (
                               <div className="flex items-center gap-2">
-                                <CheckCircle2 className="h-4 w-4 text-green-600" aria-hidden="true" />
+                                <CheckCircle2
+                                  className="h-4 w-4 text-green-600"
+                                  aria-hidden="true"
+                                />
                                 <span className="text-sm text-green-800">
                                   Acknowledged
                                   {dor.acknowledgedAt
@@ -740,9 +743,15 @@ export function TraineeDetailClient({
                             <TableRow>
                               <TableCell className="w-8">
                                 {skill.signedOff ? (
-                                  <CheckCircle2 className="h-5 w-5 text-green-600" aria-hidden="true" />
+                                  <CheckCircle2
+                                    className="h-5 w-5 text-green-600"
+                                    aria-hidden="true"
+                                  />
                                 ) : (
-                                  <Circle className="h-5 w-5 text-muted-foreground/40" aria-hidden="true" />
+                                  <Circle
+                                    className="h-5 w-5 text-muted-foreground/40"
+                                    aria-hidden="true"
+                                  />
                                 )}
                               </TableCell>
                               <TableCell>
@@ -760,9 +769,15 @@ export function TraineeDetailClient({
                                       aria-label={`${expandedSkill === skill.id ? "Collapse" : "Expand"} steps for ${skill.name}`}
                                     >
                                       {expandedSkill === skill.id ? (
-                                        <ChevronDown className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+                                        <ChevronDown
+                                          className="h-4 w-4 text-muted-foreground"
+                                          aria-hidden="true"
+                                        />
                                       ) : (
-                                        <ChevronRight className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+                                        <ChevronRight
+                                          className="h-4 w-4 text-muted-foreground"
+                                          aria-hidden="true"
+                                        />
                                       )}
                                     </button>
                                   )}
@@ -779,7 +794,10 @@ export function TraineeDetailClient({
                                       variant="destructive"
                                       className="text-[10px] px-1.5 py-0"
                                     >
-                                      <AlertTriangle className="h-3 w-3 mr-0.5" aria-hidden="true" />
+                                      <AlertTriangle
+                                        className="h-3 w-3 mr-0.5"
+                                        aria-hidden="true"
+                                      />
                                       Critical
                                     </Badge>
                                   )}
@@ -972,7 +990,11 @@ export function TraineeDetailClient({
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div aria-live="polite">
-              {pinError && <p className="text-sm text-destructive" role="alert">{pinError}</p>}
+              {pinError && (
+                <p className="text-sm text-destructive" role="alert">
+                  {pinError}
+                </p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="pin-input">PIN (6-8 digits)</Label>
@@ -1028,7 +1050,11 @@ export function TraineeDetailClient({
             </DialogHeader>
             <div className="space-y-4 py-4">
               <div aria-live="polite">
-                {phaseError && <p className="text-sm text-destructive" role="alert">{phaseError}</p>}
+                {phaseError && (
+                  <p className="text-sm text-destructive" role="alert">
+                    {phaseError}
+                  </p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="phase-status">Status</Label>

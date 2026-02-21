@@ -36,7 +36,7 @@ export interface AuditLogLookupData {
 export async function getAuditLogPage(
   filters: AuditLogFilters,
   page: number,
-  pageSize: number,
+  pageSize: number
 ): Promise<PaginatedResult<AuditLogViewRow>> {
   await requirePermission("view_audit_log");
 
@@ -101,7 +101,7 @@ export async function getAuditLogPage(
       changes: item.changes,
       actorId: item.actorId,
       actorType: item.actorType,
-      actorName: item.actorId ? actorMap.get(item.actorId) ?? "Unknown" : null,
+      actorName: item.actorId ? (actorMap.get(item.actorId) ?? "Unknown") : null,
       createdAt: item.createdAt.toISOString(),
     })),
     pagination: {
@@ -138,7 +138,7 @@ export async function getAuditLogLookupData(): Promise<AuditLogLookupData> {
 
 export async function getEntityHistory(
   entity: string,
-  entityId: string,
+  entityId: string
 ): Promise<AuditLogViewRow[]> {
   await requirePermission("view_audit_log");
 
@@ -167,7 +167,7 @@ export async function getEntityHistory(
     changes: item.changes,
     actorId: item.actorId,
     actorType: item.actorType,
-    actorName: item.actorId ? actorMap.get(item.actorId) ?? "Unknown" : null,
+    actorName: item.actorId ? (actorMap.get(item.actorId) ?? "Unknown") : null,
     createdAt: item.createdAt.toISOString(),
   }));
 }

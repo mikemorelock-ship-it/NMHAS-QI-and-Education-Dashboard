@@ -158,8 +158,13 @@ export async function updateDepartment(id: string, formData: FormData): Promise<
     });
 
     const changes = computeChanges(
-      { name: current.name, type: current.type, description: current.description, sortOrder: current.sortOrder },
-      { name, type, description: description ?? null, sortOrder },
+      {
+        name: current.name,
+        type: current.type,
+        description: current.description,
+        sortOrder: current.sortOrder,
+      },
+      { name, type, description: description ?? null, sortOrder }
     );
 
     await createAuditLog({

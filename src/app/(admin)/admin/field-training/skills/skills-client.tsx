@@ -207,7 +207,11 @@ export function SkillsClient({ categories }: { categories: SkillCategory[] }) {
                 </DialogHeader>
                 <div className="space-y-4 py-4">
                   <div aria-live="polite">
-                    {error && <p className="text-sm text-destructive" role="alert">{error}</p>}
+                    {error && (
+                      <p className="text-sm text-destructive" role="alert">
+                        {error}
+                      </p>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="cat-name">Name</Label>
@@ -267,7 +271,11 @@ export function SkillsClient({ categories }: { categories: SkillCategory[] }) {
                 </DialogHeader>
                 <div className="space-y-4 py-4">
                   <div aria-live="polite">
-                    {error && <p className="text-sm text-destructive" role="alert">{error}</p>}
+                    {error && (
+                      <p className="text-sm text-destructive" role="alert">
+                        {error}
+                      </p>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="skill-categoryId">Category</Label>
@@ -563,7 +571,11 @@ export function SkillsClient({ categories }: { categories: SkillCategory[] }) {
             </DialogHeader>
             <div className="space-y-4 py-4">
               <div aria-live="polite">
-                {error && <p className="text-sm text-destructive" role="alert">{error}</p>}
+                {error && (
+                  <p className="text-sm text-destructive" role="alert">
+                    {error}
+                  </p>
+                )}
               </div>
               <input type="hidden" name="skillId" value={stepSkillId ?? ""} />
               <div className="grid grid-cols-2 gap-4">

@@ -50,11 +50,19 @@ export function ScorecardTable({ scorecard }: ScorecardTableProps) {
         <table className="w-full text-sm">
           <thead>
             <tr className="bg-nmh-gray text-white">
-              <th scope="col" className="text-left font-semibold px-4 py-2.5 whitespace-nowrap sticky left-0 bg-nmh-gray z-10">
+              <th
+                scope="col"
+                className="text-left font-semibold px-4 py-2.5 whitespace-nowrap sticky left-0 bg-nmh-gray z-10"
+              >
                 Metric
               </th>
-              <th scope="col" className="text-right font-semibold px-3 py-2.5 whitespace-nowrap">Target</th>
-              <th scope="col" className="text-right font-semibold px-3 py-2.5 whitespace-nowrap border-r border-white/20">
+              <th scope="col" className="text-right font-semibold px-3 py-2.5 whitespace-nowrap">
+                Target
+              </th>
+              <th
+                scope="col"
+                className="text-right font-semibold px-3 py-2.5 whitespace-nowrap border-r border-white/20"
+              >
                 YTD
               </th>
               {months.map((month) => (
@@ -126,21 +134,25 @@ export function ScorecardTable({ scorecard }: ScorecardTableProps) {
                           getTargetColorClass(metric.actualYtd, metric.target)
                         }
                       >
-                        {metric.actualYtd !== null
-                          ? <>
-                              {formatMetricValue(
-                                metric.actualYtd,
-                                metric.unit,
-                                metric.rateMultiplier,
-                                metric.rateSuffix
-                              )}
-                              {metric.target !== null && (
-                                <span className="sr-only">
-                                  {metric.actualYtd >= metric.target ? "(on target)" : "(below target)"}
-                                </span>
-                              )}
-                            </>
-                          : "--"}
+                        {metric.actualYtd !== null ? (
+                          <>
+                            {formatMetricValue(
+                              metric.actualYtd,
+                              metric.unit,
+                              metric.rateMultiplier,
+                              metric.rateSuffix
+                            )}
+                            {metric.target !== null && (
+                              <span className="sr-only">
+                                {metric.actualYtd >= metric.target
+                                  ? "(on target)"
+                                  : "(below target)"}
+                              </span>
+                            )}
+                          </>
+                        ) : (
+                          "--"
+                        )}
                       </td>
 
                       {/* Monthly values */}

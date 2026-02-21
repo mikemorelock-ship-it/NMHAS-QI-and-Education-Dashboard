@@ -206,7 +206,7 @@ export async function updateCampaign(id: string, formData: FormData): Promise<Ac
         goals: data.goals ?? null,
         ownerId: data.ownerId || null,
         description: data.description ?? null,
-      },
+      }
     );
 
     await createAuditLog({

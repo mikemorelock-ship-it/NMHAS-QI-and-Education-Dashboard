@@ -168,7 +168,6 @@ const DailyObservationReportSchema = z.object({
   date: z.coerce.date("Please select a valid date"),
   overallRating: z.coerce
     .number("Please select an overall rating")
-    .int()
     .min(1, "Overall rating must be between 1 and 7")
     .max(7, "Overall rating must be between 1 and 7"),
   narrative: z.string().max(5000).optional().nullable(),

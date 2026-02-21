@@ -126,8 +126,9 @@ export function DorDetailClient({ dor, traineeId }: Props) {
             </div>
             <div>
               <span className="text-muted-foreground">Overall Rating:</span>{" "}
-              <Badge className={cn("ml-1", RATING_COLORS[dor.overallRating])}>
-                {dor.overallRating}/7 — {RATING_LABELS[dor.overallRating]}
+              <Badge className={cn("ml-1", RATING_COLORS[Math.round(dor.overallRating)])}>
+                {dor.overallRating % 1 !== 0 ? dor.overallRating.toFixed(1) : dor.overallRating}/7 —{" "}
+                {RATING_LABELS[Math.round(dor.overallRating)]}
               </Badge>
             </div>
           </div>

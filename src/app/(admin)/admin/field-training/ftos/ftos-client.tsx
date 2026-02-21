@@ -168,7 +168,11 @@ export function FtosClient({ ftos, divisions }: { ftos: Fto[]; divisions: Divisi
                 </DialogHeader>
                 <div className="space-y-4 py-4">
                   <div aria-live="polite">
-                    {error && <p className="text-sm text-destructive" role="alert">{error}</p>}
+                    {error && (
+                      <p className="text-sm text-destructive" role="alert">
+                        {error}
+                      </p>
+                    )}
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">

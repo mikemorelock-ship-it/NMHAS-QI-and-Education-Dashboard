@@ -34,6 +34,7 @@
     "seed": "node --import tsx prisma/seed.mjs"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.78.0",
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
@@ -54,10 +55,12 @@
     "next": "16.1.6",
     "nodemailer": "^8.0.1",
     "papaparse": "^5.5.3",
+    "pdf-parse": "^1.1.1",
     "radix-ui": "^1.4.3",
     "react": "19.2.3",
     "react-day-picker": "^9.13.2",
     "react-dom": "19.2.3",
+    "react-markdown": "^10.1.0",
     "recharts": "^3.7.0",
     "tailwind-merge": "^3.4.0",
     "zod": "^4.3.6"
@@ -71,6 +74,7 @@
     "@types/node": "^20",
     "@types/nodemailer": "^7.0.10",
     "@types/papaparse": "^5.5.2",
+    "@types/pdf-parse": "^1.1.5",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@vitest/coverage-v8": "^4.0.18",

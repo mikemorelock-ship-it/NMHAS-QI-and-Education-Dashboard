@@ -116,7 +116,7 @@ export function buildDorNotificationEmail(data: DorEmailData): {
             <p style="margin: 0; font-size: 14px; font-weight: 600; color: ${data.nrtFlag ? "#991b1b" : "#9a3412"};">
               ${data.nrtFlag ? "🚨 NRT — Not Responding to Training" : ""}
               ${data.remFlag ? "⚠️ REM — Remedial Training Recommended" : ""}
-              ${isPoor && !hasFlags ? `⚠️ Low Overall Score: ${data.overallRating}/7 — ${RATING_LABELS[data.overallRating]}` : ""}
+              ${isPoor && !hasFlags ? `⚠️ Low Overall Score: ${data.overallRating % 1 !== 0 ? data.overallRating.toFixed(1) : data.overallRating}/7 — ${RATING_LABELS[Math.round(data.overallRating)]}` : ""}
             </p>
           </td>
         </tr>
@@ -147,8 +147,8 @@ export function buildDorNotificationEmail(data: DorEmailData): {
               <tr>
                 <td style="padding: 6px 0; font-size: 14px; color: #6b7280;">Overall Rating:</td>
                 <td style="padding: 6px 0;">
-                  <span style="display: inline-block; padding: 3px 12px; border-radius: 12px; font-size: 14px; font-weight: 700; color: white; background-color: ${RATING_COLORS[data.overallRating]};">
-                    ${data.overallRating}/7 — ${RATING_LABELS[data.overallRating]}
+                  <span style="display: inline-block; padding: 3px 12px; border-radius: 12px; font-size: 14px; font-weight: 700; color: white; background-color: ${RATING_COLORS[Math.round(data.overallRating)]};">
+                    ${data.overallRating % 1 !== 0 ? data.overallRating.toFixed(1) : data.overallRating}/7 — ${RATING_LABELS[Math.round(data.overallRating)]}
                   </span>
                 </td>
               </tr>

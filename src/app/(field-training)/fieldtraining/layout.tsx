@@ -39,7 +39,9 @@ export default async function FieldTrainingLayout({ children }: { children: Reac
         Skip to main content
       </a>
       <FieldTrainingNavbar session={session} userName={userName} />
-      <main id="main-content" className="flex-1 p-4 md:p-8">{children}</main>
+      <main id="main-content" className="flex-1 p-4 md:p-8">
+        {children}
+      </main>
       <SessionTimeoutWarning
         expiresAt={expiresAt}
         loginPath="/login"

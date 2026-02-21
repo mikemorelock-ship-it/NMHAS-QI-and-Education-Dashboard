@@ -160,7 +160,11 @@ export function SettingsClient({
                 </DialogHeader>
                 <div className="space-y-4 py-4">
                   <div aria-live="polite">
-                    {error && <p className="text-sm text-destructive" role="alert">{error}</p>}
+                    {error && (
+                      <p className="text-sm text-destructive" role="alert">
+                        {error}
+                      </p>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="name">Name</Label>
@@ -304,7 +308,11 @@ export function SettingsClient({
                 </DialogHeader>
                 <div className="space-y-4 py-4">
                   <div aria-live="polite">
-                    {error && <p className="text-sm text-destructive" role="alert">{error}</p>}
+                    {error && (
+                      <p className="text-sm text-destructive" role="alert">
+                        {error}
+                      </p>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="cat-name">Name</Label>

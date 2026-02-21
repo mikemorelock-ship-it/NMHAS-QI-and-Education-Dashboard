@@ -284,7 +284,7 @@ export async function updateEntry(id: string, formData: FormData): Promise<Actio
         numerator: num ?? null,
         denominator: den ?? null,
         notes: data.notes ?? null,
-      },
+      }
     );
 
     await createAuditLog({

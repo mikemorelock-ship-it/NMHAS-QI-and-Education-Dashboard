@@ -50,6 +50,7 @@ export async function getMyCoachingActivities() {
       estimatedMins: a.activity.estimatedMins,
       categoryName: a.activity.category.name,
       categorySlug: a.activity.category.slug,
+      generationStatus: a.activity.generationStatus,
     },
     dor: a.dor
       ? {

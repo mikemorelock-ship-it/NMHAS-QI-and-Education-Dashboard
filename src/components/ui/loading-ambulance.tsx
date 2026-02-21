@@ -58,10 +58,7 @@ export function LoadingAmbulance({
           <rect x="60" y="24" width="120" height="70" rx="6" fill="#00b0ad" />
 
           {/* === Cab (front) === */}
-          <path
-            d="M180 44 h30 a8 8 0 0 1 8 8 v42 H180 V44z"
-            fill="#00b0ad"
-          />
+          <path d="M180 44 h30 a8 8 0 0 1 8 8 v42 H180 V44z" fill="#00b0ad" />
 
           {/* === Windshield === */}
           <path
@@ -75,14 +72,31 @@ export function LoadingAmbulance({
           <path d="M188 52 h6 v16 h-6z" fill="white" opacity="0.3" rx="1" />
 
           {/* === Side window === */}
-          <rect x="140" y="36" width="32" height="24" rx="4" fill="#e8f4f4" stroke="#008a87" strokeWidth="1.5" />
+          <rect
+            x="140"
+            y="36"
+            width="32"
+            height="24"
+            rx="4"
+            fill="#e8f4f4"
+            stroke="#008a87"
+            strokeWidth="1.5"
+          />
 
           {/* === Red cross === */}
           <rect x="90" y="44" width="8" height="24" rx="1.5" fill="white" />
           <rect x="82" y="52" width="24" height="8" rx="1.5" fill="white" />
 
           {/* === Star of Life accent (small) === */}
-          <text x="94" y="82" fontSize="10" fill="white" fontWeight="bold" textAnchor="middle" opacity="0.6">
+          <text
+            x="94"
+            y="82"
+            fontSize="10"
+            fill="white"
+            fontWeight="bold"
+            textAnchor="middle"
+            opacity="0.6"
+          >
             ✦
           </text>
 
@@ -118,32 +132,67 @@ export function LoadingAmbulance({
 
       {/* Message */}
       {message && (
-        <p className={cn("text-muted-foreground font-medium animate-pulse", text)}>
-          {message}
-        </p>
+        <p className={cn("text-muted-foreground font-medium animate-pulse", text)}>{message}</p>
       )}
 
       {/* Inline keyframe styles — keeps animations self-contained */}
       <style jsx>{`
         @keyframes ambulance-drive {
-          0%, 100% { transform: translateX(-4px); }
-          50% { transform: translateX(4px); }
+          0%,
+          100% {
+            transform: translateX(-4px);
+          }
+          50% {
+            transform: translateX(4px);
+          }
         }
         @keyframes light-red {
-          0%, 49% { fill: #ef4444; opacity: 1; }
-          50%, 100% { fill: #ef4444; opacity: 0.15; }
+          0%,
+          49% {
+            fill: #ef4444;
+            opacity: 1;
+          }
+          50%,
+          100% {
+            fill: #ef4444;
+            opacity: 0.15;
+          }
         }
         @keyframes light-blue {
-          0%, 49% { fill: #3b82f6; opacity: 0.15; }
-          50%, 100% { fill: #3b82f6; opacity: 1; }
+          0%,
+          49% {
+            fill: #3b82f6;
+            opacity: 0.15;
+          }
+          50%,
+          100% {
+            fill: #3b82f6;
+            opacity: 1;
+          }
         }
         @keyframes glow-red {
-          0%, 49% { fill: #ef4444; opacity: 0.25; }
-          50%, 100% { fill: #ef4444; opacity: 0; }
+          0%,
+          49% {
+            fill: #ef4444;
+            opacity: 0.25;
+          }
+          50%,
+          100% {
+            fill: #ef4444;
+            opacity: 0;
+          }
         }
         @keyframes glow-blue {
-          0%, 49% { fill: #3b82f6; opacity: 0; }
-          50%, 100% { fill: #3b82f6; opacity: 0.25; }
+          0%,
+          49% {
+            fill: #3b82f6;
+            opacity: 0;
+          }
+          50%,
+          100% {
+            fill: #3b82f6;
+            opacity: 0.25;
+          }
         }
         .animate-ambulance-drive {
           animation: ambulance-drive 2s ease-in-out infinite;

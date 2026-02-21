@@ -475,7 +475,7 @@ export async function updateAdminUserAction(
 
     const auditChanges = computeChanges(
       { role: user.role, status: user.status },
-      { role: data.role ?? user.role, status: data.status ?? user.status },
+      { role: data.role ?? user.role, status: data.status ?? user.status }
     );
 
     await createAuditLog({

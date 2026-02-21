@@ -8,8 +8,7 @@ function createPrismaClient() {
   const dbUrl = process.env.DATABASE_URL;
   if (!dbUrl) {
     throw new Error(
-      "Missing DATABASE_URL environment variable. " +
-        "Set it in your .env file (see .env.example).",
+      "Missing DATABASE_URL environment variable. " + "Set it in your .env file (see .env.example)."
     );
   }
 

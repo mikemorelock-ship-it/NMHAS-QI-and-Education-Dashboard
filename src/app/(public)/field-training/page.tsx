@@ -15,7 +15,16 @@ import {
   Cell,
 } from "recharts";
 import Link from "next/link";
-import { Filter, AlertTriangle, Users, FileText, TrendingUp, X, GraduationCap, ExternalLink } from "lucide-react";
+import {
+  Filter,
+  AlertTriangle,
+  Users,
+  FileText,
+  TrendingUp,
+  X,
+  GraduationCap,
+  ExternalLink,
+} from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -203,7 +212,11 @@ export default function FieldTrainingDashboardPage() {
         </div>
         <div className="flex items-center gap-3">
           <DateRangeFilter value={dateRange} onChange={setDateRange} />
-          <Button asChild size="lg" className="bg-nmh-teal hover:bg-nmh-teal/90 text-white gap-2 shadow-md">
+          <Button
+            asChild
+            size="lg"
+            className="bg-nmh-teal hover:bg-nmh-teal/90 text-white gap-2 shadow-md"
+          >
             <Link href="/fieldtraining">
               <GraduationCap className="h-5 w-5" aria-hidden="true" />
               Open FTO/Trainee Portal

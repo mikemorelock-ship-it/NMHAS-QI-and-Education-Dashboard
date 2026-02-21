@@ -135,8 +135,11 @@ export function FtoDorListClient({ dors }: Props) {
                     </TableCell>
                     <TableCell>{dor.phaseName || "—"}</TableCell>
                     <TableCell>
-                      <Badge className={RATING_COLORS[dor.overallRating]}>
-                        {dor.overallRating}/7
+                      <Badge className={RATING_COLORS[Math.round(dor.overallRating)]}>
+                        {dor.overallRating % 1 !== 0
+                          ? dor.overallRating.toFixed(1)
+                          : dor.overallRating}
+                        /7
                       </Badge>
                     </TableCell>
                     <TableCell>
@@ -156,13 +159,23 @@ export function FtoDorListClient({ dors }: Props) {
                     </TableCell>
                     <TableCell>
                       {dor.status === "draft" ? (
-                        <Button variant="ghost" size="icon" asChild aria-label={`Edit DOR for ${dor.traineeName} on ${new Date(dor.date).toLocaleDateString()}`}>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          asChild
+                          aria-label={`Edit DOR for ${dor.traineeName} on ${new Date(dor.date).toLocaleDateString()}`}
+                        >
                           <Link href={`/fieldtraining/dors/${dor.id}/edit`}>
                             <Pencil className="h-4 w-4" aria-hidden="true" />
                           </Link>
                         </Button>
                       ) : (
-                        <Button variant="ghost" size="icon" asChild aria-label={`View DOR for ${dor.traineeName} on ${new Date(dor.date).toLocaleDateString()}`}>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          asChild
+                          aria-label={`View DOR for ${dor.traineeName} on ${new Date(dor.date).toLocaleDateString()}`}
+                        >
                           <Link href={`/fieldtraining/dors/${dor.id}`}>
                             <Eye className="h-4 w-4" aria-hidden="true" />
                           </Link>

@@ -388,7 +388,7 @@ function DorDetailView({ dor }: { dor: DorRow }) {
           <div className="flex items-center gap-2">
             <RatingBadge rating={dor.overallRating} />
             <span className="text-sm text-muted-foreground">
-              {RATING_LABELS[dor.overallRating]}
+              {RATING_LABELS[Math.round(dor.overallRating)]}
             </span>
           </div>
         </div>

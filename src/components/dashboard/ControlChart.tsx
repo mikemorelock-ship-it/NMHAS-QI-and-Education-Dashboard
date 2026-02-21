@@ -169,114 +169,114 @@ export function ControlChart({
     <div className={className}>
       {/* Individuals Chart */}
       <div aria-hidden="true">
-      <ResponsiveContainer width="100%" height={350}>
-        <ComposedChart data={spcData.points} margin={{ top: 10, right: 30, left: 10, bottom: 5 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-          <XAxis dataKey="period" tick={{ fontSize: 11 }} tickLine={false} />
-          <YAxis
-            domain={[Math.floor(yMin - yPadding), Math.ceil(yMax + yPadding)]}
-            tick={{ fontSize: 11 }}
-            tickLine={false}
-            tickFormatter={(v: number) => formatMetricValue(v, unit, rateMultiplier, rateSuffix)}
-          />
-          <Tooltip
-            content={
-              <ControlChartTooltip
-                unit={unit}
-                rateMultiplier={rateMultiplier}
-                rateSuffix={rateSuffix}
-              />
-            }
-          />
-          <Legend verticalAlign="top" height={36} iconType="plainline" />
-
-          {/* UCL line (dashed, orange) */}
-          <Line
-            type="monotone"
-            dataKey="ucl"
-            name="UCL"
-            stroke={NMH_COLORS.orange}
-            strokeDasharray="6 3"
-            strokeWidth={1.5}
-            dot={false}
-            activeDot={false}
-            legendType="plainline"
-          />
-
-          {/* LCL line (dashed, orange) */}
-          <Line
-            type="monotone"
-            dataKey="lcl"
-            name="LCL"
-            stroke={NMH_COLORS.orange}
-            strokeDasharray="6 3"
-            strokeWidth={1.5}
-            dot={false}
-            activeDot={false}
-            legendType="plainline"
-          />
-
-          {/* Center line */}
-          <ReferenceLine
-            y={spcData.centerLine}
-            stroke={NMH_COLORS.teal}
-            strokeDasharray="4 4"
-            strokeWidth={1.5}
-            label={{
-              value: `CL: ${formatMetricValue(spcData.centerLine, unit, rateMultiplier, rateSuffix)}`,
-              position: "insideTopRight",
-              fill: NMH_COLORS.teal,
-              fontSize: 11,
-            }}
-          />
-
-          {/* Target line (if set) */}
-          {target != null && (
-            <ReferenceLine
-              y={target}
-              stroke={NMH_COLORS.yellow}
-              strokeDasharray="8 4"
-              strokeWidth={1}
-              label={{
-                value: `Target: ${formatMetricValue(target, unit, rateMultiplier, rateSuffix)}`,
-                position: "insideBottomRight",
-                fill: NMH_COLORS.yellow,
-                fontSize: 10,
-              }}
+        <ResponsiveContainer width="100%" height={350}>
+          <ComposedChart data={spcData.points} margin={{ top: 10, right: 30, left: 10, bottom: 5 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+            <XAxis dataKey="period" tick={{ fontSize: 11 }} tickLine={false} />
+            <YAxis
+              domain={[Math.floor(yMin - yPadding), Math.ceil(yMax + yPadding)]}
+              tick={{ fontSize: 11 }}
+              tickLine={false}
+              tickFormatter={(v: number) => formatMetricValue(v, unit, rateMultiplier, rateSuffix)}
             />
-          )}
+            <Tooltip
+              content={
+                <ControlChartTooltip
+                  unit={unit}
+                  rateMultiplier={rateMultiplier}
+                  rateSuffix={rateSuffix}
+                />
+              }
+            />
+            <Legend verticalAlign="top" height={36} iconType="plainline" />
 
-          {/* QI Annotation vertical lines */}
-          {annotations?.map((ann) => (
+            {/* UCL line (dashed, orange) */}
+            <Line
+              type="monotone"
+              dataKey="ucl"
+              name="UCL"
+              stroke={NMH_COLORS.orange}
+              strokeDasharray="6 3"
+              strokeWidth={1.5}
+              dot={false}
+              activeDot={false}
+              legendType="plainline"
+            />
+
+            {/* LCL line (dashed, orange) */}
+            <Line
+              type="monotone"
+              dataKey="lcl"
+              name="LCL"
+              stroke={NMH_COLORS.orange}
+              strokeDasharray="6 3"
+              strokeWidth={1.5}
+              dot={false}
+              activeDot={false}
+              legendType="plainline"
+            />
+
+            {/* Center line */}
             <ReferenceLine
-              key={ann.id}
-              x={ann.period}
-              stroke={ann.type === "pdsa" ? "#7c3aed" : NMH_COLORS.teal}
-              strokeDasharray="4 3"
+              y={spcData.centerLine}
+              stroke={NMH_COLORS.teal}
+              strokeDasharray="4 4"
               strokeWidth={1.5}
               label={{
-                value: ann.label,
-                position: "insideTopLeft",
-                fill: ann.type === "pdsa" ? "#7c3aed" : NMH_COLORS.teal,
-                fontSize: 10,
-                angle: -90,
-                offset: 10,
+                value: `CL: ${formatMetricValue(spcData.centerLine, unit, rateMultiplier, rateSuffix)}`,
+                position: "insideTopRight",
+                fill: NMH_COLORS.teal,
+                fontSize: 11,
               }}
             />
-          ))}
 
-          {/* Data line */}
-          <Line
-            type="monotone"
-            dataKey="value"
-            name="Value"
-            stroke={NMH_COLORS.teal}
-            strokeWidth={2}
-            dot={CustomDot}
-            activeDot={{ r: 6, stroke: NMH_COLORS.darkTeal, strokeWidth: 2 }}
-          />
-        </ComposedChart>
-      </ResponsiveContainer>
+            {/* Target line (if set) */}
+            {target != null && (
+              <ReferenceLine
+                y={target}
+                stroke={NMH_COLORS.yellow}
+                strokeDasharray="8 4"
+                strokeWidth={1}
+                label={{
+                  value: `Target: ${formatMetricValue(target, unit, rateMultiplier, rateSuffix)}`,
+                  position: "insideBottomRight",
+                  fill: NMH_COLORS.yellow,
+                  fontSize: 10,
+                }}
+              />
+            )}
+
+            {/* QI Annotation vertical lines */}
+            {annotations?.map((ann) => (
+              <ReferenceLine
+                key={ann.id}
+                x={ann.period}
+                stroke={ann.type === "pdsa" ? "#7c3aed" : NMH_COLORS.teal}
+                strokeDasharray="4 3"
+                strokeWidth={1.5}
+                label={{
+                  value: ann.label,
+                  position: "insideTopLeft",
+                  fill: ann.type === "pdsa" ? "#7c3aed" : NMH_COLORS.teal,
+                  fontSize: 10,
+                  angle: -90,
+                  offset: 10,
+                }}
+              />
+            ))}
+
+            {/* Data line */}
+            <Line
+              type="monotone"
+              dataKey="value"
+              name="Value"
+              stroke={NMH_COLORS.teal}
+              strokeWidth={2}
+              dot={CustomDot}
+              activeDot={{ r: 6, stroke: NMH_COLORS.darkTeal, strokeWidth: 2 }}
+            />
+          </ComposedChart>
+        </ResponsiveContainer>
       </div>
 
       {/* Moving Range Chart (for I-MR) */}
@@ -343,7 +343,8 @@ export function ControlChart({
       )}
 
       <span className="sr-only">
-        Control chart summary: {spcData.chartType.toUpperCase()} chart with {spcData.points.length} data points and {specialCauseCount} special cause{specialCauseCount !== 1 ? "s" : ""}.
+        Control chart summary: {spcData.chartType.toUpperCase()} chart with {spcData.points.length}{" "}
+        data points and {specialCauseCount} special cause{specialCauseCount !== 1 ? "s" : ""}.
       </span>
       {/* SPC summary */}
       <div className="flex flex-wrap gap-4 mt-3 px-2 text-xs text-muted-foreground">

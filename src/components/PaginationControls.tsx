@@ -93,7 +93,13 @@ export function PaginationControls({
             </Link>
           </Button>
         ) : (
-          <Button variant="outline" size="icon" className="h-8 w-8" disabled aria-label="First page">
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-8 w-8"
+            disabled
+            aria-label="First page"
+          >
             <ChevronsLeft className="h-4 w-4" aria-hidden="true" />
           </Button>
         )}
@@ -106,7 +112,13 @@ export function PaginationControls({
             </Link>
           </Button>
         ) : (
-          <Button variant="outline" size="icon" className="h-8 w-8" disabled aria-label="Previous page">
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-8 w-8"
+            disabled
+            aria-label="Previous page"
+          >
             <ChevronLeft className="h-4 w-4" aria-hidden="true" />
           </Button>
         )}

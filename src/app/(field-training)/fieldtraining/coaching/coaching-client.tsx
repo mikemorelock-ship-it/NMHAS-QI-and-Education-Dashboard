@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
+import Markdown from "react-markdown";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -18,6 +19,7 @@ import {
   Play,
   ChevronDown,
   ChevronUp,
+  Sparkles,
 } from "lucide-react";
 import { startCoachingActivity, completeCoachingActivity } from "@/actions/coaching";
 
@@ -44,6 +46,7 @@ interface CoachingAssignment {
     estimatedMins: number;
     categoryName: string;
     categorySlug: string;
+    generationStatus: string;
   };
   dor: { id: string; date: string; overallRating: number } | null;
 }
@@ -87,7 +90,7 @@ export function CoachingDashboardClient({ activities }: CoachingDashboardClientP
   const activeItems = [...inProgress, ...assigned];
 
   return (
-    <div className="space-y-6 max-w-3xl mx-auto">
+    <div className="space-y-6 max-w-5xl mx-auto">
       {/* Header */}
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" asChild aria-label="Go back">
@@ -188,7 +191,6 @@ function ActivityCard({ assignment }: { assignment: CoachingAssignment }) {
   const { activity, status } = assignment;
   const Icon = TYPE_ICONS[activity.type] || BookOpen;
   const isCompleted = status === "completed";
-  const isScenarioOrQuiz = activity.type === "scenario" || activity.type === "quiz";
 
   function handleStart() {
     setError(null);
@@ -232,6 +234,15 @@ function ActivityCard({ assignment }: { assignment: CoachingAssignment }) {
                 <span className="text-xs text-muted-foreground flex items-center gap-1">
                   <Clock className="h-3 w-3" />~{activity.estimatedMins} min
                 </span>
+                {activity.generationStatus !== "manual" && (
+                  <Badge
+                    variant="outline"
+                    className="text-xs bg-purple-50 text-purple-700 border-purple-200"
+                  >
+                    <Sparkles className="h-2.5 w-2.5 mr-1" />
+                    AI-Assisted
+                  </Badge>
+                )}
               </div>
               {activity.description && (
                 <CardDescription className="mt-1.5 text-xs">{activity.description}</CardDescription>
@@ -274,21 +285,30 @@ function ActivityCard({ assignment }: { assignment: CoachingAssignment }) {
           )}
 
           {/* Content area */}
-          {isScenarioOrQuiz ? (
-            <Card className="border-dashed border-2 border-muted-foreground/20">
-              <CardContent className="pt-6 text-center py-8">
-                <Gamepad2 className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-                <p className="font-medium text-muted-foreground">Interactive Content Coming Soon</p>
-                <p className="text-xs text-muted-foreground mt-1 max-w-sm mx-auto">
-                  This {activity.type} will feature AI-generated interactive scenarios based on EMS
-                  protocols and policies. Check back later!
-                </p>
-              </CardContent>
-            </Card>
+          {activity.type === "quiz" && activity.content ? (
+            <QuizContent
+              content={activity.content}
+              isCompleted={isCompleted}
+              onScore={(score) => {
+                // Store score when completing quiz
+                if (!isCompleted) {
+                  startTransition(async () => {
+                    const result = await completeCoachingActivity(assignment.id, undefined, score);
+                    if (!result.success) setError(result.error || "Failed to complete.");
+                  });
+                }
+              }}
+            />
+          ) : activity.type === "scenario" && activity.content ? (
+            <div className="prose prose-sm max-w-none">
+              <div className="rounded-lg bg-muted/50 p-4 text-sm leading-relaxed">
+                <Markdown>{activity.content}</Markdown>
+              </div>
+            </div>
           ) : activity.content ? (
             <div className="prose prose-sm max-w-none">
-              <div className="rounded-lg bg-muted/50 p-4 text-sm whitespace-pre-wrap leading-relaxed">
-                {activity.content}
+              <div className="rounded-lg bg-muted/50 p-4 text-sm leading-relaxed">
+                <Markdown>{activity.content}</Markdown>
               </div>
             </div>
           ) : (
@@ -329,7 +349,7 @@ function ActivityCard({ assignment }: { assignment: CoachingAssignment }) {
                   {isPending ? "Starting..." : "Start Activity"}
                 </Button>
               )}
-              {status === "in_progress" && !isScenarioOrQuiz && (
+              {status === "in_progress" && activity.type !== "quiz" && (
                 <Button
                   size="sm"
                   onClick={handleComplete}
@@ -352,10 +372,148 @@ function ActivityCard({ assignment }: { assignment: CoachingAssignment }) {
                 day: "numeric",
                 year: "numeric",
               })}
+              {assignment.score !== null && ` — Score: ${assignment.score}%`}
             </p>
           )}
         </CardContent>
       )}
     </Card>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Quiz Content Component
+// ---------------------------------------------------------------------------
+
+interface QuizQuestion {
+  question: string;
+  options: string[];
+  correctIndex: number;
+  explanation: string;
+}
+
+function QuizContent({
+  content,
+  isCompleted,
+  onScore,
+}: {
+  content: string;
+  isCompleted: boolean;
+  onScore: (score: number) => void;
+}) {
+  const [answers, setAnswers] = useState<Record<number, number>>({});
+  const [submitted, setSubmitted] = useState(isCompleted);
+
+  // Try to parse quiz JSON — content might be JSON string or raw JSON
+  let questions: QuizQuestion[] = [];
+  try {
+    const parsed = JSON.parse(content);
+    questions = parsed.questions || parsed;
+  } catch {
+    // If parsing fails, show as markdown
+    return (
+      <div className="prose prose-sm max-w-none">
+        <div className="rounded-lg bg-muted/50 p-4 text-sm leading-relaxed">
+          <Markdown>{content}</Markdown>
+        </div>
+      </div>
+    );
+  }
+
+  if (!Array.isArray(questions) || questions.length === 0) {
+    return (
+      <div className="prose prose-sm max-w-none">
+        <div className="rounded-lg bg-muted/50 p-4 text-sm leading-relaxed">
+          <Markdown>{content}</Markdown>
+        </div>
+      </div>
+    );
+  }
+
+  const allAnswered = Object.keys(answers).length === questions.length;
+
+  const handleSubmit = () => {
+    if (!allAnswered) return;
+    setSubmitted(true);
+    const correct = questions.filter((q, i) => answers[i] === q.correctIndex).length;
+    const score = Math.round((correct / questions.length) * 100);
+    onScore(score);
+  };
+
+  const correctCount = submitted
+    ? questions.filter((q, i) => answers[i] === q.correctIndex).length
+    : 0;
+
+  return (
+    <div className="space-y-4">
+      {submitted && (
+        <div
+          className={`rounded-lg p-3 text-sm font-medium ${
+            correctCount === questions.length
+              ? "bg-green-50 text-green-800"
+              : correctCount >= questions.length * 0.7
+                ? "bg-yellow-50 text-yellow-800"
+                : "bg-red-50 text-red-800"
+          }`}
+        >
+          Score: {correctCount}/{questions.length} (
+          {Math.round((correctCount / questions.length) * 100)}%)
+        </div>
+      )}
+
+      {questions.map((q, qi) => (
+        <div key={qi} className="rounded-lg border p-4 space-y-2">
+          <p className="font-medium text-sm">
+            {qi + 1}. {q.question}
+          </p>
+          <div className="space-y-1.5">
+            {q.options.map((opt, oi) => {
+              const isSelected = answers[qi] === oi;
+              const isCorrect = submitted && oi === q.correctIndex;
+              const isWrong = submitted && isSelected && oi !== q.correctIndex;
+
+              return (
+                <button
+                  key={oi}
+                  onClick={() => {
+                    if (submitted) return;
+                    setAnswers((prev) => ({ ...prev, [qi]: oi }));
+                  }}
+                  disabled={submitted}
+                  className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
+                    isCorrect
+                      ? "bg-green-100 border border-green-300 text-green-900"
+                      : isWrong
+                        ? "bg-red-100 border border-red-300 text-red-900"
+                        : isSelected
+                          ? "bg-nmh-teal/10 border border-nmh-teal text-nmh-teal"
+                          : "bg-muted/50 hover:bg-muted border border-transparent"
+                  }`}
+                >
+                  {opt}
+                </button>
+              );
+            })}
+          </div>
+          {submitted && q.explanation && (
+            <p className="text-xs text-muted-foreground bg-muted/50 p-2 rounded mt-2">
+              {q.explanation}
+            </p>
+          )}
+        </div>
+      ))}
+
+      {!submitted && !isCompleted && (
+        <Button
+          size="sm"
+          onClick={handleSubmit}
+          disabled={!allAnswered}
+          className="bg-green-600 hover:bg-green-700"
+        >
+          <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
+          Submit Quiz ({Object.keys(answers).length}/{questions.length} answered)
+        </Button>
+      )}
+    </div>
   );
 }

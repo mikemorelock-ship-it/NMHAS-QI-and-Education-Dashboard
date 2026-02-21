@@ -121,8 +121,11 @@ export function TraineeDorListClient({ dors }: Props) {
                     <TableCell>{dor.ftoName}</TableCell>
                     <TableCell>{dor.phaseName || "—"}</TableCell>
                     <TableCell>
-                      <Badge className={RATING_COLORS[dor.overallRating]}>
-                        {dor.overallRating}/7
+                      <Badge className={RATING_COLORS[Math.round(dor.overallRating)]}>
+                        {dor.overallRating % 1 !== 0
+                          ? dor.overallRating.toFixed(1)
+                          : dor.overallRating}
+                        /7
                       </Badge>
                     </TableCell>
                     <TableCell>

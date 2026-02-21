@@ -172,7 +172,9 @@ export function ActionItemsClient({ actionItems, campaigns, cycles, users }: Pro
       <div aria-live="polite">
         {error && (
           <Card className="border-destructive">
-            <CardContent className="py-3 text-sm text-destructive" role="alert">{error}</CardContent>
+            <CardContent className="py-3 text-sm text-destructive" role="alert">
+              {error}
+            </CardContent>
           </Card>
         )}
       </div>
@@ -253,7 +255,11 @@ export function ActionItemsClient({ actionItems, campaigns, cycles, users }: Pro
                         <button
                           onClick={() => handleToggle(a)}
                           className="hover:scale-110 transition-transform"
-                          aria-label={a.status === "completed" ? `Mark "${a.title}" as open` : `Mark "${a.title}" as completed`}
+                          aria-label={
+                            a.status === "completed"
+                              ? `Mark "${a.title}" as open`
+                              : `Mark "${a.title}" as completed`
+                          }
                         >
                           <CheckCircle2
                             className={`h-5 w-5 ${a.status === "completed" ? "text-green-600" : "text-muted-foreground/30"}`}
@@ -313,7 +319,12 @@ export function ActionItemsClient({ actionItems, campaigns, cycles, users }: Pro
                           >
                             <Pencil className="h-4 w-4" aria-hidden="true" />
                           </Button>
-                          <Button variant="ghost" size="icon" onClick={() => setDeleteTarget(a)} aria-label={`Delete "${a.title}"`}>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setDeleteTarget(a)}
+                            aria-label={`Delete "${a.title}"`}
+                          >
                             <Trash2 className="h-4 w-4 text-destructive" aria-hidden="true" />
                           </Button>
                         </div>

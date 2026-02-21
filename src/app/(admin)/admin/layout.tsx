@@ -50,7 +50,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         userName={`${session.firstName} ${session.lastName}`}
         pendingApprovals={pendingCount}
       />
-      <main id="main-content" className="flex-1 p-6 lg:p-8 bg-muted/30 overflow-auto">{children}</main>
+      <main id="main-content" className="flex-1 p-6 lg:p-8 bg-muted/30 overflow-auto">
+        {children}
+      </main>
       <SessionTimeoutWarning
         expiresAt={expiresAt}
         loginPath="/login"
