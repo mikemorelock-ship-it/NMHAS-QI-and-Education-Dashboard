@@ -147,6 +147,7 @@ function KpiSkeleton() {
 export default function FieldTrainingDashboardPage() {
   const [data, setData] = useState<FieldTrainingDashboardData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [dateRange, setDateRange] = useState<string>("ytd");
   const [divisionId, setDivisionId] = useState<string>("");
   const [ftoId, setFtoId] = useState<string>("");
@@ -159,6 +160,7 @@ export default function FieldTrainingDashboardPage() {
 
   const fetchData = useCallback(async () => {
     setLoading(true);
+    setError(null);
     try {
       const params = new URLSearchParams({ range: dateRange });
       if (divisionId) params.set("divisionId", divisionId);
@@ -166,10 +168,11 @@ export default function FieldTrainingDashboardPage() {
       if (traineeId) params.set("traineeId", traineeId);
       if (phaseId) params.set("phaseId", phaseId);
       const res = await fetch(`/api/dashboard/field-training?${params.toString()}`);
-      if (!res.ok) throw new Error("Failed to fetch");
+      if (!res.ok) throw new Error(`Server returned ${res.status}`);
       setData(await res.json());
     } catch (err) {
       console.error("Failed to fetch field training data:", err);
+      setError("Unable to load dashboard data. Please try refreshing the page.");
     } finally {
       setLoading(false);
     }
@@ -341,8 +344,20 @@ export default function FieldTrainingDashboardPage() {
         )}
       </div>
 
-      {/* 3. Skeleton / Loading State */}
+      {/* 3. Skeleton / Loading / Error State */}
       {loading && !data && <KpiSkeleton />}
+
+      {error && !loading && (
+        <Card>
+          <CardContent className="py-12 text-center">
+            <AlertTriangle className="h-10 w-10 text-nmh-orange mx-auto mb-3" />
+            <p className="text-muted-foreground mb-4">{error}</p>
+            <Button variant="outline" onClick={fetchData}>
+              Retry
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Content: KPIs + Charts + Table */}
       {data && (
