@@ -21,13 +21,11 @@ import {
   ClipboardCheck,
   BookOpen,
   ArrowRight,
-  AlertTriangle,
   Plus,
   FileText,
   ExternalLink,
   GraduationCap,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { RatingBadge } from "@/components/field-training/RatingBadge";
 
 export const dynamic = "force-dynamic";

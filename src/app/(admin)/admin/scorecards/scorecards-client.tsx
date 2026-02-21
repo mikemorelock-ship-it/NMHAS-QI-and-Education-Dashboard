@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useMemo, useCallback } from "react";
+import { useState, useTransition, useMemo } from "react";
 import {
   createScorecard,
   updateScorecard,
@@ -366,19 +366,6 @@ export function ScorecardsClient({
     startTransition(async () => {
       await toggleScorecardActive(sc.id, !sc.isActive);
     });
-  }
-
-  // --- Display helpers ---
-  function getDivisionDisplay(sc: ScorecardRow): string {
-    if (sc.divisionNames.length === 0) return "All";
-    if (sc.divisionNames.length === 1) return sc.divisionNames[0];
-    return `${sc.divisionNames.length} divisions`;
-  }
-
-  function getRegionDisplay(sc: ScorecardRow): string {
-    if (sc.regionNames.length === 0) return "All";
-    if (sc.regionNames.length === 1) return sc.regionNames[0];
-    return `${sc.regionNames.length} depts`;
   }
 
   // --- Build form data for submission ---

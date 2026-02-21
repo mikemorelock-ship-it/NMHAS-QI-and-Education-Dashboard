@@ -3,13 +3,12 @@
 import React, { useState, useTransition } from "react";
 import Link from "next/link";
 import { createDriverNode, updateDriverNode, deleteDriverNode } from "@/actions/driver-diagrams";
-import { DRIVER_NODE_TYPE_LABELS, DRIVER_NODE_TYPE_COLORS } from "@/lib/constants";
+import { DRIVER_NODE_TYPE_LABELS } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Separator } from "@/components/ui/separator";
 import {
   Dialog,
   DialogContent,

@@ -48,14 +48,7 @@ import { OrgHierarchy } from "@/components/dashboard/OrgHierarchy";
 import { ControlChart } from "@/components/dashboard/ControlChart";
 import { formatMetricValue, toUTCDate, cn } from "@/lib/utils";
 import { NMH_COLORS, CHART_COLORS } from "@/lib/constants";
-import type {
-  MetricDetailData,
-  ChartDataPoint,
-  MetricAnnotation,
-  QIAnnotation,
-  DivisionMetricBreakdown,
-  ChildMetricSummary,
-} from "@/types";
+import type { MetricDetailData, ChartDataPoint, QIAnnotation, ChildMetricSummary } from "@/types";
 
 // ---------------------------------------------------------------------------
 // Props
@@ -239,14 +232,6 @@ export function MetricDetailClient({
 
   const rateMultiplier = data.rateMultiplier;
   const rateSuffix = data.rateSuffix;
-
-  // Match annotation dates to chart data periods for ReferenceLine placement
-  const annotationMarkers = useMemo(() => {
-    return data.annotations.map((a) => ({
-      ...a,
-      period: format(toUTCDate(parseISO(a.date)), "MMM yyyy"),
-    }));
-  }, [data.annotations]);
 
   // Unified QI annotations for chart overlays (includes manual annotations + PDSA cycles)
   const qiAnnotations: QIAnnotation[] = useMemo(() => {

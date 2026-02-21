@@ -87,6 +87,27 @@ function ratingColor(rating: number | null): string {
 }
 
 // ---------------------------------------------------------------------------
+// SortIcon (extracted to avoid re-creation on every render)
+// ---------------------------------------------------------------------------
+
+function SortIcon({
+  field,
+  sortField,
+  sortDir,
+}: {
+  field: SortField;
+  sortField: SortField;
+  sortDir: SortDir;
+}) {
+  if (sortField !== field) return <ArrowUpDown className="h-3 w-3 ml-1 opacity-40" />;
+  return sortDir === "asc" ? (
+    <ArrowUp className="h-3 w-3 ml-1" />
+  ) : (
+    <ArrowDown className="h-3 w-3 ml-1" />
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 
@@ -175,15 +196,6 @@ export function SnapshotsClient({
       setSortField(field);
       setSortDir("asc");
     }
-  }
-
-  function SortIcon({ field }: { field: SortField }) {
-    if (sortField !== field) return <ArrowUpDown className="h-3 w-3 ml-1 opacity-40" />;
-    return sortDir === "asc" ? (
-      <ArrowUp className="h-3 w-3 ml-1" />
-    ) : (
-      <ArrowDown className="h-3 w-3 ml-1" />
-    );
   }
 
   function toggleSelect(id: string) {
@@ -377,7 +389,7 @@ export function SnapshotsClient({
                     onClick={() => handleSort("name")}
                   >
                     Name
-                    <SortIcon field="name" />
+                    <SortIcon field="name" sortField={sortField} sortDir={sortDir} />
                   </button>
                 </TableHead>
                 <TableHead>
@@ -386,7 +398,7 @@ export function SnapshotsClient({
                     onClick={() => handleSort("division")}
                   >
                     Division
-                    <SortIcon field="division" />
+                    <SortIcon field="division" sortField={sortField} sortDir={sortDir} />
                   </button>
                 </TableHead>
                 <TableHead>
@@ -395,7 +407,7 @@ export function SnapshotsClient({
                     onClick={() => handleSort("phase")}
                   >
                     Phase
-                    <SortIcon field="phase" />
+                    <SortIcon field="phase" sortField={sortField} sortDir={sortDir} />
                   </button>
                 </TableHead>
                 <TableHead className="text-center">
@@ -404,7 +416,7 @@ export function SnapshotsClient({
                     onClick={() => handleSort("dorCount")}
                   >
                     DORs
-                    <SortIcon field="dorCount" />
+                    <SortIcon field="dorCount" sortField={sortField} sortDir={sortDir} />
                   </button>
                 </TableHead>
                 <TableHead className="text-center">
@@ -413,7 +425,7 @@ export function SnapshotsClient({
                     onClick={() => handleSort("avgRating")}
                   >
                     Avg Rating
-                    <SortIcon field="avgRating" />
+                    <SortIcon field="avgRating" sortField={sortField} sortDir={sortDir} />
                   </button>
                 </TableHead>
               </TableRow>

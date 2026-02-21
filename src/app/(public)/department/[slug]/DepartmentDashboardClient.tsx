@@ -27,7 +27,7 @@ export function DepartmentDashboardClient({
       {/* KPI cards */}
       <section>
         <h2 className="text-lg font-semibold mb-4">Key Performance Indicators</h2>
-        <KpiGrid kpis={kpis} departmentSlug={departmentSlug} />
+        <KpiGrid kpis={kpis} />
       </section>
 
       {/* Metric charts */}

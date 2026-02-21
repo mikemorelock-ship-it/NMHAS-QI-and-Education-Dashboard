@@ -45,13 +45,7 @@ interface QuickCaptureProps {
 // Component
 // ---------------------------------------------------------------------------
 
-export function QuickCapture({
-  campaigns,
-  diagrams,
-  users,
-  metrics,
-  changeIdeas,
-}: QuickCaptureProps) {
+export function QuickCapture({ campaigns, diagrams, users, metrics }: QuickCaptureProps) {
   const [creating, setCreating] = useState<CreateType>(null);
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);

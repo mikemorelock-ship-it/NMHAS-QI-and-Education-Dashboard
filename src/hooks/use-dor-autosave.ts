@@ -93,11 +93,14 @@ export function useDorAutosave(opts: UseDorAutosaveOptions): UseDorAutosaveRetur
   // ---- Restore on mount ----
   useEffect(() => {
     if (!storageKey) return;
-    const existing = readFromStorage(storageKey);
-    if (existing) {
-      setRestoredDraft(existing);
-      setLastSavedAt(existing.savedAt ?? null);
-    }
+    const timeout = setTimeout(() => {
+      const existing = readFromStorage(storageKey);
+      if (existing) {
+        setRestoredDraft(existing);
+        setLastSavedAt(existing.savedAt ?? null);
+      }
+    }, 0);
+    return () => clearTimeout(timeout);
   }, [storageKey]);
 
   // ---- Flush pending write on unmount ----
@@ -113,7 +116,6 @@ export function useDorAutosave(opts: UseDorAutosaveOptions): UseDorAutosaveRetur
         pendingDataRef.current = null;
       }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [storageKey]);
 
   // ---- Debounced save ----

@@ -27,7 +27,6 @@ export function PaginationControls({
   pagination,
   basePath,
   searchParams = {},
-  showPageSize = false,
 }: PaginationControlsProps) {
   const { page, pageSize, totalItems, totalPages, hasNextPage, hasPreviousPage } = pagination;
 

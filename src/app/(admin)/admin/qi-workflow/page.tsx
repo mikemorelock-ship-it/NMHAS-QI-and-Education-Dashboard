@@ -96,7 +96,7 @@ export default async function QiWorkflowPage() {
   }
 
   // Fetch all QI entities in parallel
-  const [campaigns, diagrams, pdsaCycles, actionItems, users, metrics, changeIdeas, departments] =
+  const [campaigns, diagrams, pdsaCycles, , users, metrics, changeIdeas, departments] =
     await Promise.all([
       prisma.campaign.findMany({
         orderBy: [{ sortOrder: "asc" }, { name: "asc" }],

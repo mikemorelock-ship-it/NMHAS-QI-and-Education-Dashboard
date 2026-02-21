@@ -41,7 +41,6 @@ import {
   UserPlus,
   Check,
   X,
-  Pencil,
   Trash2,
   UserX,
   UserCheck,
@@ -75,7 +74,6 @@ export function UsersClient({ users, currentUserId }: UsersClientProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState<string>("all");
   const [createOpen, setCreateOpen] = useState(false);
-  const [editTarget, setEditTarget] = useState<UserRow | null>(null);
   const [approveTarget, setApproveTarget] = useState<UserRow | null>(null);
   const [approveRole, setApproveRole] = useState<AdminRole>("data_entry");
   const [passwordTarget, setPasswordTarget] = useState<UserRow | null>(null);

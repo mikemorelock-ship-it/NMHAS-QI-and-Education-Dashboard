@@ -134,13 +134,6 @@ export function CampaignGanttChart({ campaigns, linkPrefix }: Props) {
     });
   }, [columns, timelineEnd, totalDays]);
 
-  // Total minimum width so columns aren't too narrow
-  const totalMinWidth = columns.reduce((sum, _, i) => {
-    const pctWidth = columnPcts[i];
-    // Ensure each column is at least colWidth pixels
-    return sum + Math.max(colWidth, (pctWidth / 100) * columns.length * colWidth);
-  }, 0);
-
   const getBarStyle = (start: string | null, end: string | null) => {
     if (!start) return null;
     const startDate = new Date(start);

@@ -1,13 +1,12 @@
 "use client";
 
-import { useState, useTransition, useEffect, useCallback } from "react";
+import { useState, useTransition, useCallback } from "react";
 import Link from "next/link";
 import {
   CheckCircle2,
   ChevronRight,
   Plus,
   Trash2,
-  Pencil,
   Rocket,
   ArrowRight,
   ArrowLeft,
@@ -39,7 +38,7 @@ import {
   type WizardStepIndex,
 } from "@/lib/qi-coaching-content";
 import { DRIVER_NODE_TYPE_LABELS, DRIVER_NODE_TYPE_COLORS } from "@/lib/constants";
-import { createCampaign, updateCampaign } from "@/actions/campaigns";
+import { createCampaign } from "@/actions/campaigns";
 import { createDriverDiagram, createDriverNode, deleteDriverNode } from "@/actions/driver-diagrams";
 import { createPdsaCycle } from "@/actions/pdsa-cycles";
 import { createMetricDefinition } from "@/actions/metrics";
@@ -203,14 +202,12 @@ function TutorialHintBubble({
   wizard,
   step,
   showHints,
-  setShowHints,
   dismissedHints,
   onDismiss,
 }: {
   wizard: WizardState;
   step: number;
   showHints: boolean;
-  setShowHints: (v: boolean) => void;
   dismissedHints: Set<string>;
   onDismiss: (id: string) => void;
 }) {
@@ -320,7 +317,6 @@ export function GuidedWizard({ users, metrics: initialMetrics, departments }: Gu
   // Node dialog state
   const [addNodeType, setAddNodeType] = useState<string | null>(null);
   const [addNodeParentId, setAddNodeParentId] = useState<string | null>(null);
-  const [editingNode, setEditingNode] = useState<NodeRow | null>(null);
 
   // PDSA creation state
   const [pdsaForChangeIdea, setPdsaForChangeIdea] = useState<NodeRow | null>(null);
@@ -336,11 +332,6 @@ export function GuidedWizard({ users, metrics: initialMetrics, departments }: Gu
       return next;
     });
   }, []);
-
-  // Reset dismissed hints when step changes so contextual hints reappear
-  useEffect(() => {
-    setDismissedHints(new Set());
-  }, [step]);
 
   const canGoNext = () => {
     switch (step) {
@@ -369,11 +360,17 @@ export function GuidedWizard({ users, metrics: initialMetrics, departments }: Gu
   const stepGateMessage = getStepGateMessage(wizard, step);
 
   const goNext = () => {
-    if (step < 4) setStep((step + 1) as WizardStepIndex);
+    if (step < 4) {
+      setStep((step + 1) as WizardStepIndex);
+      setDismissedHints(new Set());
+    }
   };
 
   const goBack = () => {
-    if (step > 0) setStep((step - 1) as WizardStepIndex);
+    if (step > 0) {
+      setStep((step - 1) as WizardStepIndex);
+      setDismissedHints(new Set());
+    }
   };
 
   return (
@@ -421,7 +418,6 @@ export function GuidedWizard({ users, metrics: initialMetrics, departments }: Gu
             wizard={wizard}
             step={step}
             showHints={showHints}
-            setShowHints={setShowHints}
             dismissedHints={dismissedHints}
             onDismiss={dismissHint}
           />
@@ -458,8 +454,6 @@ export function GuidedWizard({ users, metrics: initialMetrics, departments }: Gu
               setAddNodeType={setAddNodeType}
               addNodeParentId={addNodeParentId}
               setAddNodeParentId={setAddNodeParentId}
-              editingNode={editingNode}
-              setEditingNode={setEditingNode}
             />
           )}
 
@@ -946,8 +940,6 @@ function Step3Diagram({
   setAddNodeType,
   addNodeParentId,
   setAddNodeParentId,
-  editingNode,
-  setEditingNode,
 }: {
   wizard: WizardState;
   setWizard: React.Dispatch<React.SetStateAction<WizardState>>;
@@ -958,8 +950,6 @@ function Step3Diagram({
   setAddNodeType: (t: string | null) => void;
   addNodeParentId: string | null;
   setAddNodeParentId: (id: string | null) => void;
-  editingNode: NodeRow | null;
-  setEditingNode: (n: NodeRow | null) => void;
 }) {
   const displayNodes = buildDisplayOrder(wizard.nodes);
 

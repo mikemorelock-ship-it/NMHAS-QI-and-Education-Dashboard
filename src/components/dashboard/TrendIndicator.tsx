@@ -2,7 +2,6 @@
 
 import { TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { NMH_COLORS } from "@/lib/constants";
 
 interface TrendIndicatorProps {
   value: number;

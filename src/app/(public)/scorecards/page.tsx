@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
-import { X, Filter, Check, ChevronsUpDown } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { X, Filter, ChevronsUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
