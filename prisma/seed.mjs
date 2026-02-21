@@ -1208,6 +1208,8 @@ async function main() {
           name: m.name,
           slug: slugify(m.name),
           unit: m.unit,
+          dataType:
+            m.unit === "percentage" ? "proportion" : m.unit === "rate" ? "rate" : "continuous",
           aggregationType: m.unit === "count" || m.unit === "currency" ? "sum" : "average",
           chartType: m.chartType,
           isKpi: m.isKpi,
@@ -2331,6 +2333,7 @@ async function main() {
         content: ca.content,
         difficulty: ca.difficulty,
         estimatedMins: ca.estimatedMins,
+        generationStatus: "manual",
       },
     });
   }

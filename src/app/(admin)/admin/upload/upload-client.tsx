@@ -35,7 +35,6 @@ import {
   AlertTriangle,
   Loader2,
   X,
-  Trash2,
   Download,
   ChevronDown,
   ChevronRight,
@@ -91,6 +90,14 @@ const HEADER_HINTS: Record<keyof ColumnMapping, string[]> = {
   ],
   notes: ["notes", "note", "comment", "comments", "description"],
 };
+
+/** Escape a CSV field value — wrap in quotes if it contains commas, quotes, or newlines */
+function csvEscapeField(value: string): string {
+  if (value.includes(",") || value.includes('"') || value.includes("\n")) {
+    return `"${value.replace(/"/g, '""')}"`;
+  }
+  return value;
+}
 
 function autoDetectColumn(headers: string[], field: keyof ColumnMapping): string {
   const hints = HEADER_HINTS[field];
@@ -349,45 +356,21 @@ export function UploadClient({ lookup }: { lookup: TemplateLookupData }) {
       if (a.regionId) assocMap[a.metricDefinitionId].regionIds.push(a.regionId);
     }
 
-    // Determine if any selected metrics are rate/proportion type
-    const hasRateMetrics = selectedMetrics.some(
-      (m) => m.dataType === "rate" || m.dataType === "proportion"
-    );
-
-    // Build rows — include Numerator/Denominator columns when rate/proportion metrics are selected
-    const rows: string[][] = [];
-
-    // Helper to build a row with the right number of columns
-    const buildRow = (
-      metricName: string,
-      period: string,
-      divName: string,
-      regionName: string,
-      metric: (typeof selectedMetrics)[0]
-    ): string[] => {
+    // Helper to build data rows for a metric across all periods
+    const buildMetricRows = (metric: (typeof selectedMetrics)[0]): string[][] => {
       const isComponent = metric.dataType === "rate" || metric.dataType === "proportion";
-      if (hasRateMetrics) {
-        // 8 columns: Metric, Period, Value, Numerator, Denominator, Division, Department, Notes
-        // For rate/proportion: leave Value blank, user fills Numerator + Denominator
-        // For continuous: user fills Value, leave Numerator + Denominator blank
-        return [
-          metricName,
-          period,
-          isComponent ? "" : "", // Value — always empty in template
-          isComponent ? "" : "", // Numerator — user fills for rate/proportion
-          isComponent ? "" : "", // Denominator — user fills for rate/proportion
-          divName,
-          regionName,
-          "",
-        ];
-      } else {
-        // 6 columns: Metric, Period, Value, Division, Department, Notes
-        return [metricName, period, "", divName, regionName, ""];
-      }
-    };
-
-    for (const metric of selectedMetrics) {
       const assoc = assocMap[metric.id];
+      const metricRows: string[][] = [];
+
+      const makeRow = (period: string, divName: string, regionName: string): string[] => {
+        if (isComponent) {
+          // 8 columns: Metric, Period, Value, NumLabel, DenLabel, Division, Department, Notes
+          return [metric.name, period, "", "", "", divName, regionName, ""];
+        } else {
+          // 6 columns: Metric, Period, Value, Division, Department, Notes
+          return [metric.name, period, "", divName, regionName, ""];
+        }
+      };
 
       for (const period of periods) {
         if (templateIncludeScope && assoc) {
@@ -406,20 +389,16 @@ export function UploadClient({ lookup }: { lookup: TemplateLookupData }) {
           }
 
           if (filteredRegionIds.length > 0) {
-            // One row per region
             for (const regionId of filteredRegionIds) {
               const region = lookup.regions.find((r) => r.id === regionId);
               const division = region
                 ? lookup.divisions.find((d) => d.id === region.divisionId)
                 : null;
-              rows.push(
-                buildRow(metric.name, period, division?.name ?? "", region?.name ?? "", metric)
-              );
+              metricRows.push(makeRow(period, division?.name ?? "", region?.name ?? ""));
             }
           } else {
             // Division-level rows
             const divIds = assoc.divisionIds.length > 0 ? assoc.divisionIds : [];
-
             const filteredDivIds =
               templateDivisionFilter !== "__all__"
                 ? divIds.filter((id) => id === templateDivisionFilter)
@@ -428,63 +407,61 @@ export function UploadClient({ lookup }: { lookup: TemplateLookupData }) {
             if (filteredDivIds.length > 0) {
               for (const divId of filteredDivIds) {
                 const div = lookup.divisions.find((d) => d.id === divId);
-                rows.push(buildRow(metric.name, period, div?.name ?? "", "", metric));
+                metricRows.push(makeRow(period, div?.name ?? "", ""));
               }
             } else {
-              // No associations — single row
-              rows.push(buildRow(metric.name, period, "", "", metric));
+              metricRows.push(makeRow(period, "", ""));
             }
           }
         } else {
-          // No scope expansion — one row per metric+period
-          rows.push(buildRow(metric.name, period, "", "", metric));
+          metricRows.push(makeRow(period, "", ""));
         }
+      }
+
+      return metricRows;
+    };
+
+    // Build sectioned CSV — each metric gets its own header row with appropriate columns
+    const csvLines: string[] = [];
+    for (let i = 0; i < selectedMetrics.length; i++) {
+      const metric = selectedMetrics[i];
+      const isComponent = metric.dataType === "rate" || metric.dataType === "proportion";
+
+      // Add blank separator line between sections
+      if (i > 0) {
+        csvLines.push("");
+      }
+
+      // Build header for this metric's section
+      let header: string[];
+      if (isComponent) {
+        const numLabel =
+          metric.numeratorLabel || (metric.dataType === "proportion" ? "Compliant" : "Events");
+        const denLabel =
+          metric.denominatorLabel || (metric.dataType === "proportion" ? "Total" : "Exposure");
+        header = [
+          "Metric",
+          "Period",
+          "Value",
+          numLabel,
+          denLabel,
+          "Division",
+          "Department",
+          "Notes",
+        ];
+      } else {
+        header = ["Metric", "Period", "Value", "Division", "Department", "Notes"];
+      }
+      csvLines.push(header.map(csvEscapeField).join(","));
+
+      // Build data rows for this metric
+      const metricRows = buildMetricRows(metric);
+      for (const row of metricRows) {
+        csvLines.push(row.map(csvEscapeField).join(","));
       }
     }
 
-    // Build header row — include Numerator/Denominator columns with custom labels when needed
-    let fields: string[];
-    if (hasRateMetrics) {
-      // Collect unique numerator/denominator labels from selected rate/proportion metrics
-      const rateMetrics = selectedMetrics.filter(
-        (m) => m.dataType === "rate" || m.dataType === "proportion"
-      );
-      const numLabels = new Set(
-        rateMetrics.map((m) => {
-          if (m.dataType === "proportion") return m.numeratorLabel || "Compliant";
-          return m.numeratorLabel || "Events";
-        })
-      );
-      const denLabels = new Set(
-        rateMetrics.map((m) => {
-          if (m.dataType === "proportion") return m.denominatorLabel || "Total";
-          return m.denominatorLabel || "Exposure";
-        })
-      );
-
-      // If all rate metrics share the same label, use it; otherwise use generic with examples
-      const numHeader = numLabels.size === 1 ? `Numerator (${[...numLabels][0]})` : `Numerator`;
-      const denHeader = denLabels.size === 1 ? `Denominator (${[...denLabels][0]})` : `Denominator`;
-
-      fields = [
-        "Metric",
-        "Period",
-        "Value",
-        numHeader,
-        denHeader,
-        "Division",
-        "Department",
-        "Notes",
-      ];
-    } else {
-      fields = ["Metric", "Period", "Value", "Division", "Department", "Notes"];
-    }
-
-    // Generate CSV with PapaParse
-    const csv = Papa.unparse({
-      fields,
-      data: rows,
-    });
+    const csv = csvLines.join("\n");
 
     // Trigger download
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
@@ -618,7 +595,6 @@ export function UploadClient({ lookup }: { lookup: TemplateLookupData }) {
     const valueColIdx = rawHeaders.indexOf(mapping.value);
     const numColIdx = rawHeaders.indexOf(mapping.numerator);
     const denColIdx = rawHeaders.indexOf(mapping.denominator);
-    const deptColIdx = rawHeaders.indexOf(mapping.department);
     const divColIdx = rawHeaders.indexOf(mapping.division);
     const indColIdx = rawHeaders.indexOf(mapping.region);
     const notesColIdx = rawHeaders.indexOf(mapping.notes);
@@ -797,16 +773,7 @@ export function UploadClient({ lookup }: { lookup: TemplateLookupData }) {
 
     setValidationResults(results);
     setStep("validate");
-  }, [
-    rawHeaders,
-    rawRows,
-    mapping,
-    fixedDepartment,
-    fixedDivision,
-    periodType,
-    filteredMetrics,
-    lookup,
-  ]);
+  }, [rawHeaders, rawRows, mapping, fixedDivision, periodType, filteredMetrics, lookup]);
 
   // -------------------------------------------------------------------------
   // Import
@@ -833,7 +800,7 @@ export function UploadClient({ lookup }: { lookup: TemplateLookupData }) {
         skipped: result.skipped ?? 0,
         error: result.error,
       });
-    } catch (err) {
+    } catch {
       setImportResult({
         created: 0,
         skipped: 0,

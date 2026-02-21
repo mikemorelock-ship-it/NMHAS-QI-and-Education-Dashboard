@@ -34,6 +34,8 @@ import {
   ChevronDown,
   ScrollText,
   BookOpen,
+  FileText,
+  Sparkles,
   type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -136,6 +138,18 @@ const navEntries: NavEntry[] = [
         icon: Camera,
         permission: "manage_ftos_trainees",
       },
+      {
+        href: "/admin/field-training/resources",
+        label: "Resources",
+        icon: FileText,
+        permission: "manage_resources",
+      },
+      {
+        href: "/admin/field-training/coaching",
+        label: "Coaching",
+        icon: Sparkles,
+        permission: "manage_coaching",
+      },
     ],
   },
   {
@@ -175,6 +189,7 @@ export function AdminSidebar({ userRole, userName, pendingApprovals = 0 }: Admin
   const newUpdates = useMemo(() => {
     // pathname is in deps to trigger recomputation after navigation
     void pathname;
+    if (typeof window === "undefined") return 0;
     const lastSeen = localStorage.getItem(CHANGELOG_STORAGE_KEY);
     return getUnseenCount(lastSeen);
   }, [pathname]);

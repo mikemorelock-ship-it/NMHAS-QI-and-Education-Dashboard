@@ -119,16 +119,16 @@ function RatingInput({
   showLabel?: boolean;
 }) {
   return (
-    <div className="flex items-center gap-1">
+    <div className="flex items-center gap-1.5">
       {[1, 2, 3, 4, 5, 6, 7].map((i) => (
         <button
           key={i}
           type="button"
           onClick={() => onChange(i)}
           className={cn(
-            "w-8 h-8 rounded text-xs font-bold transition-all",
+            "w-10 h-10 rounded-md text-sm font-bold transition-all",
             i <= value
-              ? `${RATING_COLORS[i]} text-white`
+              ? `${RATING_COLORS[i]} text-white shadow-sm`
               : "bg-muted text-muted-foreground hover:bg-muted-foreground/20"
           )}
         >
@@ -273,6 +273,23 @@ export function EditDorClient({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // ---------------------------------------------------------------------------
+  // Submit readiness — compute what's missing so we can disable the button
+  // ---------------------------------------------------------------------------
+  const missingItems: string[] = [];
+
+  const missingComments = dorCategories.filter((c) => {
+    const r = categoryRatings[c.id];
+    return r?.rating != null && r.rating < 4 && !r.comments?.trim();
+  });
+  if (missingComments.length > 0) {
+    missingComments.forEach((c) => {
+      missingItems.push(`Add comment for "${c.name}" (rated below 4)`);
+    });
+  }
+
+  const canSubmit = missingItems.length === 0;
+
   async function handleTraineeChange(traineeId: string) {
     setSelectedTraineeId(traineeId);
     setDorHistory([]);
@@ -378,9 +395,25 @@ export function EditDorClient({
       >
         <div aria-live="polite">
           {error && (
-            <Card className="border-destructive mb-4">
-              <CardContent className="pt-6">
-                <p className="text-sm text-destructive" role="alert">{error}</p>
+            <Card className="border-destructive bg-destructive/5 mb-4">
+              <CardContent className="pt-5 pb-4">
+                <div className="flex items-start gap-3" role="alert">
+                  <AlertCircle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
+                  <div className="space-y-1">
+                    <p className="text-sm font-semibold text-destructive">
+                      Please fix the following before submitting:
+                    </p>
+                    {error.includes(", ") ? (
+                      <ul className="text-sm text-destructive list-disc list-inside space-y-0.5">
+                        {error.split(", ").map((msg, idx) => (
+                          <li key={idx}>{msg}</li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="text-sm text-destructive">{error}</p>
+                    )}
+                  </div>
+                </div>
               </CardContent>
             </Card>
           )}
@@ -603,8 +636,8 @@ export function EditDorClient({
                           setCommentDialog({ catId: cat.id, catName: cat.name });
                         }}
                         className={cn(
-                          "relative inline-flex items-center justify-center rounded-md transition-colors shrink-0",
-                          "h-9 w-9 border",
+                          "relative inline-flex items-center justify-center gap-1.5 rounded-md transition-colors shrink-0",
+                          "h-10 px-3 border text-sm font-medium",
                           needsComment
                             ? "border-amber-400 bg-amber-50 text-amber-600 hover:bg-amber-100 animate-pulse"
                             : hasComment
@@ -612,7 +645,8 @@ export function EditDorClient({
                               : "border-input text-muted-foreground hover:bg-accent hover:text-foreground"
                         )}
                       >
-                        <MessageSquare className="h-4 w-4" />
+                        <MessageSquare className="h-3.5 w-3.5" />
+                        <span>Comment</span>
                         {hasComment && (
                           <span className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-nmh-teal ring-2 ring-background" />
                         )}
@@ -745,6 +779,27 @@ export function EditDorClient({
           </CardContent>
         </Card>
 
+        {/* Readiness checklist — shown when form is incomplete */}
+        {!canSubmit && (
+          <Card className="mt-4 border-amber-300 bg-amber-50/50">
+            <CardContent className="pt-5 pb-4">
+              <div className="flex items-start gap-3">
+                <AlertCircle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+                <div className="space-y-1">
+                  <p className="text-sm font-semibold text-amber-800">
+                    Complete the following to submit:
+                  </p>
+                  <ul className="text-sm text-amber-700 list-disc list-inside space-y-0.5">
+                    {missingItems.map((item, idx) => (
+                      <li key={idx}>{item}</li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         <div className="flex justify-end gap-3 mt-4">
           <Button variant="outline" asChild>
             <Link href="/fieldtraining/dors">Cancel</Link>
@@ -760,7 +815,7 @@ export function EditDorClient({
           >
             {submitting ? "Saving..." : "Save Draft"}
           </Button>
-          <Button type="submit" disabled={submitting}>
+          <Button type="submit" disabled={submitting || !canSubmit}>
             {submitting ? "Submitting..." : "Submit DOR"}
           </Button>
         </div>

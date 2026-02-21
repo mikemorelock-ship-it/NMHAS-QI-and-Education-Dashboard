@@ -162,11 +162,15 @@ const SkillSchema = z.object({
 });
 
 const DailyObservationReportSchema = z.object({
-  traineeId: z.string().min(1, "Trainee is required"),
-  ftoId: z.string().min(1, "FTO is required"),
+  traineeId: z.string("Please select a trainee").min(1, "Please select a trainee"),
+  ftoId: z.string("FTO is required").min(1, "FTO is required"),
   phaseId: z.string().optional().nullable(),
-  date: z.coerce.date(),
-  overallRating: z.coerce.number().int().min(1).max(7),
+  date: z.coerce.date("Please select a valid date"),
+  overallRating: z.coerce
+    .number("Please select an overall rating")
+    .int()
+    .min(1, "Overall rating must be between 1 and 7")
+    .max(7, "Overall rating must be between 1 and 7"),
   narrative: z.string().max(5000).optional().nullable(),
   mostSatisfactory: z.string().max(200).optional().nullable(),
   leastSatisfactory: z.string().max(200).optional().nullable(),
@@ -2200,7 +2204,7 @@ export async function reviewDivisionChange(
 }
 
 export async function getPendingDivisionChangeRequests() {
-  const session = await requirePermission("manage_ftos_trainees");
+  await requirePermission("manage_ftos_trainees");
 
   try {
     const requests = await prisma.divisionChangeRequest.findMany({
