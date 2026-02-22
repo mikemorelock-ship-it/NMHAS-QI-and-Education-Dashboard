@@ -195,22 +195,45 @@ export function DataEntryClient({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // -----------------------------------------------------------------------
-  // Recent entries — local state for immediate updates after mutations
+  // Recent entries — optimistic entries stored separately so server syncs
+  // can never wipe them out.
   // -----------------------------------------------------------------------
-  const [localEntries, setLocalEntries] = useState<EntryRow[]>(recentEntries);
-  const [refreshNeeded, setRefreshNeeded] = useState(0);
+  const [optimisticEntries, setOptimisticEntries] = useState<EntryRow[]>([]);
+  const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set());
 
-  // Sync local state when server props change (e.g. pagination navigation)
-  useEffect(() => {
-    setLocalEntries(recentEntries);
-  }, [recentEntries]);
+  // Combined view: optimistic entries first, then server entries minus deleted
+  const localEntries = useMemo(() => {
+    const filtered = recentEntries.filter((e) => !deletedIds.has(e.id));
+    if (optimisticEntries.length === 0) return filtered;
+    return [...optimisticEntries, ...filtered];
+  }, [recentEntries, optimisticEntries, deletedIds]);
 
-  // Trigger router.refresh() outside startTransition context
+  // When server data changes (revalidation/pagination), clear optimistic
+  // entries whose data is now in the server response.
   useEffect(() => {
-    if (refreshNeeded > 0) {
-      router.refresh();
-    }
-  }, [refreshNeeded, router]);
+    if (optimisticEntries.length === 0 && deletedIds.size === 0) return;
+    // Clear optimistic entries that match a server entry by metric+division+region+period
+    setOptimisticEntries((prev) =>
+      prev.filter(
+        (opt) =>
+          !recentEntries.some(
+            (e) =>
+              e.metricDefinitionId === opt.metricDefinitionId &&
+              e.divisionId === opt.divisionId &&
+              e.regionId === opt.regionId &&
+              e.periodStart === opt.periodStart
+          )
+      )
+    );
+    // Clear deleted IDs that are no longer in server data
+    setDeletedIds((prev) => {
+      const remaining = new Set<string>();
+      for (const id of prev) {
+        if (recentEntries.some((e) => e.id === id)) remaining.add(id);
+      }
+      return remaining.size === prev.size ? prev : remaining;
+    });
+  }, [recentEntries]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // -----------------------------------------------------------------------
   // Recent entries filter + sort state
@@ -637,7 +660,7 @@ export function DataEntryClient({
             });
 
           if (newRows.length > 0) {
-            setLocalEntries((prev) => [...newRows, ...prev]);
+            setOptimisticEntries((prev) => [...newRows, ...prev]);
           }
 
           // Clear values but keep rows for another period
@@ -652,7 +675,6 @@ export function DataEntryClient({
             }))
           );
           setPeriodStart("");
-          setRefreshNeeded((n) => n + 1);
         } else {
           setErrorMessage(result.error || "Failed to save entries.");
         }
@@ -739,13 +761,13 @@ export function DataEntryClient({
         });
 
         if (newRows.length > 0) {
-          setLocalEntries((prev) => [...newRows, ...prev]);
+          setOptimisticEntries((prev) => [...newRows, ...prev]);
         }
 
         setBulkRows([
           { key: ++bulkRowKey, metricDefinitionId: "", periodStart: "", value: "", notes: "" },
         ]);
-        setRefreshNeeded((n) => n + 1);
+        router.refresh();
       } else {
         setBulkResult(`Error: ${result.error}`);
       }
@@ -810,15 +832,16 @@ export function DataEntryClient({
     setBulkDeletePending(true);
     clearMessages();
     try {
-      const deletedIds = new Set(selectedEntryIds);
+      const idsToDelete = new Set(selectedEntryIds);
       const result = await bulkDeleteEntries(Array.from(selectedEntryIds));
       if (result.success) {
         setSuccessMessage(
           `Successfully deleted ${result.count} ${result.count === 1 ? "entry" : "entries"}.`
         );
         setSelectedEntryIds(new Set());
-        setLocalEntries((prev) => prev.filter((e) => !deletedIds.has(e.id)));
-        setRefreshNeeded((n) => n + 1);
+        setDeletedIds((prev) => new Set([...prev, ...idsToDelete]));
+        setOptimisticEntries((prev) => prev.filter((e) => !idsToDelete.has(e.id)));
+        router.refresh();
       } else {
         setErrorMessage(result.error || "Failed to delete entries.");
       }
@@ -1765,7 +1788,7 @@ export function DataEntryClient({
               onSuccess={() => {
                 setSuccessMessage("Entry updated successfully.");
                 setEditTarget(null);
-                setRefreshNeeded((n) => n + 1);
+                router.refresh();
               }}
               onError={(msg) => setErrorMessage(msg)}
               onCancel={() => setEditTarget(null)}
@@ -1806,9 +1829,10 @@ export function DataEntryClient({
                 if (deleteTarget) {
                   const deletedId = deleteTarget.id;
                   await deleteEntry(deletedId);
-                  setLocalEntries((prev) => prev.filter((e) => e.id !== deletedId));
+                  setDeletedIds((prev) => new Set([...prev, deletedId]));
+                  setOptimisticEntries((prev) => prev.filter((e) => e.id !== deletedId));
                   setDeleteTarget(null);
-                  setRefreshNeeded((n) => n + 1);
+                  router.refresh();
                 }
               }}
             >
