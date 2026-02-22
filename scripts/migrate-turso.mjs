@@ -156,6 +156,16 @@ const migrations = [
       `CREATE INDEX IF NOT EXISTS "DailyEvaluation_date_idx" ON "DailyEvaluation"("date")`,
     ],
   },
+  {
+    name: "20260221100000_fix_daily_evaluation_schema",
+    statements: [
+      // The overall_rating_to_float migration incorrectly replaced supervisorNotes TEXT
+      // with supervisorReviewedAt DATETIME. Add the missing column back.
+      `ALTER TABLE "DailyEvaluation" ADD COLUMN "supervisorNotes" TEXT`,
+      `CREATE INDEX IF NOT EXISTS "DailyEvaluation_phaseId_idx" ON "DailyEvaluation"("phaseId")`,
+      `CREATE INDEX IF NOT EXISTS "DailyEvaluation_status_idx" ON "DailyEvaluation"("status")`,
+    ],
+  },
 ];
 
 console.log(`Connecting to Turso: ${url.replace(/\/\/.*@/, "//***@")}`);
