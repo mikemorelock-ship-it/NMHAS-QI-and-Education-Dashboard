@@ -716,12 +716,15 @@ async function main() {
   await prisma.campaign.deleteMany();
   await prisma.metricAssociation.deleteMany();
   await prisma.scorecardMetric.deleteMany();
+  await prisma.scorecardDivision.deleteMany();
+  await prisma.scorecardRegion.deleteMany();
   await prisma.scorecard.deleteMany();
   await prisma.metricEntry.deleteMany();
   await prisma.metricAnnotation.deleteMany();
   await prisma.metricResource.deleteMany();
   await prisma.metricResponsibleParty.deleteMany();
   await prisma.metricDefinition.deleteMany();
+  await prisma.category.deleteMany();
   await prisma.region.deleteMany();
   await prisma.division.deleteMany();
   await prisma.user.deleteMany();
@@ -1233,6 +1236,69 @@ async function main() {
   }
   console.log(`  Created ${allMetricDefs.length} metric definitions.`);
 
+  // --- Categories — managed lookup table for metric grouping ---
+  console.log("\nCreating metric categories...");
+  const allCategoryNames = new Set();
+  const allMetricSpecs = [
+    ...qualityMetrics,
+    ...clinicalDevMetrics,
+    ...educationMetrics,
+    ...operationsMetrics,
+  ];
+  for (const m of allMetricSpecs) {
+    if (m.category) allCategoryNames.add(m.category);
+  }
+  const categoryColors = {
+    "Review Activity": "#00b0ad",
+    "Clinical Outcomes": "#00383d",
+    Operational: "#4b4f54",
+    "Patient Experience": "#fcb526",
+    "Patient Safety": "#e04726",
+    Competency: "#00b0ad",
+    Training: "#00383d",
+    Education: "#762d10",
+    Compliance: "#4b4f54",
+    Financial: "#00383d",
+    Enrollment: "#00b0ad",
+    Academic: "#4b4f54",
+    Experience: "#fcb526",
+    Clinical: "#e04726",
+    Staffing: "#762d10",
+    Volume: "#00b0ad",
+    Response: "#e04726",
+    Utilization: "#fcb526",
+    "Mutual Aid": "#4b4f54",
+    Workforce: "#00383d",
+    Fleet: "#762d10",
+  };
+  const categoryRecords = {};
+  let catOrder = 0;
+  for (const catName of allCategoryNames) {
+    const cat = await prisma.category.create({
+      data: {
+        name: catName,
+        slug: slugify(catName),
+        sortOrder: ++catOrder,
+        color: categoryColors[catName] || null,
+        isActive: true,
+      },
+    });
+    categoryRecords[catName] = cat.id;
+  }
+  // Link metric definitions to their categories
+  for (const md of allMetricDefs) {
+    const spec = allMetricSpecs.find((m) => m.name === md.metricName);
+    if (spec?.category && categoryRecords[spec.category]) {
+      await prisma.metricDefinition.update({
+        where: { id: md.id },
+        data: { categoryId: categoryRecords[spec.category] },
+      });
+    }
+  }
+  console.log(
+    `  Created ${Object.keys(categoryRecords).length} categories and linked to metric definitions.`
+  );
+
   // Sub-metrics
   const clinicalDebriefsDef = allMetricDefs.find(
     (m) => m.metricName === "Clinical Debriefs Completed"
@@ -1604,6 +1670,148 @@ async function main() {
     }
   }
   console.log(`  Created ${assocCount} metric associations.`);
+
+  // =========================================================================
+  // SCORECARDS — preset filter views for the scorecard page
+  // =========================================================================
+  console.log("\nCreating scorecards...");
+
+  // Scorecard group definitions (category → metric names) for operations
+  const opsGroups = {
+    Volume: ["Total Calls", "Transport Count", "Dry Runs"],
+    Response: [
+      "Average Response Time",
+      "Average On-Scene Time",
+      "Chute Time",
+      "Average Transport Time",
+      "Late Calls",
+    ],
+    Utilization: ["Unit Hour Utilization"],
+    "Mutual Aid": ["Mutual Aid Given", "Mutual Aid Received"],
+    Workforce: ["Turnover Rate", "Overtime Hours"],
+    Fleet: ["Vehicle Out-of-Service Hours"],
+  };
+
+  // Helper: add grouped metrics to a scorecard
+  async function addGroupedMetrics(scorecardId, groups) {
+    let sortIdx = 0;
+    for (const [groupName, metricNames] of Object.entries(groups)) {
+      for (const name of metricNames) {
+        const md = findMetricDef(name);
+        if (md) {
+          await prisma.scorecardMetric.create({
+            data: {
+              scorecardId,
+              metricDefinitionId: md.id,
+              sortOrder: ++sortIdx,
+              groupName,
+            },
+          });
+        }
+      }
+    }
+    return sortIdx;
+  }
+
+  // 1. Ground Ambulance Operations
+  const scGround = await prisma.scorecard.create({
+    data: {
+      name: "Ground Ambulance",
+      slug: "ground-ambulance",
+      description: "Operations metrics for all Ground Ambulance base stations",
+      sortOrder: 1,
+      isActive: true,
+    },
+  });
+  if (groundAmbDivId) {
+    await prisma.scorecardDivision.create({
+      data: { scorecardId: scGround.id, divisionId: groundAmbDivId },
+    });
+  }
+  await addGroupedMetrics(scGround.id, opsGroups);
+
+  // 2. Air Care Clinical
+  const scAirCare = await prisma.scorecard.create({
+    data: {
+      name: "Air Care Clinical",
+      slug: "air-care-clinical",
+      description: "Operations metrics for Air Care Clinical helicopter units",
+      sortOrder: 2,
+      isActive: true,
+    },
+  });
+  if (airCareDivId) {
+    await prisma.scorecardDivision.create({
+      data: { scorecardId: scAirCare.id, divisionId: airCareDivId },
+    });
+  }
+  await addGroupedMetrics(scAirCare.id, opsGroups);
+
+  // 3. Quality & Safety (quality dept metrics — no division filter,
+  //    uses preset metricIds so they appear even without region-level data)
+  const scQuality = await prisma.scorecard.create({
+    data: {
+      name: "Quality & Safety",
+      slug: "quality-safety",
+      description: "Quality improvement and patient safety metrics",
+      sortOrder: 3,
+      isActive: true,
+    },
+  });
+  await addGroupedMetrics(scQuality.id, {
+    "Review Activity": ["Cases Reviewed", "Clinical Debriefs Completed"],
+    "Clinical Outcomes": [
+      "Cardiac Arrest Survival Rate",
+      "Protocol Compliance Rate",
+      "Airway Success Rate",
+      "STEMI Door-to-Balloon Time",
+    ],
+    "Patient Safety": ["Medication Error Rate", "Hand Hygiene Compliance", "Near Miss Reports"],
+    "Patient Experience": ["Patient Satisfaction Score", "Patient Complaints"],
+  });
+
+  // 4. Clinical Development
+  const scClinical = await prisma.scorecard.create({
+    data: {
+      name: "Clinical Development",
+      slug: "clinical-development",
+      description: "Clinical skills development, competency, and compliance metrics",
+      sortOrder: 4,
+      isActive: true,
+    },
+  });
+  await addGroupedMetrics(scClinical.id, {
+    Competency: ["Skills Competency Assessments", "Competency Pass Rate"],
+    Training: [
+      "Field Training Hours",
+      "Simulation Lab Sessions",
+      "Preceptor Evaluations Completed",
+      "Clinical Ride-Along Hours",
+      "High-Acuity Scenario Completions",
+    ],
+    Education: ["CE Credits Delivered"],
+    Compliance: ["Provider Recertification Rate", "New Protocol Rollout Compliance"],
+  });
+
+  // 5. Education Program
+  const scEducation = await prisma.scorecard.create({
+    data: {
+      name: "Education Program",
+      slug: "education-program",
+      description: "EMS Professional Education program metrics",
+      sortOrder: 5,
+      isActive: true,
+    },
+  });
+  await addGroupedMetrics(scEducation.id, {
+    Financial: ["Progress Toward Revenue Targets"],
+    Enrollment: ["Active Student Enrollment"],
+    Academic: ["Course Completion Rate", "NREMT First-Attempt Pass Rate"],
+    Experience: ["Student Satisfaction Score"],
+    Clinical: ["Clinical Site Placements"],
+  });
+
+  console.log("  Created 5 scorecards with metric assignments and grouping.");
 
   // =========================================================================
   // DRIVER DIAGRAMS + PDSA (expanded)
@@ -3040,6 +3248,8 @@ async function main() {
     prisma.region.count(),
     prisma.metricDefinition.count(),
     prisma.metricEntry.count(),
+    prisma.category.count(),
+    prisma.scorecard.count(),
     prisma.driverDiagram.count(),
     prisma.pdsaCycle.count(),
     prisma.campaign.count(),
@@ -3056,14 +3266,16 @@ async function main() {
   console.log(`  Regions: ${counts[3]}`);
   console.log(`  Metrics: ${counts[4]}`);
   console.log(`  Metric Entries: ${counts[5]}`);
-  console.log(`  Driver Diagrams: ${counts[6]}`);
-  console.log(`  PDSA Cycles: ${counts[7]}`);
-  console.log(`  QI Campaigns: ${counts[8]}`);
-  console.log(`  Action Items: ${counts[9]}`);
-  console.log(`  Training Phases: ${counts[10]}`);
-  console.log(`  DORs: ${counts[11]}`);
-  console.log(`  Skill Signoffs: ${counts[12]}`);
-  console.log(`  Training Assignments: ${counts[13]}`);
+  console.log(`  Categories: ${counts[6]}`);
+  console.log(`  Scorecards: ${counts[7]}`);
+  console.log(`  Driver Diagrams: ${counts[8]}`);
+  console.log(`  PDSA Cycles: ${counts[9]}`);
+  console.log(`  QI Campaigns: ${counts[10]}`);
+  console.log(`  Action Items: ${counts[11]}`);
+  console.log(`  Training Phases: ${counts[12]}`);
+  console.log(`  DORs: ${counts[13]}`);
+  console.log(`  Skill Signoffs: ${counts[14]}`);
+  console.log(`  Training Assignments: ${counts[15]}`);
   console.log("\nNorth Memorial Health EMS Dashboard is ready.");
 }
 
