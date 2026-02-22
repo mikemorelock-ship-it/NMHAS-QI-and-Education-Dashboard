@@ -1,9 +1,10 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
+  ArrowRight,
   Printer,
   Target,
   Calendar,
@@ -15,6 +16,8 @@ import {
   CheckCircle2,
   Clock,
   Flag,
+  LineChart,
+  Activity,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -82,6 +85,7 @@ interface CycleInfo {
 interface DiagramInfo {
   id: string;
   name: string;
+  slug: string;
   description: string | null;
   metricName: string | null;
   nodes: DiagramNodeInfo[];
@@ -273,17 +277,20 @@ function ReportGanttChart({ items }: { items: GanttItem[] }) {
 
   return (
     <div className="border rounded-lg overflow-hidden text-sm">
-      {/* Month header */}
-      <div className="relative h-6 bg-muted/30 border-b">
-        {months.map((m, i) => (
-          <span
-            key={i}
-            className="absolute text-[10px] text-muted-foreground whitespace-nowrap"
-            style={{ left: `${m.leftPct}%`, top: "4px" }}
-          >
-            {m.label}
-          </span>
-        ))}
+      {/* Month header — uses same layout as rows: label spacer + chart area */}
+      <div className="flex border-b">
+        <div className="w-[220px] shrink-0 border-r bg-muted/30" />
+        <div className="flex-1 relative h-6 bg-muted/30">
+          {months.map((m, i) => (
+            <span
+              key={i}
+              className="absolute text-[10px] text-muted-foreground whitespace-nowrap"
+              style={{ left: `${m.leftPct}%`, top: "4px" }}
+            >
+              {m.label}
+            </span>
+          ))}
+        </div>
       </div>
 
       {/* Rows */}
@@ -466,6 +473,47 @@ function PdsaCycleSummary({ cycle }: { cycle: CycleInfo }) {
 }
 
 // ---------------------------------------------------------------------------
+// Chart mode toggle button group
+// ---------------------------------------------------------------------------
+
+type ChartMode = "control" | "trending";
+
+function ChartModeToggle({
+  mode,
+  onModeChange,
+}: {
+  mode: ChartMode;
+  onModeChange: (mode: ChartMode) => void;
+}) {
+  return (
+    <div className="flex gap-0.5 bg-muted/50 rounded-lg p-0.5 print:hidden">
+      <button
+        onClick={() => onModeChange("control")}
+        className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-medium transition-colors ${
+          mode === "control"
+            ? "bg-white text-nmh-teal shadow-sm"
+            : "text-muted-foreground hover:text-foreground"
+        }`}
+      >
+        <Activity className="h-3.5 w-3.5" />
+        Control Chart
+      </button>
+      <button
+        onClick={() => onModeChange("trending")}
+        className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-medium transition-colors ${
+          mode === "trending"
+            ? "bg-white text-nmh-teal shadow-sm"
+            : "text-muted-foreground hover:text-foreground"
+        }`}
+      >
+        <LineChart className="h-3.5 w-3.5" />
+        Trending
+      </button>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Main Report Component
 // ---------------------------------------------------------------------------
 
@@ -483,15 +531,21 @@ export function CampaignReportView({
   const totalCycles = diagrams.flatMap((d) => d.cycles).length;
   const openActions = actionItems.filter((a) => a.status !== "completed").length;
 
+  // Chart mode per metric — default to "control" for all
+  const [chartModes, setChartModes] = useState<Record<string, ChartMode>>({});
+  const getChartMode = (metricId: string): ChartMode => chartModes[metricId] ?? "control";
+  const setChartMode = (metricId: string, mode: ChartMode) =>
+    setChartModes((prev) => ({ ...prev, [metricId]: mode }));
+
   return (
     <div className="max-w-5xl mx-auto px-4 md:px-8 py-8 space-y-8">
       {/* Screen-only navigation */}
       <div className="flex items-center justify-between print:hidden">
         <Link
-          href={`/quality-improvement/campaign/${campaign.slug}`}
+          href="/quality-improvement"
           className="text-sm text-muted-foreground hover:text-nmh-teal flex items-center gap-1"
         >
-          <ArrowLeft className="h-3.5 w-3.5" /> Back to Campaign
+          <ArrowLeft className="h-3.5 w-3.5" /> Back to QI Tools
         </Link>
         <Button variant="outline" size="sm" onClick={() => window.print()} className="gap-1.5">
           <Printer className="h-4 w-4" /> Print Report
@@ -504,7 +558,7 @@ export function CampaignReportView({
       <header className="border-b pb-6 space-y-4">
         <div className="flex items-center gap-3 flex-wrap">
           <Target className="h-7 w-7 text-nmh-teal" />
-          <h1 className="text-2xl font-bold text-nmh-gray">QI Campaign Report: {campaign.name}</h1>
+          <h1 className="text-2xl font-bold text-nmh-gray">{campaign.name}</h1>
         </div>
 
         <div className="flex items-center gap-3 flex-wrap">
@@ -607,7 +661,13 @@ export function CampaignReportView({
           {diagrams.map((diagram) => (
             <div key={diagram.id} className="border rounded-lg p-4 space-y-3 break-inside-avoid">
               <div className="flex items-center justify-between gap-2">
-                <h3 className="font-semibold text-nmh-gray">{diagram.name}</h3>
+                <Link
+                  href={`/quality-improvement/diagram/${diagram.slug}`}
+                  className="font-semibold text-nmh-gray hover:text-nmh-teal transition-colors flex items-center gap-1.5 print:pointer-events-none"
+                >
+                  {diagram.name}
+                  <ArrowRight className="h-3.5 w-3.5 text-muted-foreground print:hidden" />
+                </Link>
                 {diagram.metricName && (
                   <Badge
                     variant="outline"
@@ -662,57 +722,95 @@ export function CampaignReportView({
             Metric Performance
           </h2>
 
-          {metrics.map((metric) => (
-            <div key={metric.id} className="space-y-3 break-inside-avoid">
-              {/* Change idea implementation overlay info */}
-              {metric.changeIdeaRanges.length > 0 && (
-                <div className="text-xs text-muted-foreground space-y-0.5 pl-1">
-                  <p className="font-medium">Change ideas implemented during this period:</p>
-                  {metric.changeIdeaRanges.map((ci, i) => (
-                    <p key={i} className="pl-3">
-                      • {ci.label}
-                      {ci.startDate && (
-                        <span>
-                          {" "}
-                          ({formatDate(ci.startDate)}
-                          {ci.endDate ? ` → ${formatDate(ci.endDate)}` : " → ongoing"})
-                        </span>
-                      )}
-                    </p>
-                  ))}
-                </div>
-              )}
+          {metrics.map((metric) => {
+            const hasSpc = !!metric.spcData;
+            const hasChartData = metric.chartData.length > 0;
+            const mode = getChartMode(metric.id);
 
-              {/* SPC Chart if available, otherwise standard chart */}
-              {metric.spcData ? (
-                <div className="border rounded-lg p-4">
-                  <h3 className="font-semibold text-sm mb-3">{metric.name} — Control Chart</h3>
-                  <ControlChart
-                    spcData={metric.spcData}
+            return (
+              <div key={metric.id} className="space-y-3 break-inside-avoid">
+                {/* Change idea implementation overlay info */}
+                {metric.changeIdeaRanges.length > 0 && (
+                  <div className="text-xs text-muted-foreground space-y-0.5 pl-1">
+                    <p className="font-medium">Change ideas implemented during this period:</p>
+                    {metric.changeIdeaRanges.map((ci, i) => (
+                      <p key={i} className="pl-3">
+                        • {ci.label}
+                        {ci.startDate && (
+                          <span>
+                            {" "}
+                            ({formatDate(ci.startDate)}
+                            {ci.endDate ? ` → ${formatDate(ci.endDate)}` : " → ongoing"})
+                          </span>
+                        )}
+                      </p>
+                    ))}
+                  </div>
+                )}
+
+                {/* Chart with toggle */}
+                {hasSpc && hasChartData ? (
+                  <div className="border rounded-lg p-4">
+                    <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
+                      <h3 className="font-semibold text-sm">
+                        {metric.name} — {mode === "control" ? "Control Chart" : "Trending"}
+                      </h3>
+                      <ChartModeToggle
+                        mode={mode}
+                        onModeChange={(m) => setChartMode(metric.id, m)}
+                      />
+                    </div>
+                    {mode === "control" ? (
+                      <ControlChart
+                        spcData={metric.spcData!}
+                        unit={metric.unit}
+                        target={metric.target}
+                        rateMultiplier={metric.rateMultiplier}
+                        rateSuffix={metric.rateSuffix}
+                        annotations={metric.annotations}
+                      />
+                    ) : (
+                      <MetricChart
+                        name={metric.name}
+                        unit={metric.unit}
+                        chartType={metric.chartType as "line" | "bar" | "area"}
+                        data={metric.chartData}
+                        target={metric.target ?? undefined}
+                        rateMultiplier={metric.rateMultiplier}
+                        rateSuffix={metric.rateSuffix}
+                      />
+                    )}
+                  </div>
+                ) : hasSpc ? (
+                  <div className="border rounded-lg p-4">
+                    <h3 className="font-semibold text-sm mb-3">{metric.name} — Control Chart</h3>
+                    <ControlChart
+                      spcData={metric.spcData!}
+                      unit={metric.unit}
+                      target={metric.target}
+                      rateMultiplier={metric.rateMultiplier}
+                      rateSuffix={metric.rateSuffix}
+                      annotations={metric.annotations}
+                    />
+                  </div>
+                ) : hasChartData ? (
+                  <MetricChart
+                    name={metric.name}
                     unit={metric.unit}
-                    target={metric.target}
+                    chartType={metric.chartType as "line" | "bar" | "area"}
+                    data={metric.chartData}
+                    target={metric.target ?? undefined}
                     rateMultiplier={metric.rateMultiplier}
                     rateSuffix={metric.rateSuffix}
-                    annotations={metric.annotations}
                   />
-                </div>
-              ) : metric.chartData.length > 0 ? (
-                <MetricChart
-                  name={metric.name}
-                  unit={metric.unit}
-                  chartType={metric.chartType as "line" | "bar" | "area"}
-                  data={metric.chartData}
-                  target={metric.target ?? undefined}
-                  rateMultiplier={metric.rateMultiplier}
-                  rateSuffix={metric.rateSuffix}
-                />
-              ) : (
-                <div className="border rounded-lg p-4 text-sm text-muted-foreground text-center">
-                  No data available for {metric.name}
-                </div>
-              )}
-            </div>
-          ))}
+                ) : (
+                  <div className="border rounded-lg p-4 text-sm text-muted-foreground text-center">
+                    No data available for {metric.name}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </section>
       )}
 

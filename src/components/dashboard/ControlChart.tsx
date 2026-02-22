@@ -147,14 +147,19 @@ function AnnotationLabel({
 }) {
   if (!viewBox || viewBox.x == null || viewBox.y == null) return null;
 
+  // Anchor at bottom of chart area; text extends upward after -90° rotation
+  const chartHeight = viewBox.height ?? 300;
+  const anchorX = viewBox.x + 4;
+  const anchorY = (viewBox.y ?? 0) + chartHeight - 8;
+
   return (
     <text
-      x={viewBox.x + 4}
-      y={(viewBox.y ?? 0) + 14}
+      x={anchorX}
+      y={anchorY}
       fill={fill}
       fontSize={9}
       textAnchor="start"
-      transform={`rotate(-90, ${viewBox.x + 4}, ${(viewBox.y ?? 0) + 14})`}
+      transform={`rotate(-90, ${anchorX}, ${anchorY})`}
     >
       {value}
     </text>
