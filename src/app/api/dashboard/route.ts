@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { parseDateRangeFilter } from "@/lib/utils";
 import {
   aggregateByPeriodWeighted,
+  aggregateValues,
   type AggregationType,
   type MetricDataType,
 } from "@/lib/aggregation";
@@ -187,14 +188,31 @@ export async function GET(request: NextRequest) {
       const dataType = (metric.dataType ?? "continuous") as MetricDataType;
       const aggType = metric.aggregationType as AggregationType;
 
+      // Aggregate region-level entries into per-period values
       const aggregatedSeries = aggregateByPeriodWeighted(entries, dataType, aggType);
-      const recent = aggregatedSeries.slice(-2);
-      const currentValue = recent.length > 0 ? recent[recent.length - 1].value : 0;
-      const previousValue = recent.length > 1 ? recent[recent.length - 2].value : 0;
+      const allValues = aggregatedSeries.map((s) => s.value);
 
+      let currentValue = 0;
+      let previousValue = 0;
       let trend = 0;
-      if (previousValue !== 0) {
-        trend = ((currentValue - previousValue) / Math.abs(previousValue)) * 100;
+
+      if (allValues.length > 0) {
+        // Aggregate all period values across the selected date range
+        currentValue = aggregateValues(allValues, aggType) ?? 0;
+
+        if (allValues.length >= 2) {
+          // Split the range into older/recent halves for trend comparison
+          const midpoint = Math.ceil(allValues.length / 2);
+          const olderHalf = allValues.slice(0, midpoint);
+          const recentHalf = allValues.slice(midpoint);
+
+          previousValue = aggregateValues(olderHalf, aggType) ?? 0;
+          const recentAggregate = aggregateValues(recentHalf, aggType) ?? 0;
+
+          if (previousValue !== 0) {
+            trend = ((recentAggregate - previousValue) / Math.abs(previousValue)) * 100;
+          }
+        }
       }
 
       const sparklineSeries = aggregateByPeriodWeighted(sparklineEntries, dataType, aggType)
@@ -281,12 +299,28 @@ export async function GET(request: NextRequest) {
 
       const unassignedKpiData = unassociatedKpis.map((metric) => {
         const entries = unassocByMetric.get(metric.id) ?? [];
-        const currentValue = entries.length > 0 ? entries[entries.length - 1].value : 0;
-        const previousValue = entries.length > 1 ? entries[entries.length - 2].value : 0;
+        const allValues = entries.map((e) => e.value);
+        const aggType = (metric.aggregationType ?? "average") as AggregationType;
 
+        let currentValue = 0;
+        let previousValue = 0;
         let trend = 0;
-        if (previousValue !== 0) {
-          trend = ((currentValue - previousValue) / Math.abs(previousValue)) * 100;
+
+        if (allValues.length > 0) {
+          currentValue = aggregateValues(allValues, aggType) ?? 0;
+
+          if (allValues.length >= 2) {
+            const midpoint = Math.ceil(allValues.length / 2);
+            const olderHalf = allValues.slice(0, midpoint);
+            const recentHalf = allValues.slice(midpoint);
+
+            previousValue = aggregateValues(olderHalf, aggType) ?? 0;
+            const recentAggregate = aggregateValues(recentHalf, aggType) ?? 0;
+
+            if (previousValue !== 0) {
+              trend = ((recentAggregate - previousValue) / Math.abs(previousValue)) * 100;
+            }
+          }
         }
 
         return {
