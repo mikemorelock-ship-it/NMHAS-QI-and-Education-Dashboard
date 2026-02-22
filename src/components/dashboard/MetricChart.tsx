@@ -189,6 +189,28 @@ export function MetricChart({
     return `${value}`;
   };
 
+  // Determine label positions for target + median to avoid overlap.
+  // When their Y values are close (within 15 % of the visible range) we put
+  // them on opposite sides of the chart; otherwise both sit on the right.
+  let targetLabelPos: "insideTopRight" | "insideTopLeft" = "insideTopRight";
+  let medianLabelPos: "insideBottomRight" | "insideTopLeft" | "insideTopRight" =
+    "insideBottomRight";
+
+  if (target !== undefined && data.length >= 2) {
+    const vals = data.map((d) => d.value).concat(target, runChartAnalysis.median);
+    const yRange = Math.max(...vals) - Math.min(...vals) || 1;
+    const close = Math.abs(target - runChartAnalysis.median) / yRange < 0.15;
+
+    if (close) {
+      // Close — put the higher line's label top-right, the lower one's top-left
+      if (target >= runChartAnalysis.median) {
+        medianLabelPos = "insideTopLeft";
+      } else {
+        targetLabelPos = "insideTopLeft";
+      }
+    }
+  }
+
   /**
    * Shared axis/grid/tooltip/reference-line elements used by every chart type.
    */
@@ -217,7 +239,7 @@ export function MetricChart({
           strokeWidth={2}
           label={{
             value: `Target: ${formatMetricValue(target, unit, rateMultiplier, rateSuffix)}`,
-            position: "insideTopRight",
+            position: targetLabelPos,
             fill: NMH_COLORS.orange,
             fontSize: 11,
           }}
@@ -239,7 +261,7 @@ export function MetricChart({
           strokeWidth={1}
           label={{
             value: `Median: ${formatMetricValue(runChartAnalysis.median, unit, rateMultiplier, rateSuffix)}`,
-            position: "insideBottomRight",
+            position: medianLabelPos,
             fill: NMH_COLORS.gray,
             fontSize: 11,
           }}

@@ -212,6 +212,25 @@ export function ControlChart({
   const hasAnnotations = annotations && annotations.length > 0;
   const chartTopMargin = hasAnnotations ? 20 : 10;
 
+  // Determine label positions for CL + target to avoid overlap.
+  // When close (within 15 % of visible Y range), put labels on opposite sides.
+  let clLabelPos: "insideTopRight" | "insideTopLeft" = "insideTopRight";
+  let targetLabelPos: "insideBottomRight" | "insideTopLeft" = "insideBottomRight";
+
+  if (target != null) {
+    const yRange = yMax - yMin || 1;
+    const close = Math.abs(target - spcData.centerLine) / yRange < 0.15;
+    if (close) {
+      if (spcData.centerLine >= target) {
+        // CL higher — keep CL top-right, move target to left
+        targetLabelPos = "insideTopLeft";
+      } else {
+        // Target higher — keep target right, move CL to left
+        clLabelPos = "insideTopLeft";
+      }
+    }
+  }
+
   return (
     <div className={className}>
       {/* Individuals Chart */}
@@ -292,7 +311,7 @@ export function ControlChart({
               strokeWidth={1.5}
               label={{
                 value: `CL: ${formatMetricValue(spcData.centerLine, unit, rateMultiplier, rateSuffix)}`,
-                position: "insideTopRight",
+                position: clLabelPos,
                 fill: NMH_COLORS.teal,
                 fontSize: 11,
               }}
@@ -307,7 +326,7 @@ export function ControlChart({
                 strokeWidth={1}
                 label={{
                   value: `Target: ${formatMetricValue(target, unit, rateMultiplier, rateSuffix)}`,
-                  position: "insideBottomRight",
+                  position: targetLabelPos,
                   fill: NMH_COLORS.yellow,
                   fontSize: 10,
                 }}
