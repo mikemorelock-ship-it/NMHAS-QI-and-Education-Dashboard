@@ -159,6 +159,7 @@ export async function createEntry(formData: FormData): Promise<ActionResult> {
         numerator: num ?? null,
         denominator: den ?? null,
         notes: data.notes ?? null,
+        createdById: session.userId,
       },
     });
 
@@ -417,6 +418,7 @@ export async function bulkCreateEntries(
             regionId: entry.regionId || null,
             periodType: entry.periodType,
             periodStart: periodDate,
+            createdById: session.userId,
             ...data,
           },
         });

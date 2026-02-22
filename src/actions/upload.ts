@@ -106,6 +106,7 @@ export async function importUploadedData(rows: ValidatedRow[]): Promise<UploadAc
               numerator: row.numerator ?? null,
               denominator: row.denominator ?? null,
               notes: row.notes || null,
+              createdById: session.userId,
             },
           });
         })
