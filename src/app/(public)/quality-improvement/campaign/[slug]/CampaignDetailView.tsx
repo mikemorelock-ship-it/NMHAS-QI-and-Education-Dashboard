@@ -14,7 +14,9 @@ import {
   User,
   Target,
   CheckCircle2,
+  FileText,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   CAMPAIGN_STATUS_LABELS,
   CAMPAIGN_STATUS_COLORS,
@@ -32,6 +34,7 @@ import {
 
 interface CampaignInfo {
   name: string;
+  slug: string;
   description: string | null;
   goals: string | null;
   status: string;
@@ -122,15 +125,22 @@ export function CampaignDetailView({ campaign, diagrams, cycles, actionItems }: 
 
       {/* Campaign Header */}
       <div className="space-y-4">
-        <div className="flex items-center gap-3 flex-wrap">
-          <Target className="h-6 w-6 text-nmh-teal" />
-          <h1 className="text-2xl font-bold text-nmh-gray">{campaign.name}</h1>
-          <Badge
-            variant="secondary"
-            style={{ backgroundColor: `${statusColor}20`, color: statusColor }}
-          >
-            {CAMPAIGN_STATUS_LABELS[campaign.status] ?? campaign.status}
-          </Badge>
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <div className="flex items-center gap-3 flex-wrap">
+            <Target className="h-6 w-6 text-nmh-teal" />
+            <h1 className="text-2xl font-bold text-nmh-gray">{campaign.name}</h1>
+            <Badge
+              variant="secondary"
+              style={{ backgroundColor: `${statusColor}20`, color: statusColor }}
+            >
+              {CAMPAIGN_STATUS_LABELS[campaign.status] ?? campaign.status}
+            </Badge>
+          </div>
+          <Link href={`/quality-improvement/campaign/${campaign.slug}/report`}>
+            <Button variant="outline" size="sm" className="gap-1.5">
+              <FileText className="h-4 w-4" /> Campaign Report
+            </Button>
+          </Link>
         </div>
 
         {campaign.description && <p className="text-muted-foreground">{campaign.description}</p>}

@@ -52,8 +52,8 @@
   --color-nmh-yellow: #fcb526;
   --color-nmh-gray: #4b4f54;
   --color-nmh-dark-teal: #00383d;
-  --color-nmh-dark-red: #60151E;
-  --color-nmh-light-gray: #D6D6D6;
+  --color-nmh-dark-red: #60151e;
+  --color-nmh-light-gray: #d6d6d6;
   --color-nmh-dark-brown: #762d10;
 }
 
@@ -114,5 +114,36 @@
   [role="button"],
   [role="tab"] {
     touch-action: manipulation;
+  }
+}
+
+/* Print-friendly styles for campaign reports */
+@media print {
+  /* Hide navigation, buttons, and non-essential UI */
+  .print\:hidden {
+    display: none !important;
+  }
+
+  /* Reset page background */
+  body {
+    background: white !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Improve page breaks */
+  .break-inside-avoid {
+    break-inside: avoid;
+  }
+
+  /* Ensure charts render with colors */
+  svg {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Compact margins for printing */
+  @page {
+    margin: 0.5in;
   }
 }

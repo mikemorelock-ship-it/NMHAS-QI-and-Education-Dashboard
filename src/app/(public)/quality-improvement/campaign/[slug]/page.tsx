@@ -53,6 +53,7 @@ export default async function CampaignDetailPage({
     <CampaignDetailView
       campaign={{
         name: campaign.name,
+        slug: campaign.slug,
         description: campaign.description,
         goals: campaign.goals,
         status: campaign.status,
