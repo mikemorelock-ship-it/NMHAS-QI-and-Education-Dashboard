@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import {
   LineChart,
   BarChart,
@@ -13,6 +14,7 @@ import {
   Tooltip,
   ResponsiveContainer,
   ReferenceLine,
+  ReferenceArea,
 } from "recharts";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
@@ -31,6 +33,8 @@ interface MetricChartProps {
   href?: string;
   rateMultiplier?: number | null;
   rateSuffix?: string | null;
+  baselineStartPeriod?: string | null;
+  baselineEndPeriod?: string | null;
 }
 
 /**
@@ -73,7 +77,86 @@ export function MetricChart({
   href,
   rateMultiplier,
   rateSuffix,
+  baselineStartPeriod,
+  baselineEndPeriod,
 }: MetricChartProps) {
+  /**
+   * IHI Run Chart Rules — detect shifts and trends in the data.
+   *
+   * Shift: 6+ consecutive points all above or all below the median
+   *        (points exactly on the median are skipped / do not break a run).
+   * Trend: 5+ consecutive points continuously increasing or decreasing.
+   */
+  const runChartAnalysis = useMemo(() => {
+    if (data.length < 2) {
+      return { median: 0, enrichedData: data, shifts: [] as number[][], trends: [] as number[][] };
+    }
+
+    // --- Compute median ---
+    const sorted = [...data.map((d) => d.value)].sort((a, b) => a - b);
+    const mid = Math.floor(sorted.length / 2);
+    const median = sorted.length % 2 === 0 ? (sorted[mid - 1] + sorted[mid]) / 2 : sorted[mid];
+
+    // --- Detect shifts (6+ consecutive above or below median) ---
+    const shifts: number[][] = [];
+    let shiftRun: number[] = [];
+    let shiftSide: "above" | "below" | null = null;
+
+    for (let i = 0; i < data.length; i++) {
+      const v = data[i].value;
+      if (v === median) {
+        // Point on median — does not break or extend a run
+        continue;
+      }
+      const side: "above" | "below" = v > median ? "above" : "below";
+      if (side === shiftSide) {
+        shiftRun.push(i);
+      } else {
+        if (shiftRun.length >= 6) shifts.push([...shiftRun]);
+        shiftRun = [i];
+        shiftSide = side;
+      }
+    }
+    if (shiftRun.length >= 6) shifts.push([...shiftRun]);
+
+    // --- Detect trends (5+ consecutive increasing or decreasing) ---
+    const trends: number[][] = [];
+    let trendRun: number[] = [0];
+    let trendDir: "up" | "down" | null = null;
+
+    for (let i = 1; i < data.length; i++) {
+      const diff = data[i].value - data[i - 1].value;
+      if (diff === 0) {
+        if (trendRun.length >= 5) trends.push([...trendRun]);
+        trendRun = [i];
+        trendDir = null;
+        continue;
+      }
+      const dir: "up" | "down" = diff > 0 ? "up" : "down";
+      if (dir === trendDir) {
+        trendRun.push(i);
+      } else {
+        if (trendRun.length >= 5) trends.push([...trendRun]);
+        trendRun = [i - 1, i];
+        trendDir = dir;
+      }
+    }
+    if (trendRun.length >= 5) trends.push([...trendRun]);
+
+    // --- Build index sets for fast lookup ---
+    const shiftIndices = new Set(shifts.flat());
+    const trendIndices = new Set(trends.flat());
+
+    // --- Enrich data with shift / trend flags ---
+    const enrichedData = data.map((d, i) => ({
+      ...d,
+      shift: shiftIndices.has(i),
+      trend: trendIndices.has(i),
+    }));
+
+    return { median, enrichedData, shifts, trends };
+  }, [data]);
+
   // Empty state
   if (data.length === 0) {
     return (
@@ -140,11 +223,54 @@ export function MetricChart({
           }}
         />
       )}
+      {baselineStartPeriod && baselineEndPeriod && (
+        <ReferenceArea
+          x1={baselineStartPeriod}
+          x2={baselineEndPeriod}
+          fill="#3b82f6"
+          fillOpacity={0.08}
+        />
+      )}
+      {data.length >= 2 && (
+        <ReferenceLine
+          y={runChartAnalysis.median}
+          stroke={NMH_COLORS.gray}
+          strokeDasharray="4 4"
+          strokeWidth={1}
+          label={{
+            value: `Median: ${formatMetricValue(runChartAnalysis.median, unit, rateMultiplier, rateSuffix)}`,
+            position: "insideBottomRight",
+            fill: NMH_COLORS.gray,
+            fontSize: 11,
+          }}
+        />
+      )}
     </>
   );
 
+  const { median, enrichedData, shifts, trends } = runChartAnalysis;
+
+  /**
+   * Custom dot renderer for the line chart.
+   * Shift points are orange, trend points are purple, normal points use the
+   * chart colour. If a point is both shift and trend, shift takes priority.
+   */
+  const renderDot = (props: {
+    cx?: number;
+    cy?: number;
+    index?: number;
+    payload?: { shift?: boolean; trend?: boolean };
+  }) => {
+    const { cx, cy, payload } = props;
+    if (cx == null || cy == null) return null;
+    let fill = color;
+    if (payload?.shift) fill = NMH_COLORS.orange;
+    else if (payload?.trend) fill = "#8b5cf6"; // purple
+    return <circle key={`dot-${cx}-${cy}`} cx={cx} cy={cy} r={3} fill={fill} stroke="none" />;
+  };
+
   const commonChartProps = {
-    data,
+    data: enrichedData,
     margin: { top: 5, right: 10, left: 10, bottom: 5 },
   };
 
@@ -192,7 +318,7 @@ export function MetricChart({
               dataKey="value"
               stroke={color}
               strokeWidth={2}
-              dot={{ r: 3, fill: color }}
+              dot={renderDot}
               activeDot={{ r: 5, fill: color }}
             />
           </LineChart>
@@ -223,6 +349,34 @@ export function MetricChart({
             {renderChart()}
           </ResponsiveContainer>
         </div>
+        {(shifts.length > 0 || trends.length > 0) && (
+          <div className="mt-3 space-y-1 text-xs text-muted-foreground">
+            {shifts.map((run, idx) => (
+              <p key={`shift-${idx}`}>
+                <span
+                  className="inline-block w-2.5 h-2.5 rounded-full mr-1.5 align-middle"
+                  style={{ backgroundColor: NMH_COLORS.orange }}
+                />
+                <strong>Shift detected</strong> — {run.length} consecutive points{" "}
+                {enrichedData[run[0]].value > median ? "above" : "below"} median (
+                {enrichedData[run[0]].period} – {enrichedData[run[run.length - 1]].period})
+              </p>
+            ))}
+            {trends.map((run, idx) => (
+              <p key={`trend-${idx}`}>
+                <span
+                  className="inline-block w-2.5 h-2.5 rounded-full mr-1.5 align-middle"
+                  style={{ backgroundColor: "#8b5cf6" }}
+                />
+                <strong>Trend detected</strong> — {run.length} consecutive points{" "}
+                {enrichedData[run[run.length - 1]].value > enrichedData[run[0]].value
+                  ? "increasing"
+                  : "decreasing"}{" "}
+                ({enrichedData[run[0]].period} – {enrichedData[run[run.length - 1]].period})
+              </p>
+            ))}
+          </div>
+        )}
       </CardContent>
     </Card>
   );

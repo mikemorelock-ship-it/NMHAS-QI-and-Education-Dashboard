@@ -48,6 +48,7 @@ interface CampaignInfo {
   slug: string;
   description: string | null;
   goals: string | null;
+  keyFindings: string | null;
   status: string;
   ownerName: string | null;
   startDate: string | null;
@@ -108,6 +109,8 @@ interface MetricReportData {
     startDate: string | null;
     endDate: string | null;
   }>;
+  baselineStartPeriod: string | null;
+  baselineEndPeriod: string | null;
 }
 
 interface ActionItemInfo {
@@ -617,6 +620,15 @@ export function CampaignReportView({
           </div>
         )}
 
+        {campaign.keyFindings && (
+          <div className="bg-nmh-teal/5 border border-nmh-teal/20 rounded-lg p-4">
+            <p className="text-xs font-medium text-nmh-teal uppercase tracking-wide mb-1">
+              Key Findings & Lessons Learned
+            </p>
+            <p className="text-sm whitespace-pre-line">{campaign.keyFindings}</p>
+          </div>
+        )}
+
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <div className="border rounded-lg p-3 text-center">
             <div className="text-2xl font-bold text-nmh-teal">{diagrams.length}</div>
@@ -697,18 +709,80 @@ export function CampaignReportView({
             PDSA Cycles ({totalCycles})
           </h2>
 
-          {diagrams.map((diagram) =>
-            diagram.cycles.length > 0 ? (
-              <div key={diagram.id} className="space-y-2">
+          {diagrams.map((diagram) => {
+            if (diagram.cycles.length === 0) return null;
+
+            // Group cycles by change idea for progression tracking
+            const grouped = new Map<string, CycleInfo[]>();
+            const ungrouped: CycleInfo[] = [];
+            for (const cycle of diagram.cycles) {
+              if (cycle.changeIdea) {
+                const key = cycle.changeIdea;
+                if (!grouped.has(key)) grouped.set(key, []);
+                grouped.get(key)!.push(cycle);
+              } else {
+                ungrouped.push(cycle);
+              }
+            }
+
+            return (
+              <div key={diagram.id} className="space-y-3">
                 <h3 className="text-sm font-medium text-muted-foreground">{diagram.name}</h3>
-                <div className="space-y-2">
-                  {diagram.cycles.map((cycle) => (
-                    <PdsaCycleSummary key={cycle.id} cycle={cycle} />
-                  ))}
-                </div>
+
+                {/* Grouped by change idea */}
+                {Array.from(grouped.entries()).map(([changeIdea, cycles]) => (
+                  <div key={changeIdea} className="border rounded-lg p-3 space-y-2">
+                    <div className="flex items-center gap-2 text-xs">
+                      <span className="font-medium text-nmh-gray">Change Idea:</span>
+                      <span className="text-muted-foreground">{changeIdea}</span>
+                      <span className="text-muted-foreground/50">
+                        ({cycles.length} cycle{cycles.length !== 1 ? "s" : ""})
+                      </span>
+                    </div>
+                    {/* Progression chain */}
+                    <div className="flex items-center gap-1 flex-wrap text-xs">
+                      {cycles.map((c, idx) => (
+                        <span key={c.id} className="flex items-center gap-1">
+                          {idx > 0 && <span className="text-muted-foreground/40">→</span>}
+                          <Badge
+                            variant="secondary"
+                            className={`text-[10px] ${
+                              c.outcome === "adopt"
+                                ? "bg-green-100 text-green-700"
+                                : c.outcome === "adapt"
+                                  ? "bg-yellow-100 text-yellow-700"
+                                  : c.outcome === "abandon"
+                                    ? "bg-red-100 text-red-700"
+                                    : "bg-muted"
+                            }`}
+                          >
+                            Cycle {c.cycleNumber}
+                            {c.outcome
+                              ? `: ${PDSA_OUTCOME_LABELS[c.outcome] ?? c.outcome}`
+                              : ` (${PDSA_STATUS_LABELS[c.status] ?? c.status})`}
+                          </Badge>
+                        </span>
+                      ))}
+                    </div>
+                    <div className="space-y-2">
+                      {cycles.map((cycle) => (
+                        <PdsaCycleSummary key={cycle.id} cycle={cycle} />
+                      ))}
+                    </div>
+                  </div>
+                ))}
+
+                {/* Ungrouped cycles (no change idea linked) */}
+                {ungrouped.length > 0 && (
+                  <div className="space-y-2">
+                    {ungrouped.map((cycle) => (
+                      <PdsaCycleSummary key={cycle.id} cycle={cycle} />
+                    ))}
+                  </div>
+                )}
               </div>
-            ) : null
-          )}
+            );
+          })}
         </section>
       )}
 
@@ -768,6 +842,8 @@ export function CampaignReportView({
                         rateMultiplier={metric.rateMultiplier}
                         rateSuffix={metric.rateSuffix}
                         annotations={metric.annotations}
+                        baselineStartPeriod={metric.baselineStartPeriod}
+                        baselineEndPeriod={metric.baselineEndPeriod}
                       />
                     ) : (
                       <MetricChart
@@ -778,6 +854,8 @@ export function CampaignReportView({
                         target={metric.target ?? undefined}
                         rateMultiplier={metric.rateMultiplier}
                         rateSuffix={metric.rateSuffix}
+                        baselineStartPeriod={metric.baselineStartPeriod}
+                        baselineEndPeriod={metric.baselineEndPeriod}
                       />
                     )}
                   </div>
@@ -791,6 +869,8 @@ export function CampaignReportView({
                       rateMultiplier={metric.rateMultiplier}
                       rateSuffix={metric.rateSuffix}
                       annotations={metric.annotations}
+                      baselineStartPeriod={metric.baselineStartPeriod}
+                      baselineEndPeriod={metric.baselineEndPeriod}
                     />
                   </div>
                 ) : hasChartData ? (
@@ -802,6 +882,8 @@ export function CampaignReportView({
                     target={metric.target ?? undefined}
                     rateMultiplier={metric.rateMultiplier}
                     rateSuffix={metric.rateSuffix}
+                    baselineStartPeriod={metric.baselineStartPeriod}
+                    baselineEndPeriod={metric.baselineEndPeriod}
                   />
                 ) : (
                   <div className="border rounded-lg p-4 text-sm text-muted-foreground text-center">

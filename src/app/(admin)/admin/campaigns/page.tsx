@@ -33,6 +33,7 @@ export default async function CampaignsPage() {
     slug: c.slug,
     description: c.description,
     goals: c.goals,
+    keyFindings: c.keyFindings,
     status: c.status,
     isActive: c.isActive,
     sortOrder: c.sortOrder,

@@ -117,6 +117,8 @@ export default async function CampaignDetailPage({
       startDate: string | null;
       endDate: string | null;
     }>;
+    baselineStartPeriod: string | null;
+    baselineEndPeriod: string | null;
   }
 
   const metricsData: MetricReportData[] = [];
@@ -192,6 +194,8 @@ export default async function CampaignDetailPage({
       spcData,
       annotations: pdsaAnnotations[metricId] ?? [],
       changeIdeaRanges,
+      baselineStartPeriod: metricDef.baselineStart ? formatPeriod(metricDef.baselineStart) : null,
+      baselineEndPeriod: metricDef.baselineEnd ? formatPeriod(metricDef.baselineEnd) : null,
     });
   }
 
@@ -352,6 +356,7 @@ export default async function CampaignDetailPage({
         name: campaign.name,
         description: campaign.description,
         goals: campaign.goals,
+        keyFindings: campaign.keyFindings,
         status: campaign.status,
         ownerName: campaign.owner ? `${campaign.owner.firstName} ${campaign.owner.lastName}` : null,
         startDate: campaign.startDate?.toISOString().split("T")[0] ?? null,

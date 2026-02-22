@@ -290,6 +290,7 @@ model Campaign {
   slug        String    @unique
   description String?
   goals       String?
+  keyFindings String?   // editable narrative summary of key findings / lessons learned
   status      String    @default("planning") // "planning" | "active" | "completed" | "archived"
   ownerId     String?
   startDate   DateTime?

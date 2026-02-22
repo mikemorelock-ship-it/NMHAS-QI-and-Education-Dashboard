@@ -10,6 +10,7 @@ import {
   Tooltip,
   Legend,
   ReferenceLine,
+  ReferenceArea,
 } from "recharts";
 import { NMH_COLORS } from "@/lib/constants";
 import type { SPCChartData, QIAnnotation } from "@/types";
@@ -27,6 +28,8 @@ interface ControlChartProps {
   rateMultiplier?: number | null;
   rateSuffix?: string | null;
   annotations?: QIAnnotation[];
+  baselineStartPeriod?: string | null;
+  baselineEndPeriod?: string | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -172,6 +175,8 @@ export function ControlChart({
   rateMultiplier,
   rateSuffix,
   annotations,
+  baselineStartPeriod,
+  baselineEndPeriod,
 }: ControlChartProps) {
   if (!spcData || spcData.points.length === 0) {
     return (
@@ -190,6 +195,20 @@ export function ControlChart({
 
   const specialCauseCount = spcData.points.filter((p) => p.specialCause).length;
 
+  // Aggregate special cause rules for Pareto summary
+  const ruleFrequencyMap = new Map<string, number>();
+  for (const point of spcData.points) {
+    if (point.specialCauseRules) {
+      for (const rule of point.specialCauseRules) {
+        ruleFrequencyMap.set(rule, (ruleFrequencyMap.get(rule) ?? 0) + 1);
+      }
+    }
+  }
+  const paretoRules = Array.from(ruleFrequencyMap.entries())
+    .map(([rule, count]) => ({ rule, count }))
+    .sort((a, b) => b.count - a.count);
+  const maxRuleCount = paretoRules.length > 0 ? paretoRules[0].count : 0;
+
   const hasAnnotations = annotations && annotations.length > 0;
   const chartTopMargin = hasAnnotations ? 20 : 10;
 
@@ -203,6 +222,24 @@ export function ControlChart({
             margin={{ top: chartTopMargin, right: 30, left: 10, bottom: 5 }}
           >
             <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+
+            {/* Baseline period shading */}
+            {baselineStartPeriod != null && baselineEndPeriod != null && (
+              <ReferenceArea
+                x1={baselineStartPeriod}
+                x2={baselineEndPeriod}
+                fill="#3b82f6"
+                fillOpacity={0.08}
+                label={{
+                  value: "Baseline",
+                  position: "insideTop",
+                  fill: "#3b82f6",
+                  fontSize: 11,
+                  fontWeight: 600,
+                }}
+              />
+            )}
+
             <XAxis dataKey="period" tick={{ fontSize: 11 }} tickLine={false} />
             <YAxis
               domain={[Math.floor(yMin - yPadding), Math.ceil(yMax + yPadding)]}
@@ -437,6 +474,38 @@ export function ControlChart({
           </strong>
         </span>
       </div>
+
+      {/* Pareto summary of special cause rules */}
+      {paretoRules.length > 0 && (
+        <div className="mt-3 px-2">
+          <p className="text-xs font-medium text-muted-foreground mb-2">
+            Special Cause Rules (by frequency)
+          </p>
+          <div className="space-y-1.5">
+            {paretoRules.map(({ rule, count }) => (
+              <div key={rule} className="flex items-center gap-2 text-xs">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <div
+                      className="h-4 rounded-sm shrink-0"
+                      style={{
+                        width: `${maxRuleCount > 0 ? (count / maxRuleCount) * 100 : 0}%`,
+                        minWidth: "8px",
+                        backgroundColor: "#f97316",
+                        opacity: 0.7,
+                      }}
+                    />
+                    <span className="font-mono font-medium text-orange-600 shrink-0">{count}</span>
+                  </div>
+                  <p className="text-muted-foreground mt-0.5 truncate" title={rule}>
+                    {rule}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

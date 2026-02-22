@@ -66,6 +66,7 @@ interface CampaignRow {
   slug: string;
   description: string | null;
   goals: string | null;
+  keyFindings: string | null;
   status: string;
   isActive: boolean;
   sortOrder: number;
@@ -137,6 +138,17 @@ function CampaignFormFields({
           rows={3}
           maxLength={2000}
           placeholder="One goal per line, e.g.:&#10;- Reduce response time to under 8 min&#10;- Deploy in all divisions"
+        />
+      </div>
+      <div>
+        <Label htmlFor="keyFindings">Key Findings / Summary of Learning</Label>
+        <Textarea
+          id="keyFindings"
+          name="keyFindings"
+          defaultValue={defaults?.keyFindings ?? ""}
+          rows={4}
+          maxLength={5000}
+          placeholder="Summarize key findings, lessons learned, and interpretations of the data..."
         />
       </div>
       <div className="grid grid-cols-2 gap-4">
