@@ -132,6 +132,35 @@ function ControlChartTooltip({
 }
 
 // ---------------------------------------------------------------------------
+// Numbered annotation marker — renders a circled number at the top of the
+// reference line. A legend below the chart maps numbers to full labels.
+// ---------------------------------------------------------------------------
+
+function AnnotationMarker({
+  viewBox,
+  value,
+  fill,
+}: {
+  viewBox?: { x?: number; y?: number; width?: number; height?: number };
+  value?: string;
+  fill: string;
+}) {
+  if (!viewBox || viewBox.x == null || viewBox.y == null) return null;
+
+  const cx = viewBox.x;
+  const cy = (viewBox.y ?? 0) + 12;
+
+  return (
+    <g>
+      <circle cx={cx} cy={cy} r={8} fill="white" stroke={fill} strokeWidth={1.5} />
+      <text x={cx} y={cy + 3.5} fill={fill} fontSize={9} fontWeight={600} textAnchor="middle">
+        {value}
+      </text>
+    </g>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Main Component
 // ---------------------------------------------------------------------------
 
@@ -161,12 +190,18 @@ export function ControlChart({
 
   const specialCauseCount = spcData.points.filter((p) => p.specialCause).length;
 
+  const hasAnnotations = annotations && annotations.length > 0;
+  const chartTopMargin = hasAnnotations ? 20 : 10;
+
   return (
     <div className={className}>
       {/* Individuals Chart */}
       <div aria-hidden="true">
-        <ResponsiveContainer width="100%" height={350}>
-          <ComposedChart data={spcData.points} margin={{ top: 10, right: 30, left: 10, bottom: 5 }}>
+        <ResponsiveContainer width="100%" height={hasAnnotations ? 380 : 350}>
+          <ComposedChart
+            data={spcData.points}
+            margin={{ top: chartTopMargin, right: 30, left: 10, bottom: 5 }}
+          >
             <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
             <XAxis dataKey="period" tick={{ fontSize: 11 }} tickLine={false} />
             <YAxis
@@ -242,24 +277,20 @@ export function ControlChart({
               />
             )}
 
-            {/* QI Annotation vertical lines */}
-            {annotations?.map((ann) => (
-              <ReferenceLine
-                key={ann.id}
-                x={ann.period}
-                stroke={ann.type === "pdsa" ? "#7c3aed" : NMH_COLORS.teal}
-                strokeDasharray="4 3"
-                strokeWidth={1.5}
-                label={{
-                  value: ann.label,
-                  position: "insideTopLeft",
-                  fill: ann.type === "pdsa" ? "#7c3aed" : NMH_COLORS.teal,
-                  fontSize: 10,
-                  angle: -90,
-                  offset: 10,
-                }}
-              />
-            ))}
+            {/* QI Annotation vertical lines — numbered markers */}
+            {annotations?.map((ann, idx) => {
+              const color = ann.type === "pdsa" ? "#7c3aed" : NMH_COLORS.teal;
+              return (
+                <ReferenceLine
+                  key={ann.id}
+                  x={ann.period}
+                  stroke={color}
+                  strokeDasharray="4 3"
+                  strokeWidth={1.5}
+                  label={<AnnotationMarker value={String(idx + 1)} fill={color} />}
+                />
+              );
+            })}
 
             {/* Data line */}
             <Line
@@ -274,6 +305,26 @@ export function ControlChart({
           </ComposedChart>
         </ResponsiveContainer>
       </div>
+
+      {/* Annotation legend — maps numbered markers to full labels */}
+      {hasAnnotations && (
+        <div className="mt-2 px-2 space-y-0.5">
+          {annotations!.map((ann, idx) => {
+            const color = ann.type === "pdsa" ? "#7c3aed" : NMH_COLORS.teal;
+            return (
+              <div key={ann.id} className="flex items-start gap-2 text-xs">
+                <span
+                  className="inline-flex items-center justify-center w-4 h-4 rounded-full border text-[9px] font-semibold shrink-0 mt-px"
+                  style={{ borderColor: color, color }}
+                >
+                  {idx + 1}
+                </span>
+                <span className="text-muted-foreground">{ann.label}</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       {/* Moving Range Chart (for I-MR) */}
       {spcData.chartType === "i-mr" && spcData.movingRange && spcData.movingRange.length > 0 && (
