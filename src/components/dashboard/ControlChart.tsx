@@ -132,11 +132,11 @@ function ControlChartTooltip({
 }
 
 // ---------------------------------------------------------------------------
-// Custom annotation label for vertical reference lines — renders rotated text
-// that extends downward inside the chart area so it doesn't clip.
+// Numbered annotation marker — renders a circled number at the top of the
+// reference line. A legend below the chart maps numbers to full labels.
 // ---------------------------------------------------------------------------
 
-function AnnotationLabel({
+function AnnotationMarker({
   viewBox,
   value,
   fill,
@@ -147,22 +147,16 @@ function AnnotationLabel({
 }) {
   if (!viewBox || viewBox.x == null || viewBox.y == null) return null;
 
-  // Anchor at bottom of chart area; text extends upward after -90° rotation
-  const chartHeight = viewBox.height ?? 300;
-  const anchorX = viewBox.x + 4;
-  const anchorY = (viewBox.y ?? 0) + chartHeight - 8;
+  const cx = viewBox.x;
+  const cy = (viewBox.y ?? 0) + 12;
 
   return (
-    <text
-      x={anchorX}
-      y={anchorY}
-      fill={fill}
-      fontSize={9}
-      textAnchor="start"
-      transform={`rotate(-90, ${anchorX}, ${anchorY})`}
-    >
-      {value}
-    </text>
+    <g>
+      <circle cx={cx} cy={cy} r={8} fill="white" stroke={fill} strokeWidth={1.5} />
+      <text x={cx} y={cy + 3.5} fill={fill} fontSize={9} fontWeight={600} textAnchor="middle">
+        {value}
+      </text>
+    </g>
   );
 }
 
@@ -283,8 +277,8 @@ export function ControlChart({
               />
             )}
 
-            {/* QI Annotation vertical lines */}
-            {annotations?.map((ann) => {
+            {/* QI Annotation vertical lines — numbered markers */}
+            {annotations?.map((ann, idx) => {
               const color = ann.type === "pdsa" ? "#7c3aed" : NMH_COLORS.teal;
               return (
                 <ReferenceLine
@@ -293,7 +287,7 @@ export function ControlChart({
                   stroke={color}
                   strokeDasharray="4 3"
                   strokeWidth={1.5}
-                  label={<AnnotationLabel value={ann.label} fill={color} />}
+                  label={<AnnotationMarker value={String(idx + 1)} fill={color} />}
                 />
               );
             })}
@@ -311,6 +305,26 @@ export function ControlChart({
           </ComposedChart>
         </ResponsiveContainer>
       </div>
+
+      {/* Annotation legend — maps numbered markers to full labels */}
+      {hasAnnotations && (
+        <div className="mt-2 px-2 space-y-0.5">
+          {annotations!.map((ann, idx) => {
+            const color = ann.type === "pdsa" ? "#7c3aed" : NMH_COLORS.teal;
+            return (
+              <div key={ann.id} className="flex items-start gap-2 text-xs">
+                <span
+                  className="inline-flex items-center justify-center w-4 h-4 rounded-full border text-[9px] font-semibold shrink-0 mt-px"
+                  style={{ borderColor: color, color }}
+                >
+                  {idx + 1}
+                </span>
+                <span className="text-muted-foreground">{ann.label}</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       {/* Moving Range Chart (for I-MR) */}
       {spcData.chartType === "i-mr" && spcData.movingRange && spcData.movingRange.length > 0 && (
