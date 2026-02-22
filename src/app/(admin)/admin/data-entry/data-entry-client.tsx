@@ -198,19 +198,27 @@ export function DataEntryClient({
   // Recent entries — local state for immediate updates after mutations
   // -----------------------------------------------------------------------
   const [localEntries, setLocalEntries] = useState<EntryRow[]>(recentEntries);
-  const [refreshNeeded, setRefreshNeeded] = useState(0);
+  const pendingMutationRef = useRef(false);
 
-  // Sync local state when server props change (e.g. pagination navigation)
+  // Sync local state when server props change (e.g. pagination navigation),
+  // but skip the sync right after a mutation so optimistic entries aren't wiped.
   useEffect(() => {
-    setLocalEntries(recentEntries);
-  }, [recentEntries]);
-
-  // Trigger router.refresh() outside startTransition context
-  useEffect(() => {
-    if (refreshNeeded > 0) {
-      router.refresh();
+    if (pendingMutationRef.current) {
+      // Merge: keep optimistic entries (id starts with "optimistic-") and
+      // replace the rest with fresh server data.
+      setLocalEntries((prev) => {
+        const optimistic = prev.filter((e) => e.id.startsWith("optimistic-"));
+        if (optimistic.length === 0) return recentEntries;
+        const serverIds = new Set(recentEntries.map((e) => e.id));
+        // Keep optimistic rows that haven't been resolved by the server yet
+        const stillPending = optimistic.filter((e) => !serverIds.has(e.id));
+        return [...stillPending, ...recentEntries];
+      });
+      pendingMutationRef.current = false;
+    } else {
+      setLocalEntries(recentEntries);
     }
-  }, [refreshNeeded, router]);
+  }, [recentEntries]);
 
   // -----------------------------------------------------------------------
   // Recent entries filter + sort state
@@ -652,7 +660,8 @@ export function DataEntryClient({
             }))
           );
           setPeriodStart("");
-          setRefreshNeeded((n) => n + 1);
+          pendingMutationRef.current = true;
+          router.refresh();
         } else {
           setErrorMessage(result.error || "Failed to save entries.");
         }
@@ -745,7 +754,8 @@ export function DataEntryClient({
         setBulkRows([
           { key: ++bulkRowKey, metricDefinitionId: "", periodStart: "", value: "", notes: "" },
         ]);
-        setRefreshNeeded((n) => n + 1);
+        pendingMutationRef.current = true;
+        router.refresh();
       } else {
         setBulkResult(`Error: ${result.error}`);
       }
@@ -818,7 +828,8 @@ export function DataEntryClient({
         );
         setSelectedEntryIds(new Set());
         setLocalEntries((prev) => prev.filter((e) => !deletedIds.has(e.id)));
-        setRefreshNeeded((n) => n + 1);
+        pendingMutationRef.current = true;
+        router.refresh();
       } else {
         setErrorMessage(result.error || "Failed to delete entries.");
       }
@@ -1765,7 +1776,8 @@ export function DataEntryClient({
               onSuccess={() => {
                 setSuccessMessage("Entry updated successfully.");
                 setEditTarget(null);
-                setRefreshNeeded((n) => n + 1);
+                pendingMutationRef.current = true;
+                router.refresh();
               }}
               onError={(msg) => setErrorMessage(msg)}
               onCancel={() => setEditTarget(null)}
@@ -1808,7 +1820,8 @@ export function DataEntryClient({
                   await deleteEntry(deletedId);
                   setLocalEntries((prev) => prev.filter((e) => e.id !== deletedId));
                   setDeleteTarget(null);
-                  setRefreshNeeded((n) => n + 1);
+                  pendingMutationRef.current = true;
+                  router.refresh();
                 }
               }}
             >
