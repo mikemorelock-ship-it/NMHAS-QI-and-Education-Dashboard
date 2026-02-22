@@ -72,6 +72,7 @@ export default async function DataEntryPage({
           },
           division: { select: { name: true } },
           region: { select: { name: true } },
+          createdBy: { select: { firstName: true, lastName: true } },
         },
       }),
       prisma.metricAssociation.findMany({
@@ -120,6 +121,8 @@ export default async function DataEntryPage({
     numerator: e.numerator,
     denominator: e.denominator,
     notes: e.notes,
+    createdAt: e.createdAt.toISOString(),
+    createdByName: e.createdBy ? `${e.createdBy.firstName} ${e.createdBy.lastName}` : null,
   }));
 
   const totalPages = Math.max(1, Math.ceil(totalEntryCount / pageSize));
