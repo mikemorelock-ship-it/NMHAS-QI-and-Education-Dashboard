@@ -55,6 +55,9 @@ import {
   Filter,
   ListChecks,
   FileUp,
+  ArrowUp,
+  ArrowDown,
+  ArrowUpDown,
 } from "lucide-react";
 
 // ---------------------------------------------------------------------------
@@ -189,11 +192,23 @@ export function DataEntryClient({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // -----------------------------------------------------------------------
-  // Recent entries filter state
+  // Recent entries filter + sort state
   // -----------------------------------------------------------------------
   const [filterMetric, setFilterMetric] = useState<string>("");
   const [filterPeriod, setFilterPeriod] = useState<string>("");
   const [displayLimit, setDisplayLimit] = useState<number>(100);
+
+  type SortColumn =
+    | "metricName"
+    | "divisionName"
+    | "regionName"
+    | "periodStart"
+    | "value"
+    | "createdAt"
+    | "createdByName";
+  type SortDirection = "asc" | "desc";
+  const [sortColumn, setSortColumn] = useState<SortColumn>("createdAt");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
   const [deleteTarget, setDeleteTarget] = useState<EntryRow | null>(null);
   const [editTarget, setEditTarget] = useState<EntryRow | null>(null);
   const [selectedEntryIds, setSelectedEntryIds] = useState<Set<string>>(new Set());
@@ -415,7 +430,56 @@ export function DataEntryClient({
     return true;
   });
 
-  const displayedEntries = filteredEntries.slice(0, displayLimit);
+  const sortedEntries = useMemo(() => {
+    const sorted = [...filteredEntries].sort((a, b) => {
+      let cmp = 0;
+      switch (sortColumn) {
+        case "metricName":
+          cmp = a.metricName.localeCompare(b.metricName);
+          break;
+        case "divisionName":
+          cmp = (a.divisionName ?? "").localeCompare(b.divisionName ?? "");
+          break;
+        case "regionName":
+          cmp = (a.regionName ?? "").localeCompare(b.regionName ?? "");
+          break;
+        case "periodStart":
+          cmp = a.periodStart.localeCompare(b.periodStart);
+          break;
+        case "value":
+          cmp = a.value - b.value;
+          break;
+        case "createdAt":
+          cmp = a.createdAt.localeCompare(b.createdAt);
+          break;
+        case "createdByName":
+          cmp = (a.createdByName ?? "").localeCompare(b.createdByName ?? "");
+          break;
+      }
+      return sortDirection === "asc" ? cmp : -cmp;
+    });
+    return sorted;
+  }, [filteredEntries, sortColumn, sortDirection]);
+
+  const displayedEntries = sortedEntries.slice(0, displayLimit);
+
+  function toggleSort(col: SortColumn) {
+    if (sortColumn === col) {
+      setSortDirection((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortColumn(col);
+      setSortDirection(col === "createdAt" ? "desc" : "asc");
+    }
+  }
+
+  function SortIcon({ col }: { col: SortColumn }) {
+    if (sortColumn !== col) return <ArrowUpDown className="h-3.5 w-3.5 ml-1 opacity-40" />;
+    return sortDirection === "asc" ? (
+      <ArrowUp className="h-3.5 w-3.5 ml-1" />
+    ) : (
+      <ArrowDown className="h-3.5 w-3.5 ml-1" />
+    );
+  }
 
   // -----------------------------------------------------------------------
   // Handlers
@@ -1426,13 +1490,69 @@ export function DataEntryClient({
                       aria-label="Select all entries"
                     />
                   </TableHead>
-                  <TableHead>Metric</TableHead>
-                  <TableHead>Division</TableHead>
-                  <TableHead>Department</TableHead>
-                  <TableHead>Period</TableHead>
-                  <TableHead className="text-right">Value</TableHead>
-                  <TableHead>Entered</TableHead>
-                  <TableHead>By</TableHead>
+                  <TableHead>
+                    <button
+                      type="button"
+                      className="flex items-center hover:text-foreground transition-colors"
+                      onClick={() => toggleSort("metricName")}
+                    >
+                      Metric <SortIcon col="metricName" />
+                    </button>
+                  </TableHead>
+                  <TableHead>
+                    <button
+                      type="button"
+                      className="flex items-center hover:text-foreground transition-colors"
+                      onClick={() => toggleSort("divisionName")}
+                    >
+                      Division <SortIcon col="divisionName" />
+                    </button>
+                  </TableHead>
+                  <TableHead>
+                    <button
+                      type="button"
+                      className="flex items-center hover:text-foreground transition-colors"
+                      onClick={() => toggleSort("regionName")}
+                    >
+                      Department <SortIcon col="regionName" />
+                    </button>
+                  </TableHead>
+                  <TableHead>
+                    <button
+                      type="button"
+                      className="flex items-center hover:text-foreground transition-colors"
+                      onClick={() => toggleSort("periodStart")}
+                    >
+                      Period <SortIcon col="periodStart" />
+                    </button>
+                  </TableHead>
+                  <TableHead className="text-right">
+                    <button
+                      type="button"
+                      className="flex items-center justify-end hover:text-foreground transition-colors ml-auto"
+                      onClick={() => toggleSort("value")}
+                    >
+                      Value <SortIcon col="value" />
+                    </button>
+                  </TableHead>
+                  <TableHead>
+                    <button
+                      type="button"
+                      className="flex items-center hover:text-foreground transition-colors"
+                      onClick={() => toggleSort("createdAt")}
+                    >
+                      Entered <SortIcon col="createdAt" />
+                    </button>
+                  </TableHead>
+                  <TableHead>
+                    <button
+                      type="button"
+                      className="flex items-center hover:text-foreground transition-colors"
+                      onClick={() => toggleSort("createdByName")}
+                    >
+                      By <SortIcon col="createdByName" />
+                    </button>
+                  </TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
