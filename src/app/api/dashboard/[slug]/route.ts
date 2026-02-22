@@ -99,15 +99,14 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       }
 
       const kpis = kpiMetrics.map((metric) => {
-        const entries = allByMetric.get(metric.id) ?? [];
-        const recent = entries.slice(-2);
+        const filteredEntries = filteredByMetric.get(metric.id) ?? [];
+        const recent = filteredEntries.slice(-2);
         const currentValue = recent.length > 0 ? recent[recent.length - 1].value : 0;
         const previousValue = recent.length > 1 ? recent[recent.length - 2].value : 0;
         let trend = 0;
         if (previousValue !== 0) {
           trend = ((currentValue - previousValue) / Math.abs(previousValue)) * 100;
         }
-        const sparkEntries = filteredByMetric.get(metric.id) ?? [];
         return {
           metricId: metric.id,
           metricSlug: metric.slug,
@@ -119,7 +118,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
           unit: metric.unit,
           target: metric.target,
           trend: Math.round(trend * 10) / 10,
-          sparkline: sparkEntries.slice(-12).map((e) => e.value),
+          sparkline: filteredEntries.slice(-12).map((e) => e.value),
           chartType: metric.chartType,
           category: metric.categoryLegacy,
           aggregationType: metric.aggregationType,
@@ -275,8 +274,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       const aggType = metric.aggregationType as AggregationType;
       const dataType = (metric.dataType ?? "continuous") as MetricDataType;
 
-      const entries = allByMetric.get(metric.id) ?? [];
-      const aggregatedSeries = aggregateByPeriodWeighted(entries, dataType, aggType);
+      const filteredEntries = filteredByMetric.get(metric.id) ?? [];
+      const aggregatedSeries = aggregateByPeriodWeighted(filteredEntries, dataType, aggType);
 
       const recent = aggregatedSeries.slice(-2);
       const currentValue = recent.length > 0 ? recent[recent.length - 1].value : 0;
@@ -287,10 +286,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         trend = ((currentValue - previousValue) / Math.abs(previousValue)) * 100;
       }
 
-      const sparkEntries = filteredByMetric.get(metric.id) ?? [];
-      const sparklineSeries = aggregateByPeriodWeighted(sparkEntries, dataType, aggType)
-        .slice(-12)
-        .map((s) => s.value);
+      const sparklineSeries = aggregatedSeries.slice(-12).map((s) => s.value);
 
       return {
         metricId: metric.id,

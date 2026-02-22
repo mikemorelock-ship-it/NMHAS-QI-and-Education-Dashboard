@@ -17,7 +17,7 @@ import type { DivisionOverview, DivisionDetail, KpiData, MetricChartData } from 
 
 function KpiGridSkeleton() {
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 auto-rows-[1fr] gap-4">
       {Array.from({ length: 8 }).map((_, i) => (
         <div key={i} className="min-h-[140px] rounded-xl border bg-card p-4 animate-pulse">
           <div className="h-3 w-24 bg-muted rounded mb-3" />
@@ -170,7 +170,7 @@ export default function PublicDashboardPage() {
         <KpiGridSkeleton />
       ) : displayKpis.length > 0 ? (
         viewMode === "cards" ? (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 auto-rows-[1fr] gap-4">
             {displayKpis.map((kpi) => (
               <KpiCard
                 key={kpi.metricId}

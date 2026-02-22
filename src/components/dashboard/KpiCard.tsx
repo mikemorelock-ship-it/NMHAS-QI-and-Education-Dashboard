@@ -42,7 +42,7 @@ export function KpiCard({
   const cardContent = (
     <Card
       className={cn(
-        "relative min-h-[140px] p-4 rounded-xl shadow-sm",
+        "relative min-h-[140px] h-full p-4 rounded-xl shadow-sm",
         "flex flex-col justify-between gap-2",
         "touch-manipulation select-none",
         "transition-all hover:shadow-md",
@@ -124,7 +124,11 @@ export function KpiCard({
   );
 
   if (href) {
-    return <Link href={href}>{cardContent}</Link>;
+    return (
+      <Link href={href} className="block h-full">
+        {cardContent}
+      </Link>
+    );
   }
 
   return cardContent;

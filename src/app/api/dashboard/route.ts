@@ -228,9 +228,8 @@ export async function GET(request: NextRequest) {
 
       const kpis = divKpiMetrics.map((metric) => {
         const key = `${metric.id}|${div.id}`;
-        const entries = entryIndex.get(key) ?? [];
-        const sparkEntries = filteredEntryIndex.get(key) ?? [];
-        return buildKpi(metric, entries, sparkEntries, div.slug);
+        const filteredEntries = filteredEntryIndex.get(key) ?? [];
+        return buildKpi(metric, filteredEntries, filteredEntries, div.slug);
       });
 
       return { id: div.id, name: div.name, slug: div.slug, kpis };
@@ -325,9 +324,8 @@ export async function GET(request: NextRequest) {
       .filter(Boolean)
       .map((metric) => {
         const metricDef = metric as (typeof kpiMetrics)[number];
-        const entries = allEntriesByMetric.get(metricDef.id) ?? [];
-        const sparkEntries = filteredAllByMetric.get(metricDef.id) ?? [];
-        return buildKpi(metricDef, entries, sparkEntries, "");
+        const filteredEntries = filteredAllByMetric.get(metricDef.id) ?? [];
+        return buildKpi(metricDef, filteredEntries, filteredEntries, "");
       });
 
     return NextResponse.json({ divisions: result, allDivisionsKpis });

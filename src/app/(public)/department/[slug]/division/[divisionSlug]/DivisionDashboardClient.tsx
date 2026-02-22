@@ -65,7 +65,7 @@ export function DivisionDashboardClient({
             <ViewToggle value={viewMode} onChange={setViewMode} />
           </div>
           {viewMode === "cards" ? (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 auto-rows-[1fr] gap-4">
               {displayKpis.map((kpi) => (
                 <KpiCard
                   key={kpi.metricId}
