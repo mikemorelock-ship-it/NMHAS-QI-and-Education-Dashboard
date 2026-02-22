@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -18,9 +18,14 @@ import {
   Flag,
   LineChart,
   Activity,
+  Share2,
+  Copy,
+  Check,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { createCampaignShareLink } from "@/actions/campaigns";
 import {
   CAMPAIGN_STATUS_LABELS,
   CAMPAIGN_STATUS_COLORS,
@@ -53,6 +58,8 @@ interface CampaignInfo {
   ownerName: string | null;
   startDate: string | null;
   endDate: string | null;
+  divisionName?: string | null;
+  regionName?: string | null;
 }
 
 interface DiagramNodeInfo {
@@ -147,6 +154,10 @@ interface Props {
   milestones: MilestoneInfo[];
   ganttItems: GanttItem[];
   generatedAt: string;
+  /** Campaign ID — used for generating share links. Omit in shared view. */
+  campaignId?: string;
+  /** When true, hides navigation links and share button (standalone shared view). */
+  isShared?: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -517,6 +528,91 @@ function ChartModeToggle({
 }
 
 // ---------------------------------------------------------------------------
+// Share Button
+// ---------------------------------------------------------------------------
+
+function ShareButton({ campaignId }: { campaignId: string }) {
+  const [isPending, startTransition] = useTransition();
+  const [open, setOpen] = useState(false);
+  const [shareUrl, setShareUrl] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  function handleGenerateLink() {
+    setError(null);
+    startTransition(async () => {
+      const res = await createCampaignShareLink(campaignId);
+      if (res.success && res.data) {
+        const url = `${window.location.origin}/share/campaign/${res.data.token}`;
+        setShareUrl(url);
+      } else {
+        setError(res.error ?? "Failed to create share link");
+      }
+    });
+  }
+
+  function handleCopy() {
+    if (!shareUrl) return;
+    navigator.clipboard.writeText(shareUrl).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }
+
+  return (
+    <>
+      <Button
+        variant="outline"
+        size="sm"
+        className="gap-1.5"
+        onClick={() => {
+          setOpen(true);
+          setShareUrl(null);
+          setCopied(false);
+          setError(null);
+        }}
+      >
+        <Share2 className="h-4 w-4" /> Share
+      </Button>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Share Campaign Report</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Generate a public link that anyone can use to view this campaign report without logging
+            in. Navigation and other dashboard features will not be visible.
+          </p>
+          {error && <p className="text-sm text-destructive">{error}</p>}
+          {!shareUrl ? (
+            <Button onClick={handleGenerateLink} disabled={isPending} className="w-full">
+              {isPending ? "Generating..." : "Generate Share Link"}
+            </Button>
+          ) : (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 rounded-md border p-2.5">
+                <code className="flex-1 text-xs break-all text-muted-foreground">{shareUrl}</code>
+                <Button variant="ghost" size="icon" className="shrink-0" onClick={handleCopy}>
+                  {copied ? (
+                    <Check className="h-4 w-4 text-green-600" />
+                  ) : (
+                    <Copy className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Anyone with this link can view the report. You can revoke links from the admin
+                panel.
+              </p>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Main Report Component
 // ---------------------------------------------------------------------------
 
@@ -528,6 +624,8 @@ export function CampaignReportView({
   milestones,
   ganttItems,
   generatedAt,
+  campaignId,
+  isShared = false,
 }: Props) {
   const statusColor = CAMPAIGN_STATUS_COLORS[campaign.status] ?? "#4b4f54";
   const completedCycles = diagrams.flatMap((d) => d.cycles).filter((c) => c.status === "completed");
@@ -543,17 +641,29 @@ export function CampaignReportView({
   return (
     <div className="max-w-5xl mx-auto px-4 md:px-8 py-8 space-y-8">
       {/* Screen-only navigation */}
-      <div className="flex items-center justify-between print:hidden">
-        <Link
-          href="/quality-improvement"
-          className="text-sm text-muted-foreground hover:text-nmh-teal flex items-center gap-1"
-        >
-          <ArrowLeft className="h-3.5 w-3.5" /> Back to QI Tools
-        </Link>
-        <Button variant="outline" size="sm" onClick={() => window.print()} className="gap-1.5">
-          <Printer className="h-4 w-4" /> Print Report
-        </Button>
-      </div>
+      {!isShared && (
+        <div className="flex items-center justify-between print:hidden">
+          <Link
+            href="/quality-improvement"
+            className="text-sm text-muted-foreground hover:text-nmh-teal flex items-center gap-1"
+          >
+            <ArrowLeft className="h-3.5 w-3.5" /> Back to QI Tools
+          </Link>
+          <div className="flex items-center gap-2">
+            {campaignId && <ShareButton campaignId={campaignId} />}
+            <Button variant="outline" size="sm" onClick={() => window.print()} className="gap-1.5">
+              <Printer className="h-4 w-4" /> Print Report
+            </Button>
+          </div>
+        </div>
+      )}
+      {isShared && (
+        <div className="flex items-center justify-end print:hidden">
+          <Button variant="outline" size="sm" onClick={() => window.print()} className="gap-1.5">
+            <Printer className="h-4 w-4" /> Print Report
+          </Button>
+        </div>
+      )}
 
       {/* ================================================================= */}
       {/* REPORT HEADER                                                     */}
@@ -576,6 +686,11 @@ export function CampaignReportView({
               <User className="h-4 w-4" />
               {campaign.ownerName}
             </span>
+          )}
+          {(campaign.divisionName || campaign.regionName) && (
+            <Badge variant="outline" className="text-xs">
+              {campaign.regionName ?? campaign.divisionName}
+            </Badge>
           )}
           {(campaign.startDate || campaign.endDate) && (
             <span className="flex items-center gap-1 text-sm text-muted-foreground">

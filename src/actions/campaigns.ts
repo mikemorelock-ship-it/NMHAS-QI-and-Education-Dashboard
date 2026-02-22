@@ -19,6 +19,8 @@ const CampaignSchema = z.object({
   keyFindings: z.string().max(5000).optional().nullable(),
   status: z.enum(["planning", "active", "completed", "archived"]).default("planning"),
   ownerId: z.string().optional().nullable(),
+  divisionId: z.string().optional().nullable(),
+  regionId: z.string().optional().nullable(),
   startDate: z.string().optional().nullable(),
   endDate: z.string().optional().nullable(),
   sortOrder: z.coerce.number().int().min(0).default(0),
@@ -72,6 +74,8 @@ export async function createCampaign(formData: FormData): Promise<ActionResult<{
     keyFindings: raw.keyFindings || null,
     status: raw.status || "planning",
     ownerId: raw.ownerId && raw.ownerId !== "__none__" ? raw.ownerId : null,
+    divisionId: raw.divisionId && raw.divisionId !== "__none__" ? raw.divisionId : null,
+    regionId: raw.regionId && raw.regionId !== "__none__" ? raw.regionId : null,
     startDate: raw.startDate || null,
     endDate: raw.endDate || null,
     sortOrder: raw.sortOrder ?? 0,
@@ -99,6 +103,8 @@ export async function createCampaign(formData: FormData): Promise<ActionResult<{
         keyFindings: data.keyFindings ?? null,
         status: data.status,
         ownerId: data.ownerId || null,
+        divisionId: data.divisionId || null,
+        regionId: data.regionId || null,
         startDate: parseDate(data.startDate),
         endDate: parseDate(data.endDate),
         sortOrder: data.sortOrder,
@@ -154,6 +160,8 @@ export async function updateCampaign(id: string, formData: FormData): Promise<Ac
     keyFindings: raw.keyFindings || null,
     status: raw.status || "planning",
     ownerId: raw.ownerId && raw.ownerId !== "__none__" ? raw.ownerId : null,
+    divisionId: raw.divisionId && raw.divisionId !== "__none__" ? raw.divisionId : null,
+    regionId: raw.regionId && raw.regionId !== "__none__" ? raw.regionId : null,
     startDate: raw.startDate || null,
     endDate: raw.endDate || null,
     sortOrder: raw.sortOrder ?? 0,
@@ -191,6 +199,8 @@ export async function updateCampaign(id: string, formData: FormData): Promise<Ac
         keyFindings: data.keyFindings ?? null,
         status: data.status,
         ownerId: data.ownerId || null,
+        divisionId: data.divisionId || null,
+        regionId: data.regionId || null,
         startDate: parseDate(data.startDate),
         endDate: parseDate(data.endDate),
         sortOrder: data.sortOrder,
@@ -204,6 +214,8 @@ export async function updateCampaign(id: string, formData: FormData): Promise<Ac
         goals: current.goals,
         keyFindings: current.keyFindings,
         ownerId: current.ownerId,
+        divisionId: current.divisionId,
+        regionId: current.regionId,
         description: current.description,
       },
       {
@@ -212,6 +224,8 @@ export async function updateCampaign(id: string, formData: FormData): Promise<Ac
         goals: data.goals ?? null,
         keyFindings: data.keyFindings ?? null,
         ownerId: data.ownerId || null,
+        divisionId: data.divisionId || null,
+        regionId: data.regionId || null,
         description: data.description ?? null,
       }
     );
@@ -342,5 +356,80 @@ export async function assignDiagramToCampaign(
   }
 
   revalidateAll();
+  return { success: true };
+}
+
+// ---------------------------------------------------------------------------
+// Campaign Share Links
+// ---------------------------------------------------------------------------
+
+export async function createCampaignShareLink(
+  campaignId: string
+): Promise<ActionResult<{ token: string }>> {
+  let session;
+  try {
+    session = await requireAdmin("manage_campaigns");
+  } catch {
+    return { success: false, error: "Insufficient permissions" };
+  }
+
+  try {
+    const campaign = await prisma.campaign.findUnique({ where: { id: campaignId } });
+    if (!campaign) return { success: false, error: "Campaign not found." };
+
+    const shareLink = await prisma.campaignShareLink.create({
+      data: {
+        campaignId,
+        createdById: session.userId,
+      },
+    });
+
+    await prisma.auditLog.create({
+      data: {
+        action: "CREATE",
+        entity: "CampaignShareLink",
+        entityId: shareLink.id,
+        details: `Created share link for campaign "${campaign.name}"`,
+        actorId: session.userId,
+        actorType: "admin",
+      },
+    });
+
+    return { success: true, data: { token: shareLink.token } };
+  } catch (err) {
+    console.error("createCampaignShareLink error:", err);
+    return { success: false, error: "Failed to create share link." };
+  }
+}
+
+export async function revokeCampaignShareLink(linkId: string): Promise<ActionResult> {
+  let session;
+  try {
+    session = await requireAdmin("manage_campaigns");
+  } catch {
+    return { success: false, error: "Insufficient permissions" };
+  }
+
+  try {
+    await prisma.campaignShareLink.update({
+      where: { id: linkId },
+      data: { isActive: false },
+    });
+
+    await prisma.auditLog.create({
+      data: {
+        action: "UPDATE",
+        entity: "CampaignShareLink",
+        entityId: linkId,
+        details: "Revoked campaign share link",
+        actorId: session.userId,
+        actorType: "admin",
+      },
+    });
+  } catch (err) {
+    console.error("revokeCampaignShareLink error:", err);
+    return { success: false, error: "Failed to revoke share link." };
+  }
+
   return { success: true };
 }

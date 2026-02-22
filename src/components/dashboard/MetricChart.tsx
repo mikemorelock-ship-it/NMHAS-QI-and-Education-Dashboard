@@ -189,30 +189,9 @@ export function MetricChart({
     return `${value}`;
   };
 
-  // Determine label positions for target + median to avoid overlap.
-  // When their Y values are close (within 15 % of the visible range) we put
-  // them on opposite sides of the chart; otherwise both sit on the right.
-  let targetLabelPos: "insideTopRight" | "insideTopLeft" = "insideTopRight";
-  let medianLabelPos: "insideBottomRight" | "insideTopLeft" | "insideTopRight" =
-    "insideBottomRight";
-
-  if (target !== undefined && data.length >= 2) {
-    const vals = data.map((d) => d.value).concat(target, runChartAnalysis.median);
-    const yRange = Math.max(...vals) - Math.min(...vals) || 1;
-    const close = Math.abs(target - runChartAnalysis.median) / yRange < 0.15;
-
-    if (close) {
-      // Close — put the higher line's label top-right, the lower one's top-left
-      if (target >= runChartAnalysis.median) {
-        medianLabelPos = "insideTopLeft";
-      } else {
-        targetLabelPos = "insideTopLeft";
-      }
-    }
-  }
-
   /**
    * Shared axis/grid/tooltip/reference-line elements used by every chart type.
+   * Labels are rendered in a separate legend below the chart to avoid overlap.
    */
   const commonAxisElements = (
     <>
@@ -237,12 +216,6 @@ export function MetricChart({
           stroke={NMH_COLORS.orange}
           strokeDasharray="6 4"
           strokeWidth={2}
-          label={{
-            value: `Target: ${formatMetricValue(target, unit, rateMultiplier, rateSuffix)}`,
-            position: targetLabelPos,
-            fill: NMH_COLORS.orange,
-            fontSize: 11,
-          }}
         />
       )}
       {baselineStartPeriod && baselineEndPeriod && (
@@ -259,12 +232,6 @@ export function MetricChart({
           stroke={NMH_COLORS.gray}
           strokeDasharray="4 4"
           strokeWidth={1}
-          label={{
-            value: `Median: ${formatMetricValue(runChartAnalysis.median, unit, rateMultiplier, rateSuffix)}`,
-            position: medianLabelPos,
-            fill: NMH_COLORS.gray,
-            fontSize: 11,
-          }}
         />
       )}
     </>
@@ -371,6 +338,53 @@ export function MetricChart({
             {renderChart()}
           </ResponsiveContainer>
         </div>
+        {/* Reference line legend — always below the chart so labels never overlap */}
+        {(target !== undefined || data.length >= 2) && (
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-[11px] text-muted-foreground">
+            {target !== undefined && (
+              <span className="flex items-center gap-1.5">
+                <svg width="20" height="2" className="shrink-0">
+                  <line
+                    x1="0"
+                    y1="1"
+                    x2="20"
+                    y2="1"
+                    stroke={NMH_COLORS.orange}
+                    strokeWidth="2"
+                    strokeDasharray="6 4"
+                  />
+                </svg>
+                <span>
+                  Target:{" "}
+                  <strong style={{ color: NMH_COLORS.orange }}>
+                    {formatMetricValue(target, unit, rateMultiplier, rateSuffix)}
+                  </strong>
+                </span>
+              </span>
+            )}
+            {data.length >= 2 && (
+              <span className="flex items-center gap-1.5">
+                <svg width="20" height="2" className="shrink-0">
+                  <line
+                    x1="0"
+                    y1="1"
+                    x2="20"
+                    y2="1"
+                    stroke={NMH_COLORS.gray}
+                    strokeWidth="1"
+                    strokeDasharray="4 4"
+                  />
+                </svg>
+                <span>
+                  Median:{" "}
+                  <strong style={{ color: NMH_COLORS.gray }}>
+                    {formatMetricValue(runChartAnalysis.median, unit, rateMultiplier, rateSuffix)}
+                  </strong>
+                </span>
+              </span>
+            )}
+          </div>
+        )}
         {(shifts.length > 0 || trends.length > 0) && (
           <div className="mt-3 space-y-1 text-xs text-muted-foreground">
             {shifts.map((run, idx) => (

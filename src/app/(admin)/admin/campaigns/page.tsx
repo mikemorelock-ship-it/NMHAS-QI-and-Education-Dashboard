@@ -12,11 +12,13 @@ export default async function CampaignsPage() {
     notFound();
   }
 
-  const [campaigns, users] = await Promise.all([
+  const [campaigns, users, divisions] = await Promise.all([
     prisma.campaign.findMany({
       orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
       include: {
         owner: { select: { id: true, firstName: true, lastName: true } },
+        division: { select: { id: true, name: true } },
+        region: { select: { id: true, name: true } },
         _count: { select: { driverDiagrams: true, actionItems: true } },
       },
     }),
@@ -24,6 +26,19 @@ export default async function CampaignsPage() {
       where: { isActive: true, status: "active" },
       orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
       select: { id: true, firstName: true, lastName: true },
+    }),
+    prisma.division.findMany({
+      where: { isActive: true },
+      orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
+      select: {
+        id: true,
+        name: true,
+        regions: {
+          where: { isActive: true },
+          orderBy: { name: "asc" },
+          select: { id: true, name: true },
+        },
+      },
     }),
   ]);
 
@@ -39,11 +54,15 @@ export default async function CampaignsPage() {
     sortOrder: c.sortOrder,
     ownerId: c.ownerId,
     ownerName: c.owner ? `${c.owner.firstName} ${c.owner.lastName}` : null,
+    divisionId: c.divisionId,
+    divisionName: c.division?.name ?? null,
+    regionId: c.regionId,
+    regionName: c.region?.name ?? null,
     startDate: c.startDate?.toISOString().split("T")[0] ?? null,
     endDate: c.endDate?.toISOString().split("T")[0] ?? null,
     diagramCount: c._count.driverDiagrams,
     actionItemCount: c._count.actionItems,
   }));
 
-  return <CampaignsClient campaigns={campaignsData} users={users} />;
+  return <CampaignsClient campaigns={campaignsData} users={users} divisions={divisions} />;
 }

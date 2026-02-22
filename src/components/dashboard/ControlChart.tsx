@@ -212,25 +212,6 @@ export function ControlChart({
   const hasAnnotations = annotations && annotations.length > 0;
   const chartTopMargin = hasAnnotations ? 20 : 10;
 
-  // Determine label positions for CL + target to avoid overlap.
-  // When close (within 15 % of visible Y range), put labels on opposite sides.
-  let clLabelPos: "insideTopRight" | "insideTopLeft" = "insideTopRight";
-  let targetLabelPos: "insideBottomRight" | "insideTopLeft" = "insideBottomRight";
-
-  if (target != null) {
-    const yRange = yMax - yMin || 1;
-    const close = Math.abs(target - spcData.centerLine) / yRange < 0.15;
-    if (close) {
-      if (spcData.centerLine >= target) {
-        // CL higher — keep CL top-right, move target to left
-        targetLabelPos = "insideTopLeft";
-      } else {
-        // Target higher — keep target right, move CL to left
-        clLabelPos = "insideTopLeft";
-      }
-    }
-  }
-
   return (
     <div className={className}>
       {/* Individuals Chart */}
@@ -303,33 +284,21 @@ export function ControlChart({
               legendType="plainline"
             />
 
-            {/* Center line */}
+            {/* Center line — label rendered in legend below */}
             <ReferenceLine
               y={spcData.centerLine}
               stroke={NMH_COLORS.teal}
               strokeDasharray="4 4"
               strokeWidth={1.5}
-              label={{
-                value: `CL: ${formatMetricValue(spcData.centerLine, unit, rateMultiplier, rateSuffix)}`,
-                position: clLabelPos,
-                fill: NMH_COLORS.teal,
-                fontSize: 11,
-              }}
             />
 
-            {/* Target line (if set) */}
+            {/* Target line (if set) — label rendered in legend below */}
             {target != null && (
               <ReferenceLine
                 y={target}
                 stroke={NMH_COLORS.yellow}
                 strokeDasharray="8 4"
                 strokeWidth={1}
-                label={{
-                  value: `Target: ${formatMetricValue(target, unit, rateMultiplier, rateSuffix)}`,
-                  position: targetLabelPos,
-                  fill: NMH_COLORS.yellow,
-                  fontSize: 10,
-                }}
               />
             )}
 
@@ -360,6 +329,50 @@ export function ControlChart({
             />
           </ComposedChart>
         </ResponsiveContainer>
+      </div>
+
+      {/* Reference line legend — CL & target rendered below chart to avoid overlap */}
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 px-2 text-[11px] text-muted-foreground">
+        <span className="flex items-center gap-1.5">
+          <svg width="20" height="2" className="shrink-0">
+            <line
+              x1="0"
+              y1="1"
+              x2="20"
+              y2="1"
+              stroke={NMH_COLORS.teal}
+              strokeWidth="1.5"
+              strokeDasharray="4 4"
+            />
+          </svg>
+          <span>
+            CL:{" "}
+            <strong style={{ color: NMH_COLORS.teal }}>
+              {formatMetricValue(spcData.centerLine, unit, rateMultiplier, rateSuffix)}
+            </strong>
+          </span>
+        </span>
+        {target != null && (
+          <span className="flex items-center gap-1.5">
+            <svg width="20" height="2" className="shrink-0">
+              <line
+                x1="0"
+                y1="1"
+                x2="20"
+                y2="1"
+                stroke={NMH_COLORS.yellow}
+                strokeWidth="1"
+                strokeDasharray="8 4"
+              />
+            </svg>
+            <span>
+              Target:{" "}
+              <strong style={{ color: NMH_COLORS.yellow }}>
+                {formatMetricValue(target, unit, rateMultiplier, rateSuffix)}
+              </strong>
+            </span>
+          </span>
+        )}
       </div>
 
       {/* Annotation legend — maps numbered markers to full labels */}

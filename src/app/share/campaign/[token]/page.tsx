@@ -2,20 +2,31 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { formatPeriod } from "@/lib/utils";
 import { computeSPCData } from "@/lib/spc-server";
-import { CampaignReportView } from "./report/CampaignReportView";
+import { CampaignReportView } from "@/app/(public)/quality-improvement/campaign/[slug]/report/CampaignReportView";
 import type { ChartDataPoint, SPCChartData, QIAnnotation } from "@/types";
 
 export const dynamic = "force-dynamic";
 
-export default async function CampaignDetailPage({
+export default async function SharedCampaignPage({
   params,
 }: {
-  params: Promise<{ slug: string }>;
+  params: Promise<{ token: string }>;
 }) {
-  const { slug } = await params;
+  const { token } = await params;
+
+  // Validate the share link
+  const shareLink = await prisma.campaignShareLink.findUnique({
+    where: { token },
+    include: { campaign: true },
+  });
+
+  if (!shareLink || !shareLink.isActive) notFound();
+  if (shareLink.expiresAt && shareLink.expiresAt < new Date()) notFound();
+
+  const campaignId = shareLink.campaignId;
 
   const campaign = await prisma.campaign.findUnique({
-    where: { slug },
+    where: { id: campaignId },
     include: {
       owner: { select: { firstName: true, lastName: true } },
       division: { select: { name: true } },
@@ -68,7 +79,7 @@ export default async function CampaignDetailPage({
   if (!campaign || !campaign.isActive) notFound();
 
   // ---------------------------------------------------------------------------
-  // Build metric data for each unique metric linked via driver diagrams
+  // Build metric data (same logic as the authenticated page)
   // ---------------------------------------------------------------------------
 
   const metricIds = new Set<string>();
@@ -76,7 +87,6 @@ export default async function CampaignDetailPage({
     if (d.metricDefinition) metricIds.add(d.metricDefinition.id);
   }
 
-  // Also collect PDSA cycle date ranges for annotation overlay on metric charts
   const pdsaAnnotations: Record<string, QIAnnotation[]> = {};
 
   for (const d of campaign.driverDiagrams) {
@@ -85,7 +95,6 @@ export default async function CampaignDetailPage({
     if (!pdsaAnnotations[mid]) pdsaAnnotations[mid] = [];
 
     for (const cycle of d.pdsaCycles) {
-      // Use the earliest available date as the annotation point
       const dateStr =
         cycle.doStartDate?.toISOString() ??
         cycle.planStartDate?.toISOString() ??
@@ -101,7 +110,6 @@ export default async function CampaignDetailPage({
     }
   }
 
-  // Fetch metric chart data + SPC for each linked metric
   interface MetricReportData {
     id: string;
     name: string;
@@ -113,7 +121,6 @@ export default async function CampaignDetailPage({
     chartData: ChartDataPoint[];
     spcData: SPCChartData | null;
     annotations: QIAnnotation[];
-    // Change idea date ranges for overlay on the chart
     changeIdeaRanges: Array<{
       label: string;
       startDate: string | null;
@@ -132,7 +139,7 @@ export default async function CampaignDetailPage({
     if (!diagramWithMetric?.metricDefinition) continue;
     const metricDef = diagramWithMetric.metricDefinition;
 
-    // Fetch entries for this metric scoped by campaign division/region
+    // Scope entries by campaign division/region
     const entryWhere: Record<string, unknown> = {
       metricDefinitionId: metricId,
       departmentId: metricDef.departmentId,
@@ -158,7 +165,6 @@ export default async function CampaignDetailPage({
       value: e.value,
     }));
 
-    // Compute SPC
     let spcData: SPCChartData | null = null;
     if (chartData.length >= 2) {
       spcData =
@@ -175,7 +181,6 @@ export default async function CampaignDetailPage({
         )) ?? null;
     }
 
-    // Build change idea date ranges from PDSA cycles linked to this metric's diagrams
     const changeIdeaRanges: MetricReportData["changeIdeaRanges"] = [];
     for (const d of campaign.driverDiagrams) {
       if (d.metricDefinition?.id !== metricId) continue;
@@ -206,7 +211,7 @@ export default async function CampaignDetailPage({
   }
 
   // ---------------------------------------------------------------------------
-  // Build driver diagram data for the report
+  // Build diagram, milestone, and gantt data
   // ---------------------------------------------------------------------------
 
   const diagramsData = campaign.driverDiagrams.map((d) => ({
@@ -243,17 +248,12 @@ export default async function CampaignDetailPage({
     })),
   }));
 
-  // ---------------------------------------------------------------------------
-  // Build milestones from action items + PDSA completions
-  // ---------------------------------------------------------------------------
-
   const milestones: Array<{
     date: string;
     label: string;
     type: "action" | "pdsa" | "campaign";
   }> = [];
 
-  // Campaign start/end
   if (campaign.startDate) {
     milestones.push({
       date: campaign.startDate.toISOString().split("T")[0],
@@ -269,7 +269,6 @@ export default async function CampaignDetailPage({
     });
   }
 
-  // Completed action items
   for (const a of campaign.actionItems) {
     if (a.completedAt) {
       milestones.push({
@@ -280,7 +279,6 @@ export default async function CampaignDetailPage({
     }
   }
 
-  // Completed PDSA cycles
   for (const d of campaign.driverDiagrams) {
     for (const c of d.pdsaCycles) {
       if (c.status === "completed" && c.actDate) {
@@ -295,10 +293,6 @@ export default async function CampaignDetailPage({
 
   milestones.sort((a, b) => a.date.localeCompare(b.date));
 
-  // ---------------------------------------------------------------------------
-  // Gantt chart items: campaign + individual PDSA cycles
-  // ---------------------------------------------------------------------------
-
   const ganttItems: Array<{
     id: string;
     label: string;
@@ -308,7 +302,6 @@ export default async function CampaignDetailPage({
     endDate: string | null;
   }> = [];
 
-  // Campaign bar
   ganttItems.push({
     id: campaign.id,
     label: campaign.name,
@@ -318,7 +311,6 @@ export default async function CampaignDetailPage({
     endDate: campaign.endDate?.toISOString().split("T")[0] ?? null,
   });
 
-  // PDSA cycles as gantt rows
   for (const d of campaign.driverDiagrams) {
     for (const c of d.pdsaCycles) {
       const start =
@@ -339,7 +331,6 @@ export default async function CampaignDetailPage({
     }
   }
 
-  // Action items with due dates
   for (const a of campaign.actionItems) {
     if (a.dueDate || a.completedAt) {
       ganttItems.push({
@@ -385,7 +376,7 @@ export default async function CampaignDetailPage({
       }))}
       milestones={milestones}
       ganttItems={ganttItems}
-      campaignId={campaign.id}
+      isShared
       generatedAt={new Date().toISOString()}
     />
   );
