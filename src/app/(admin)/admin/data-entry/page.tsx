@@ -59,7 +59,7 @@ export default async function DataEntryPage({
       prisma.metricEntry.findMany({
         skip,
         take: pageSize,
-        orderBy: { periodStart: "desc" },
+        orderBy: { createdAt: "desc" },
         include: {
           metricDefinition: {
             select: {
