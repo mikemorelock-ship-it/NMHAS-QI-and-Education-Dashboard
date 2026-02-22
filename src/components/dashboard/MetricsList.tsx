@@ -30,7 +30,13 @@ export function MetricsList({ kpis, divisionSlug }: MetricsListProps) {
         <tbody>
           {kpis.map((kpi) => {
             const direction = kpi.trend > 0.5 ? "up" : kpi.trend < -0.5 ? "down" : "flat";
-            const atOrAboveTarget = kpi.target !== null && kpi.currentValue >= kpi.target;
+            const desired = kpi.desiredDirection ?? "up";
+            const isFavorable = direction === "flat" ? null : direction === desired;
+            const meetsTarget =
+              kpi.target !== null &&
+              (desired === "down"
+                ? kpi.currentValue <= kpi.target
+                : kpi.currentValue >= kpi.target);
             const effectiveSlug = kpi.divisionSlug || divisionSlug || "";
             const metricHref = kpi.metricSlug
               ? effectiveSlug && effectiveSlug !== "all"
@@ -67,9 +73,9 @@ export function MetricsList({ kpis, divisionSlug }: MetricsListProps) {
                   <span
                     className={cn(
                       "inline-flex items-center gap-1 text-sm font-medium",
-                      direction === "up" && "text-[#00b0ad]",
-                      direction === "down" && "text-[#e04726]",
-                      direction === "flat" && "text-muted-foreground"
+                      isFavorable === true && "text-[#00b0ad]",
+                      isFavorable === false && "text-[#e04726]",
+                      isFavorable === null && "text-muted-foreground"
                     )}
                   >
                     {direction === "up" && <TrendingUp className="size-3.5" />}
@@ -87,7 +93,7 @@ export function MetricsList({ kpis, divisionSlug }: MetricsListProps) {
                     <span
                       className={cn(
                         "text-xs font-medium px-2 py-0.5 rounded-full",
-                        atOrAboveTarget
+                        meetsTarget
                           ? "bg-[#00b0ad]/10 text-[#00b0ad]"
                           : "bg-[#e04726]/10 text-[#e04726]"
                       )}

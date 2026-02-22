@@ -76,6 +76,7 @@ export function DivisionDashboardClient({
                   target={kpi.target}
                   sparkline={kpi.sparkline}
                   href={`/department/${departmentSlug}/metric/${kpi.metricSlug}`}
+                  desiredDirection={kpi.desiredDirection}
                   rateMultiplier={kpi.rateMultiplier}
                   rateSuffix={kpi.rateSuffix}
                 />

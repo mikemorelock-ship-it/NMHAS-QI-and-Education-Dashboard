@@ -92,6 +92,7 @@ export async function GET(request: NextRequest) {
               dataType: true,
               rateMultiplier: true,
               rateSuffix: true,
+              desiredDirection: true,
             },
           })
         : [];
@@ -233,6 +234,7 @@ export async function GET(request: NextRequest) {
         chartType: metric.chartType,
         category: metric.categoryLegacy,
         aggregationType: metric.aggregationType,
+        desiredDirection: (metric.desiredDirection ?? "up") as "up" | "down",
         rateMultiplier: metric.rateMultiplier ?? null,
         rateSuffix: metric.rateSuffix ?? null,
       };
@@ -274,6 +276,7 @@ export async function GET(request: NextRequest) {
         dataType: true,
         rateMultiplier: true,
         rateSuffix: true,
+        desiredDirection: true,
       },
     });
 
@@ -337,6 +340,7 @@ export async function GET(request: NextRequest) {
           chartType: metric.chartType,
           category: metric.categoryLegacy,
           aggregationType: metric.aggregationType,
+          desiredDirection: (metric.desiredDirection ?? "up") as "up" | "down",
           rateMultiplier: metric.rateMultiplier ?? null,
           rateSuffix: metric.rateSuffix ?? null,
         };

@@ -33,6 +33,7 @@ export function KpiGrid({ kpis, divisionSlug }: KpiGridProps) {
             target={kpi.target}
             sparkline={kpi.sparkline}
             href={metricHref}
+            desiredDirection={kpi.desiredDirection}
             rateMultiplier={kpi.rateMultiplier}
             rateSuffix={kpi.rateSuffix}
           />

@@ -140,6 +140,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
           chartType: metric.chartType,
           category: metric.categoryLegacy,
           aggregationType: metric.aggregationType,
+          desiredDirection: (metric.desiredDirection ?? "up") as "up" | "down",
           rateMultiplier: metric.rateMultiplier ?? null,
           rateSuffix: metric.rateSuffix ?? null,
         };
@@ -336,6 +337,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         chartType: metric.chartType,
         category: metric.categoryLegacy,
         aggregationType: metric.aggregationType,
+        desiredDirection: (metric.desiredDirection ?? "up") as "up" | "down",
         rateMultiplier: metric.rateMultiplier ?? null,
         rateSuffix: metric.rateSuffix ?? null,
       };

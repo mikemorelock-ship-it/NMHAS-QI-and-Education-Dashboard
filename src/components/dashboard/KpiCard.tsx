@@ -16,6 +16,7 @@ interface KpiCardProps {
   sparkline: number[];
   className?: string;
   href?: string;
+  desiredDirection?: "up" | "down";
   rateMultiplier?: number | null;
   rateSuffix?: string | null;
 }
@@ -29,15 +30,20 @@ export function KpiCard({
   sparkline,
   className,
   href,
+  desiredDirection = "up",
   rateMultiplier,
   rateSuffix,
 }: KpiCardProps) {
   const direction = trend > 0.5 ? "up" : trend < -0.5 ? "down" : "flat";
 
+  // Determine if the current trend is favorable based on desiredDirection
+  const isFavorable = direction === "flat" ? null : direction === desiredDirection;
+
   const sparklineData = sparkline.map((v, i) => ({ index: i, value: v }));
 
-  // Determine if being on-target or above is "good" (most metrics: higher is better)
-  const atOrAboveTarget = target !== null && value >= target;
+  // Determine if being on-target is "good" based on desiredDirection
+  const meetsTarget =
+    target !== null && (desiredDirection === "down" ? value <= target : value >= target);
 
   const cardContent = (
     <Card
@@ -92,9 +98,9 @@ export function KpiCard({
         <div
           className={cn(
             "inline-flex items-center gap-1 text-sm font-medium",
-            direction === "up" && "text-[#00b0ad]",
-            direction === "down" && "text-[#e04726]",
-            direction === "flat" && "text-muted-foreground"
+            isFavorable === true && "text-[#00b0ad]",
+            isFavorable === false && "text-[#e04726]",
+            isFavorable === null && "text-muted-foreground"
           )}
         >
           {direction === "up" && <TrendingUp className="size-4" aria-hidden="true" />}
@@ -112,11 +118,11 @@ export function KpiCard({
           <span
             className={cn(
               "text-xs font-medium px-2 py-0.5 rounded-full",
-              atOrAboveTarget ? "bg-[#00b0ad]/10 text-[#00b0ad]" : "bg-[#e04726]/10 text-[#e04726]"
+              meetsTarget ? "bg-[#00b0ad]/10 text-[#00b0ad]" : "bg-[#e04726]/10 text-[#e04726]"
             )}
           >
             Target: {formatMetricValue(target, unit, rateMultiplier, rateSuffix)}
-            <span className="sr-only">{atOrAboveTarget ? " (on target)" : " (below target)"}</span>
+            <span className="sr-only">{meetsTarget ? " (on target)" : " (off target)"}</span>
           </span>
         )}
       </div>

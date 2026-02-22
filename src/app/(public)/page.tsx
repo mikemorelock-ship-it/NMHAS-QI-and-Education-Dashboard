@@ -180,6 +180,7 @@ export default function PublicDashboardPage() {
                 trend={kpi.trend}
                 target={kpi.target}
                 sparkline={kpi.sparkline}
+                desiredDirection={kpi.desiredDirection}
                 rateMultiplier={kpi.rateMultiplier}
                 rateSuffix={kpi.rateSuffix}
                 href={
