@@ -105,6 +105,8 @@ interface EntryRow {
   numerator: number | null;
   denominator: number | null;
   notes: string | null;
+  createdAt: string;
+  createdByName: string | null;
 }
 
 interface AssociationsMap {
@@ -1429,6 +1431,8 @@ export function DataEntryClient({
                   <TableHead>Department</TableHead>
                   <TableHead>Period</TableHead>
                   <TableHead className="text-right">Value</TableHead>
+                  <TableHead>Entered</TableHead>
+                  <TableHead>By</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -1467,6 +1471,22 @@ export function DataEntryClient({
                         entry.metricRateMultiplier,
                         entry.metricRateSuffix
                       )}
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
+                      {new Date(entry.createdAt).toLocaleDateString(undefined, {
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric",
+                      })}{" "}
+                      <span className="text-xs">
+                        {new Date(entry.createdAt).toLocaleTimeString(undefined, {
+                          hour: "numeric",
+                          minute: "2-digit",
+                        })}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-sm">
+                      {entry.createdByName ?? <span className="text-muted-foreground">--</span>}
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-1">

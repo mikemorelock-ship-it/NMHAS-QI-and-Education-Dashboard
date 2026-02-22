@@ -1557,6 +1557,7 @@ async function main() {
         periodType: "monthly",
         periodStart: new Date(Date.UTC(year, month, 1, 12, 0, 0)),
         value: computeValue(i, md.range, md.genOptions),
+        createdById: adminUser.id,
       });
     }
   }
@@ -1572,6 +1573,7 @@ async function main() {
           periodType: "monthly",
           periodStart: new Date(Date.UTC(year, month, 1, 12, 0, 0)),
           value: computeValue(i, sub.range, sub.genOptions),
+          createdById: adminUser.id,
         });
       }
     }
@@ -1597,6 +1599,7 @@ async function main() {
             periodType: "monthly",
             periodStart: new Date(Date.UTC(year, month, 1, 12, 0, 0)),
             value: computeValue(i, md.range, md.genOptions),
+            createdById: adminUser.id,
           });
         }
       }
@@ -1618,6 +1621,7 @@ async function main() {
                 periodType: "monthly",
                 periodStart: new Date(Date.UTC(year, month, 1, 12, 0, 0)),
                 value: computeValue(i, r, md.genOptions),
+                createdById: adminUser.id,
               });
             }
           }

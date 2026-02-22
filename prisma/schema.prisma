@@ -171,6 +171,7 @@ model MetricEntry {
   numerator          Float?
   denominator        Float?
   notes              String?
+  createdById        String?
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 
@@ -178,6 +179,7 @@ model MetricEntry {
   department       Department       @relation(fields: [departmentId], references: [id], onDelete: Cascade)
   division         Division?        @relation(fields: [divisionId], references: [id], onDelete: SetNull)
   region           Region?          @relation(fields: [regionId], references: [id], onDelete: SetNull)
+  createdBy        User?            @relation("MetricEntryCreator", fields: [createdById], references: [id], onDelete: SetNull)
 
   @@unique([metricDefinitionId, departmentId, divisionId, regionId, periodType, periodStart])
   @@index([departmentId, periodStart])
@@ -498,6 +500,9 @@ model User {
   // Trainee snapshot relations
   traineeSnapshots      TraineeSnapshot[]    @relation("TraineeSnapshots")
   createdSnapshots      TraineeSnapshot[]    @relation("SnapshotCreator")
+
+  // Metric entries created by this user
+  metricEntriesCreated  MetricEntry[]         @relation("MetricEntryCreator")
 
   // Division change requests
   divisionChangeRequests         DivisionChangeRequest[] @relation("DivisionChangeRequester")
