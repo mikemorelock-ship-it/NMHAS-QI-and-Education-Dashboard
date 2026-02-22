@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useTransition, useMemo, useCallback, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 import {
   bulkCreateEntries,
   bulkDeleteEntries,
@@ -178,6 +179,8 @@ export function DataEntryClient({
   };
   uploadLookup?: TemplateLookupData | null;
 }) {
+  const router = useRouter();
+
   // -----------------------------------------------------------------------
   // Single Entry state
   // -----------------------------------------------------------------------
@@ -190,6 +193,24 @@ export function DataEntryClient({
   const [isPending, startTransition] = useTransition();
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  // -----------------------------------------------------------------------
+  // Recent entries — local state for immediate updates after mutations
+  // -----------------------------------------------------------------------
+  const [localEntries, setLocalEntries] = useState<EntryRow[]>(recentEntries);
+  const [refreshNeeded, setRefreshNeeded] = useState(0);
+
+  // Sync local state when server props change (e.g. pagination navigation)
+  useEffect(() => {
+    setLocalEntries(recentEntries);
+  }, [recentEntries]);
+
+  // Trigger router.refresh() outside startTransition context
+  useEffect(() => {
+    if (refreshNeeded > 0) {
+      router.refresh();
+    }
+  }, [refreshNeeded, router]);
 
   // -----------------------------------------------------------------------
   // Recent entries filter + sort state
@@ -411,20 +432,18 @@ export function DataEntryClient({
   // Recent entries filtering
   const entryMetricOptions = Array.from(
     new Map(
-      recentEntries.map((e) => [
+      localEntries.map((e) => [
         e.metricDefinitionId,
         { id: e.metricDefinitionId, name: e.metricName },
       ])
     ).values()
   ).sort((a, b) => a.name.localeCompare(b.name));
 
-  const entryPeriodOptions = Array.from(
-    new Set(recentEntries.map((e) => e.periodStart.slice(0, 7)))
-  )
+  const entryPeriodOptions = Array.from(new Set(localEntries.map((e) => e.periodStart.slice(0, 7))))
     .sort()
     .reverse();
 
-  const filteredEntries = recentEntries.filter((e) => {
+  const filteredEntries = localEntries.filter((e) => {
     if (filterMetric && e.metricDefinitionId !== filterMetric) return false;
     if (filterPeriod && !e.periodStart.startsWith(filterPeriod)) return false;
     return true;
@@ -579,6 +598,48 @@ export function DataEntryClient({
         const result = await bulkCreateEntries(entries);
         if (result.success) {
           setSuccessMessage(`Successfully saved ${result.count} entries.`);
+
+          // Build optimistic EntryRow objects for the new entries
+          const now = new Date().toISOString();
+          const newRows: EntryRow[] = rowsToSubmit
+            .filter((r) => !r.existingEntryId)
+            .map((r, i) => {
+              let value = parseFloat(r.value);
+              if (metric?.dataType === "rate" && metric.rateMultiplier) {
+                value = value / metric.rateMultiplier;
+              }
+              return {
+                id: `optimistic-${Date.now()}-${i}`,
+                metricDefinitionId: selectedMetric,
+                metricName: metric?.name ?? "",
+                metricUnit: metric?.unit ?? "",
+                metricDataType: metric?.dataType ?? "number",
+                metricRateMultiplier: metric?.rateMultiplier ?? null,
+                metricRateSuffix: metric?.rateSuffix ?? null,
+                departmentId: getMetricDepartmentId(selectedMetric),
+                divisionId: r.divisionId ?? null,
+                divisionName: r.divisionId ? (divisionMap.get(r.divisionId) ?? null) : null,
+                regionId: r.regionId ?? null,
+                regionName: r.regionId ? (regionMap.get(r.regionId)?.name ?? null) : null,
+                periodType,
+                periodStart: new Date(
+                  periodStart.length <= 10
+                    ? `${periodStart.length === 7 ? periodStart + "-01" : periodStart}T12:00:00.000Z`
+                    : periodStart
+                ).toISOString(),
+                value,
+                numerator: r.numerator ? parseFloat(r.numerator) : null,
+                denominator: r.denominator ? parseFloat(r.denominator) : null,
+                notes: r.notes || null,
+                createdAt: now,
+                createdByName: null,
+              };
+            });
+
+          if (newRows.length > 0) {
+            setLocalEntries((prev) => [...newRows, ...prev]);
+          }
+
           // Clear values but keep rows for another period
           setSingleRows((prev) =>
             prev.map((r) => ({
@@ -591,6 +652,7 @@ export function DataEntryClient({
             }))
           );
           setPeriodStart("");
+          setRefreshNeeded((n) => n + 1);
         } else {
           setErrorMessage(result.error || "Failed to save entries.");
         }
@@ -643,9 +705,47 @@ export function DataEntryClient({
       const result = await bulkCreateEntries(entries);
       if (result.success) {
         setBulkResult(`Successfully created ${result.count} entries.`);
+
+        // Build optimistic EntryRow objects
+        const now = new Date().toISOString();
+        const newRows: EntryRow[] = entries.map((e, i) => {
+          const metric = metrics.find((m) => m.id === e.metricDefinitionId);
+          return {
+            id: `optimistic-bulk-${Date.now()}-${i}`,
+            metricDefinitionId: e.metricDefinitionId,
+            metricName: metric?.name ?? "",
+            metricUnit: metric?.unit ?? "",
+            metricDataType: metric?.dataType ?? "number",
+            metricRateMultiplier: metric?.rateMultiplier ?? null,
+            metricRateSuffix: metric?.rateSuffix ?? null,
+            departmentId: e.departmentId,
+            divisionId: e.divisionId ?? null,
+            divisionName: e.divisionId ? (divisionMap.get(e.divisionId) ?? null) : null,
+            regionId: e.regionId ?? null,
+            regionName: e.regionId ? (regionMap.get(e.regionId)?.name ?? null) : null,
+            periodType: bulkPeriodType,
+            periodStart: new Date(
+              e.periodStart.length <= 10
+                ? `${e.periodStart.length === 7 ? e.periodStart + "-01" : e.periodStart}T12:00:00.000Z`
+                : e.periodStart
+            ).toISOString(),
+            value: e.value,
+            numerator: null,
+            denominator: null,
+            notes: e.notes ?? null,
+            createdAt: now,
+            createdByName: null,
+          };
+        });
+
+        if (newRows.length > 0) {
+          setLocalEntries((prev) => [...newRows, ...prev]);
+        }
+
         setBulkRows([
           { key: ++bulkRowKey, metricDefinitionId: "", periodStart: "", value: "", notes: "" },
         ]);
+        setRefreshNeeded((n) => n + 1);
       } else {
         setBulkResult(`Error: ${result.error}`);
       }
@@ -710,12 +810,15 @@ export function DataEntryClient({
     setBulkDeletePending(true);
     clearMessages();
     try {
+      const deletedIds = new Set(selectedEntryIds);
       const result = await bulkDeleteEntries(Array.from(selectedEntryIds));
       if (result.success) {
         setSuccessMessage(
           `Successfully deleted ${result.count} ${result.count === 1 ? "entry" : "entries"}.`
         );
         setSelectedEntryIds(new Set());
+        setLocalEntries((prev) => prev.filter((e) => !deletedIds.has(e.id)));
+        setRefreshNeeded((n) => n + 1);
       } else {
         setErrorMessage(result.error || "Failed to delete entries.");
       }
@@ -1662,6 +1765,7 @@ export function DataEntryClient({
               onSuccess={() => {
                 setSuccessMessage("Entry updated successfully.");
                 setEditTarget(null);
+                setRefreshNeeded((n) => n + 1);
               }}
               onError={(msg) => setErrorMessage(msg)}
               onCancel={() => setEditTarget(null)}
@@ -1700,8 +1804,11 @@ export function DataEntryClient({
             <form
               action={async () => {
                 if (deleteTarget) {
-                  await deleteEntry(deleteTarget.id);
+                  const deletedId = deleteTarget.id;
+                  await deleteEntry(deletedId);
+                  setLocalEntries((prev) => prev.filter((e) => e.id !== deletedId));
                   setDeleteTarget(null);
+                  setRefreshNeeded((n) => n + 1);
                 }
               }}
             >
