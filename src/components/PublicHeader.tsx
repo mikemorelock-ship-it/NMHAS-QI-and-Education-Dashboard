@@ -31,14 +31,18 @@ export function PublicHeader({ userName, userRole }: PublicHeaderProps) {
       style={{ backgroundColor: NMH_COLORS.teal }}
     >
       <div className="flex items-center gap-2 shrink-0">
-        <span className="text-white font-bold text-base md:text-lg tracking-tight whitespace-nowrap">
+        <span className="text-white font-bold text-base md:text-lg tracking-tight whitespace-nowrap print:hidden">
           North Memorial Health
         </span>
-        <span className="hidden lg:inline text-white/70 text-sm font-medium whitespace-nowrap">
+        <span className="hidden lg:inline text-white/70 text-sm font-medium whitespace-nowrap print:hidden">
           EMS Dashboard
         </span>
+        {/* Print-only: show full org name */}
+        <span className="hidden print:block text-white font-bold text-lg tracking-tight whitespace-nowrap">
+          North Memorial Health Ambulance Services
+        </span>
       </div>
-      <nav className="flex items-center gap-1 ml-auto overflow-x-auto scrollbar-none [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+      <nav className="flex items-center gap-1 ml-auto overflow-x-auto scrollbar-none [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] print:hidden">
         <Link
           href="/"
           aria-current={pathname === "/" ? "page" : undefined}

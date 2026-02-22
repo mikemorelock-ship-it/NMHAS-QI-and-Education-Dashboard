@@ -243,19 +243,28 @@ function ReportGanttChart({ items }: { items: GanttItem[] }) {
 
   const totalDays = differenceInDays(bounds.end, bounds.start) || 1;
 
-  // Generate month markers
+  // Generate month markers, filtering out overlapping labels
   const months = useMemo(() => {
-    const result: { label: string; leftPct: number }[] = [];
+    const all: { label: string; leftPct: number }[] = [];
     const cursor = new Date(bounds.start);
     cursor.setDate(1);
     if (cursor < bounds.start) cursor.setMonth(cursor.getMonth() + 1);
 
     while (cursor <= bounds.end) {
       const pct = (differenceInDays(cursor, bounds.start) / totalDays) * 100;
-      result.push({ label: format(cursor, "MMM yyyy"), leftPct: pct });
+      all.push({ label: format(cursor, "MMM yyyy"), leftPct: pct });
       cursor.setMonth(cursor.getMonth() + 1);
     }
-    return result;
+
+    // Filter to avoid overlapping labels — require at least 10% gap between labels
+    const minGap = 10;
+    const filtered: typeof all = [];
+    for (const m of all) {
+      if (filtered.length === 0 || m.leftPct - filtered[filtered.length - 1].leftPct >= minGap) {
+        filtered.push(m);
+      }
+    }
+    return filtered;
   }, [bounds, totalDays]);
 
   const todayPct = (differenceInDays(new Date(), bounds.start) / totalDays) * 100;
@@ -300,11 +309,12 @@ function ReportGanttChart({ items }: { items: GanttItem[] }) {
             className={`flex border-b last:border-b-0 ${isCampaign ? "bg-muted/10" : ""}`}
           >
             <div
-              className={`w-[180px] shrink-0 px-2 py-1.5 text-xs border-r truncate ${isCampaign ? "font-semibold" : ""}`}
+              className={`w-[220px] shrink-0 px-2 py-1.5 text-xs border-r leading-tight break-words ${isCampaign ? "font-semibold" : ""}`}
+              title={item.label}
             >
               {item.label}
             </div>
-            <div className="flex-1 relative h-7">
+            <div className="flex-1 relative min-h-7">
               {/* Today line */}
               <div
                 className="absolute top-0 bottom-0 w-px bg-primary/40 z-10"

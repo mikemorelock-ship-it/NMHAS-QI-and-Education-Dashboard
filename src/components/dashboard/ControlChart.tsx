@@ -132,6 +132,36 @@ function ControlChartTooltip({
 }
 
 // ---------------------------------------------------------------------------
+// Custom annotation label for vertical reference lines — renders rotated text
+// that extends downward inside the chart area so it doesn't clip.
+// ---------------------------------------------------------------------------
+
+function AnnotationLabel({
+  viewBox,
+  value,
+  fill,
+}: {
+  viewBox?: { x?: number; y?: number; width?: number; height?: number };
+  value?: string;
+  fill: string;
+}) {
+  if (!viewBox || viewBox.x == null || viewBox.y == null) return null;
+
+  return (
+    <text
+      x={viewBox.x + 4}
+      y={(viewBox.y ?? 0) + 14}
+      fill={fill}
+      fontSize={9}
+      textAnchor="start"
+      transform={`rotate(-90, ${viewBox.x + 4}, ${(viewBox.y ?? 0) + 14})`}
+    >
+      {value}
+    </text>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Main Component
 // ---------------------------------------------------------------------------
 
@@ -161,12 +191,18 @@ export function ControlChart({
 
   const specialCauseCount = spcData.points.filter((p) => p.specialCause).length;
 
+  const hasAnnotations = annotations && annotations.length > 0;
+  const chartTopMargin = hasAnnotations ? 20 : 10;
+
   return (
     <div className={className}>
       {/* Individuals Chart */}
       <div aria-hidden="true">
-        <ResponsiveContainer width="100%" height={350}>
-          <ComposedChart data={spcData.points} margin={{ top: 10, right: 30, left: 10, bottom: 5 }}>
+        <ResponsiveContainer width="100%" height={hasAnnotations ? 380 : 350}>
+          <ComposedChart
+            data={spcData.points}
+            margin={{ top: chartTopMargin, right: 30, left: 10, bottom: 5 }}
+          >
             <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
             <XAxis dataKey="period" tick={{ fontSize: 11 }} tickLine={false} />
             <YAxis
@@ -243,23 +279,19 @@ export function ControlChart({
             )}
 
             {/* QI Annotation vertical lines */}
-            {annotations?.map((ann) => (
-              <ReferenceLine
-                key={ann.id}
-                x={ann.period}
-                stroke={ann.type === "pdsa" ? "#7c3aed" : NMH_COLORS.teal}
-                strokeDasharray="4 3"
-                strokeWidth={1.5}
-                label={{
-                  value: ann.label,
-                  position: "insideTopLeft",
-                  fill: ann.type === "pdsa" ? "#7c3aed" : NMH_COLORS.teal,
-                  fontSize: 10,
-                  angle: -90,
-                  offset: 10,
-                }}
-              />
-            ))}
+            {annotations?.map((ann) => {
+              const color = ann.type === "pdsa" ? "#7c3aed" : NMH_COLORS.teal;
+              return (
+                <ReferenceLine
+                  key={ann.id}
+                  x={ann.period}
+                  stroke={color}
+                  strokeDasharray="4 3"
+                  strokeWidth={1.5}
+                  label={<AnnotationLabel value={ann.label} fill={color} />}
+                />
+              );
+            })}
 
             {/* Data line */}
             <Line

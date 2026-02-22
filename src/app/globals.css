@@ -124,11 +124,36 @@
     display: none !important;
   }
 
+  /* Show print-only elements */
+  .print\:block {
+    display: block !important;
+  }
+
+  .print\:flex {
+    display: flex !important;
+  }
+
   /* Reset page background */
   body {
     background: white !important;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
+  }
+
+  /* Override kiosk layout so content flows across print pages */
+  .h-screen {
+    height: auto !important;
+  }
+
+  .overflow-hidden,
+  .overflow-y-auto,
+  .overflow-x-hidden {
+    overflow: visible !important;
+  }
+
+  #main-content {
+    overflow: visible !important;
+    flex: none !important;
   }
 
   /* Improve page breaks */
