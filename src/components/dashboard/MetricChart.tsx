@@ -23,6 +23,24 @@ import { formatMetricValue } from "@/lib/utils";
 import { NMH_COLORS } from "@/lib/constants";
 import type { ChartDataPoint } from "@/types";
 
+/**
+ * Pick a "nice" tick interval for the given axis range so tick labels
+ * land on round numbers (1, 2, 5 multiples of a power of 10).
+ * E.g. range 7 → step 1, range 35 → step 5, range 0.6 → step 0.1.
+ */
+function niceTickInterval(range: number, targetTicks = 5): number {
+  if (range <= 0) return 1;
+  const rough = range / targetTicks;
+  const mag = Math.pow(10, Math.floor(Math.log10(rough)));
+  const residual = rough / mag;
+  let nice: number;
+  if (residual <= 1.5) nice = 1;
+  else if (residual <= 3.5) nice = 2;
+  else if (residual <= 7.5) nice = 5;
+  else nice = 10;
+  return nice * mag;
+}
+
 interface MetricChartProps {
   name: string;
   unit: string;
@@ -157,6 +175,61 @@ export function MetricChart({
     return { median, enrichedData, shifts, trends };
   }, [data]);
 
+  /**
+   * Compute a smart Y-axis domain that fits the data tightly with padding.
+   *
+   * Best practices applied:
+   *  - Line/area charts: domain spans data + reference lines + 15% padding,
+   *    using "nice" rounding so ticks land on clean numbers.
+   *  - Bar charts: always start at 0 (truncating bars is misleading).
+   *  - Percentage data: clamp to [0, 100].
+   */
+  const yDomain = useMemo((): [number, number] | undefined => {
+    if (data.length === 0) return undefined;
+
+    // Gather every value the axis must encompass
+    const values = data.map((d) => d.value);
+    if (target !== undefined) values.push(target);
+    if (data.length >= 2) values.push(runChartAnalysis.median);
+
+    let lo = Math.min(...values);
+    let hi = Math.max(...values);
+
+    // Bar charts should always include 0
+    if (chartType === "bar") {
+      lo = Math.min(lo, 0);
+    }
+
+    const range = hi - lo || 1; // avoid zero-range
+    const padding = range * 0.15;
+
+    lo = lo - padding;
+    hi = hi + padding;
+
+    // Bar charts: floor at 0
+    if (chartType === "bar") lo = Math.max(lo, 0);
+
+    // Percentage data: clamp to [0, 100]
+    if (unit === "percentage") {
+      lo = Math.max(lo, 0);
+      hi = Math.min(hi, 100);
+    }
+
+    // "Nice" rounding — pick a tick interval and round bounds outward
+    const niceStep = niceTickInterval(hi - lo);
+    lo = Math.floor(lo / niceStep) * niceStep;
+    hi = Math.ceil(hi / niceStep) * niceStep;
+
+    // Re-apply hard bounds after rounding
+    if (chartType === "bar") lo = Math.max(lo, 0);
+    if (unit === "percentage") {
+      lo = Math.max(lo, 0);
+      hi = Math.min(hi, 100);
+    }
+
+    return [lo, hi];
+  }, [data, target, runChartAnalysis.median, chartType, unit]);
+
   // Empty state
   if (data.length === 0) {
     return (
@@ -198,11 +271,13 @@ export function MetricChart({
       <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
       <XAxis dataKey="period" tick={{ fontSize: 12 }} tickLine={false} axisLine={false} />
       <YAxis
+        domain={yDomain}
         tick={{ fontSize: 12 }}
         tickLine={false}
         axisLine={false}
         tickFormatter={formatYAxis}
         width={50}
+        allowDataOverflow
       />
       <Tooltip
         content={
