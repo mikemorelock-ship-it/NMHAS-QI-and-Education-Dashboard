@@ -18,6 +18,7 @@ import {
   Flag,
   LineChart,
   Activity,
+  Building2,
   Share2,
   Copy,
   Check,
@@ -687,11 +688,12 @@ export function CampaignReportView({
               {campaign.ownerName}
             </span>
           )}
-          {(campaign.divisionName || campaign.regionName) && (
-            <Badge variant="outline" className="text-xs">
-              {campaign.regionName ?? campaign.divisionName}
-            </Badge>
-          )}
+          <span className="flex items-center gap-1 text-sm text-muted-foreground">
+            <Building2 className="h-4 w-4" />
+            {campaign.divisionName && campaign.regionName
+              ? `${campaign.divisionName} › ${campaign.regionName}`
+              : (campaign.divisionName ?? campaign.regionName ?? "Organization-wide")}
+          </span>
           {(campaign.startDate || campaign.endDate) && (
             <span className="flex items-center gap-1 text-sm text-muted-foreground">
               <Calendar className="h-4 w-4" />

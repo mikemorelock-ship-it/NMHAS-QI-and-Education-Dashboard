@@ -161,8 +161,18 @@ export function MetricChart({
     }
     if (trendRun.length >= 5) trends.push([...trendRun]);
 
-    // --- Build index sets for fast lookup ---
-    const shiftIndices = new Set(shifts.flat());
+    // --- Expand shift ranges to include on-median points sandwiched within ---
+    // IHI rules: on-median points don't count toward the 6-point threshold
+    // and don't break a run — but they ARE within the shift period and should
+    // be visually highlighted so the shift looks continuous on the chart.
+    const shiftIndices = new Set<number>();
+    for (const run of shifts) {
+      const first = run[0];
+      const last = run[run.length - 1];
+      for (let i = first; i <= last; i++) {
+        shiftIndices.add(i);
+      }
+    }
     const trendIndices = new Set(trends.flat());
 
     // --- Enrich data with shift / trend flags ---
@@ -462,17 +472,24 @@ export function MetricChart({
         )}
         {(shifts.length > 0 || trends.length > 0) && (
           <div className="mt-3 space-y-1 text-xs text-muted-foreground">
-            {shifts.map((run, idx) => (
-              <p key={`shift-${idx}`}>
-                <span
-                  className="inline-block w-2.5 h-2.5 rounded-full mr-1.5 align-middle"
-                  style={{ backgroundColor: NMH_COLORS.orange }}
-                />
-                <strong>Shift detected</strong> — {run.length} consecutive points{" "}
-                {enrichedData[run[0]].value > median ? "above" : "below"} median (
-                {enrichedData[run[0]].period} – {enrichedData[run[run.length - 1]].period})
-              </p>
-            ))}
+            {shifts.map((run, idx) => {
+              const first = run[0];
+              const last = run[run.length - 1];
+              const totalSpan = last - first + 1;
+              const onMedianCount = totalSpan - run.length;
+              const side = enrichedData[first].value > median ? "above" : "below";
+              return (
+                <p key={`shift-${idx}`}>
+                  <span
+                    className="inline-block w-2.5 h-2.5 rounded-full mr-1.5 align-middle"
+                    style={{ backgroundColor: NMH_COLORS.orange }}
+                  />
+                  <strong>Shift detected</strong> — {run.length} consecutive points {side} median
+                  {onMedianCount > 0 && ` (plus ${onMedianCount} on median)`} (
+                  {enrichedData[first].period} – {enrichedData[last].period})
+                </p>
+              );
+            })}
             {trends.map((run, idx) => (
               <p key={`trend-${idx}`}>
                 <span
