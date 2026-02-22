@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useTransition, useMemo, useCallback, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 import {
   bulkCreateEntries,
   bulkDeleteEntries,
@@ -178,6 +179,8 @@ export function DataEntryClient({
   };
   uploadLookup?: TemplateLookupData | null;
 }) {
+  const router = useRouter();
+
   // -----------------------------------------------------------------------
   // Single Entry state
   // -----------------------------------------------------------------------
@@ -591,6 +594,7 @@ export function DataEntryClient({
             }))
           );
           setPeriodStart("");
+          router.refresh();
         } else {
           setErrorMessage(result.error || "Failed to save entries.");
         }
@@ -646,6 +650,7 @@ export function DataEntryClient({
         setBulkRows([
           { key: ++bulkRowKey, metricDefinitionId: "", periodStart: "", value: "", notes: "" },
         ]);
+        router.refresh();
       } else {
         setBulkResult(`Error: ${result.error}`);
       }
@@ -716,6 +721,7 @@ export function DataEntryClient({
           `Successfully deleted ${result.count} ${result.count === 1 ? "entry" : "entries"}.`
         );
         setSelectedEntryIds(new Set());
+        router.refresh();
       } else {
         setErrorMessage(result.error || "Failed to delete entries.");
       }
@@ -1662,6 +1668,7 @@ export function DataEntryClient({
               onSuccess={() => {
                 setSuccessMessage("Entry updated successfully.");
                 setEditTarget(null);
+                router.refresh();
               }}
               onError={(msg) => setErrorMessage(msg)}
               onCancel={() => setEditTarget(null)}
@@ -1702,6 +1709,7 @@ export function DataEntryClient({
                 if (deleteTarget) {
                   await deleteEntry(deleteTarget.id);
                   setDeleteTarget(null);
+                  router.refresh();
                 }
               }}
             >
