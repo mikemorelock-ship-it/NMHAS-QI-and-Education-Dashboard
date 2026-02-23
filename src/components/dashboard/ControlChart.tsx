@@ -179,7 +179,9 @@ export function ControlChart({
   baselineStartPeriod,
   baselineEndPeriod,
 }: ControlChartProps) {
-  const [limitMode, setLimitMode] = useState<"fixed" | "variable">("fixed");
+  const [limitMode, setLimitMode] = useState<"fixed" | "variable">(
+    spcData.supportsVariableLimits ? "variable" : "fixed"
+  );
 
   if (!spcData || spcData.points.length === 0) {
     return (
