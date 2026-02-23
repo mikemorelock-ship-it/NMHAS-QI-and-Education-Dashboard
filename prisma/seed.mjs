@@ -50,11 +50,12 @@ function createSeededRandom(seed) {
 }
 const random = createSeededRandom(42);
 
-const now = new Date();
+// Fixed date range: Jan 2025 – Jan 2026 (13 months) for deterministic seed data
 const SEED_MONTHS = [];
-for (let i = 17; i >= 0; i--) {
-  const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-  SEED_MONTHS.push({ year: d.getFullYear(), month: d.getMonth() });
+for (let m = 0; m <= 12; m++) {
+  const year = 2025 + Math.floor(m / 12);
+  const month = m % 12; // 0 = Jan
+  SEED_MONTHS.push({ year, month });
 }
 
 function generateValue(month, min, max, options = {}) {
@@ -236,6 +237,10 @@ const qualityMetrics = [
     target: 12,
     range: { min: 8, max: 16 },
     genOptions: { trendStrength: 0.35, seasonalAmplitude: 0.1, seasonalPeak: 6, decimals: 1 },
+    // P-chart: small, highly variable denominators → triggers variable control limits
+    denomRange: { min: 8, max: 35 },
+    numeratorLabel: "Survived",
+    denominatorLabel: "Total Cardiac Arrests",
   },
   {
     name: "Average Response Time",
@@ -256,6 +261,10 @@ const qualityMetrics = [
     target: 95,
     range: { min: 88, max: 98 },
     genOptions: { trendStrength: 0.3, seasonalAmplitude: 0.08, seasonalPeak: 7, decimals: 1 },
+    // P-chart: moderate variability in chart reviews
+    denomRange: { min: 60, max: 120 },
+    numeratorLabel: "Compliant",
+    denominatorLabel: "Charts Reviewed",
   },
   {
     name: "Patient Satisfaction Score",
@@ -286,16 +295,26 @@ const qualityMetrics = [
     target: 95,
     range: { min: 90, max: 99 },
     genOptions: { trendStrength: 0.3, seasonalAmplitude: 0.08, seasonalPeak: 7, decimals: 1 },
+    // P-chart: small & variable intubation volumes → variable limits
+    denomRange: { min: 10, max: 40 },
+    numeratorLabel: "Successful",
+    denominatorLabel: "Airway Attempts",
   },
   {
     name: "Medication Error Rate",
-    unit: "percentage",
+    unit: "rate",
     chartType: "line",
     isKpi: true,
     category: "Patient Safety",
     target: 0.5,
     range: { min: 0.1, max: 2.0 },
     genOptions: { trendStrength: -0.3, seasonalAmplitude: 0.1, seasonalPeak: 1, decimals: 2 },
+    // U-chart: errors per 1000 medication administrations, varying exposure
+    denomRange: { min: 400, max: 1200 },
+    numeratorLabel: "Errors",
+    denominatorLabel: "Medication Administrations",
+    rateMultiplier: 1000,
+    rateSuffix: "per 1,000 administrations",
   },
   {
     name: "Hand Hygiene Compliance",
@@ -306,6 +325,10 @@ const qualityMetrics = [
     target: 95,
     range: { min: 80, max: 99 },
     genOptions: { trendStrength: 0.2, seasonalAmplitude: 0.1, seasonalPeak: 9, decimals: 1 },
+    // P-chart: observations per month vary significantly
+    denomRange: { min: 25, max: 80 },
+    numeratorLabel: "Compliant",
+    denominatorLabel: "Observations",
   },
   {
     name: "Patient Complaints",
@@ -379,6 +402,10 @@ const clinicalDevMetrics = [
     target: 90,
     range: { min: 85, max: 98 },
     genOptions: { trendStrength: 0.25, seasonalAmplitude: 0.1, seasonalPeak: 6, decimals: 1 },
+    // P-chart: testing volume varies seasonally
+    denomRange: { min: 20, max: 65 },
+    numeratorLabel: "Passed",
+    denominatorLabel: "Assessments",
   },
   {
     name: "Provider Recertification Rate",
@@ -389,6 +416,10 @@ const clinicalDevMetrics = [
     target: 95,
     range: { min: 88, max: 99 },
     genOptions: { trendStrength: 0.2, seasonalAmplitude: 0.08, seasonalPeak: 12, decimals: 1 },
+    // P-chart: recerts come in seasonal batches
+    denomRange: { min: 8, max: 30 },
+    numeratorLabel: "Recertified",
+    denominatorLabel: "Due for Recert",
   },
   {
     name: "Preceptor Evaluations Completed",
@@ -409,6 +440,10 @@ const clinicalDevMetrics = [
     target: 90,
     range: { min: 70, max: 98 },
     genOptions: { trendStrength: 0.4, seasonalAmplitude: 0.1, seasonalPeak: 3, decimals: 1 },
+    // P-chart: variable crew counts being evaluated each month
+    denomRange: { min: 15, max: 50 },
+    numeratorLabel: "Compliant",
+    denominatorLabel: "Providers Evaluated",
   },
   {
     name: "Clinical Ride-Along Hours",
@@ -442,6 +477,8 @@ const educationMetrics = [
     target: 100,
     range: { min: 55, max: 98 },
     genOptions: { trendStrength: 0.35, seasonalAmplitude: 0.15, seasonalPeak: 12, decimals: 1 },
+    // This is a cumulative percentage — no natural denominator, use continuous/I-MR
+    skipDenom: true,
   },
   {
     name: "Active Student Enrollment",
@@ -462,6 +499,10 @@ const educationMetrics = [
     target: 85,
     range: { min: 72, max: 95 },
     genOptions: { trendStrength: 0.2, seasonalAmplitude: 0.1, seasonalPeak: 5, decimals: 1 },
+    // P-chart: class sizes vary between cohorts
+    denomRange: { min: 12, max: 40 },
+    numeratorLabel: "Completed",
+    denominatorLabel: "Enrolled Students",
   },
   {
     name: "NREMT First-Attempt Pass Rate",
@@ -472,6 +513,10 @@ const educationMetrics = [
     target: 70,
     range: { min: 58, max: 85 },
     genOptions: { trendStrength: 0.25, seasonalAmplitude: 0.1, seasonalPeak: 6, decimals: 1 },
+    // P-chart: small, highly variable test cohorts → variable limits
+    denomRange: { min: 5, max: 25 },
+    numeratorLabel: "Passed",
+    denominatorLabel: "Test Takers",
   },
   {
     name: "Student Satisfaction Score",
@@ -535,6 +580,10 @@ const operationsMetrics = [
     target: 35,
     range: { min: 22, max: 42 },
     genOptions: { trendStrength: 0.15, seasonalAmplitude: 0.12, seasonalPeak: 7, decimals: 1 },
+    // P-chart: productive hours / total staffed hours
+    denomRange: { min: 8000, max: 14000 },
+    numeratorLabel: "Productive Hours",
+    denominatorLabel: "Staffed Unit Hours",
   },
   {
     name: "Transport Count",
@@ -605,6 +654,10 @@ const operationsMetrics = [
     target: null,
     range: { min: 5, max: 18 },
     genOptions: { trendStrength: -0.15, seasonalAmplitude: 0.1, seasonalPeak: 3, decimals: 1 },
+    // P-chart: separations / headcount — headcount varies
+    denomRange: { min: 140, max: 220 },
+    numeratorLabel: "Separations",
+    denominatorLabel: "Headcount",
   },
   {
     name: "Overtime Hours",
@@ -1205,14 +1258,21 @@ async function main() {
     const metrics = metricsByDept[dept.slug];
     for (let i = 0; i < metrics.length; i++) {
       const m = metrics[i];
+      // Determine SPC data type: percentage → proportion (P-chart), rate → rate (U-chart),
+      // unless skipDenom is set (cumulative percentages like revenue targets use I-MR)
+      const dataType =
+        m.unit === "rate"
+          ? "rate"
+          : m.unit === "percentage" && !m.skipDenom
+            ? "proportion"
+            : "continuous";
       const c = await prisma.metricDefinition.create({
         data: {
           departmentId,
           name: m.name,
           slug: slugify(m.name),
           unit: m.unit,
-          dataType:
-            m.unit === "percentage" ? "proportion" : m.unit === "rate" ? "rate" : "continuous",
+          dataType,
           aggregationType: m.unit === "count" || m.unit === "currency" ? "sum" : "average",
           chartType: m.chartType,
           isKpi: m.isKpi,
@@ -1220,7 +1280,16 @@ async function main() {
           target: m.target,
           dataDefinition: m.dataDefinition || null,
           methodology: m.methodology || null,
-          desiredDirection: m.unit === "duration" ? "down" : "up",
+          desiredDirection:
+            m.unit === "duration" ||
+            m.name === "Medication Error Rate" ||
+            m.name === "Turnover Rate"
+              ? "down"
+              : "up",
+          numeratorLabel: m.numeratorLabel || null,
+          denominatorLabel: m.denominatorLabel || null,
+          rateMultiplier: m.rateMultiplier || null,
+          rateSuffix: m.rateSuffix || null,
           sortOrder: i + 1,
           isActive: true,
         },
@@ -1232,6 +1301,10 @@ async function main() {
         metricName: m.name,
         range: m.range,
         genOptions: m.genOptions,
+        denomRange: m.denomRange || null,
+        dataType,
+        unit: m.unit,
+        rateMultiplier: m.rateMultiplier || null,
       });
     }
   }
@@ -1546,20 +1619,70 @@ async function main() {
     `  Created ${annotationData.length} annotations, ${resourceData.length} resources, ${partyData.length} responsible parties.`
   );
 
-  // --- Metric Entries (18 months) ---
+  // --- Metric Entries ---
   console.log("\nCreating metric entries...");
+
+  /**
+   * Build a single metric entry with optional numerator/denominator.
+   *
+   * For proportion metrics (P-chart): value = (numerator / denominator) * 100
+   *   denominator is drawn from denomRange with random variation to produce
+   *   variable control limits on the P-chart.
+   *
+   * For rate metrics (U-chart): value = (numerator / denominator) * rateMultiplier
+   *   denominator is exposure drawn from denomRange.
+   *
+   * For continuous metrics (I-MR): value only, no numerator/denominator.
+   */
+  function buildEntry(md, monthIdx, overrides = {}) {
+    const { year, month } = SEED_MONTHS[Math.min(monthIdx, SEED_MONTHS.length - 1)];
+    const valueRange = overrides.range || md.range;
+    const base = {
+      metricDefinitionId: md.id,
+      departmentId: overrides.departmentId || md.departmentId,
+      ...(overrides.divisionId ? { divisionId: overrides.divisionId } : {}),
+      ...(overrides.regionId ? { regionId: overrides.regionId } : {}),
+      periodType: "monthly",
+      periodStart: new Date(Date.UTC(year, month, 1, 12, 0, 0)),
+      createdById: adminUser.id,
+    };
+
+    // Scale denomRange for sub-unit level data (smaller subgroups)
+    const denomScale = overrides.denomScale || 1;
+    const denomRange = md.denomRange
+      ? {
+          min: Math.max(1, Math.round(md.denomRange.min * denomScale)),
+          max: Math.max(2, Math.round(md.denomRange.max * denomScale)),
+        }
+      : null;
+
+    if (denomRange && md.dataType === "proportion") {
+      // P-chart: generate denominator then derive numerator from target value
+      const denom = Math.round(denomRange.min + random() * (denomRange.max - denomRange.min));
+      const pct = computeValue(monthIdx, valueRange, md.genOptions);
+      const num = Math.min(denom, Math.max(0, Math.round((pct / 100) * denom)));
+      const actualPct = denom > 0 ? Math.round((num / denom) * 10000) / 100 : 0;
+      return { ...base, value: actualPct, numerator: num, denominator: denom };
+    }
+
+    if (denomRange && md.dataType === "rate") {
+      // U-chart: generate exposure denominator then derive event count
+      const denom = Math.round(denomRange.min + random() * (denomRange.max - denomRange.min));
+      const rateValue = computeValue(monthIdx, valueRange, md.genOptions);
+      const multiplier = md.rateMultiplier || 1;
+      const num = Math.max(0, Math.round((rateValue / multiplier) * denom));
+      const actualRate = denom > 0 ? Math.round((num / denom) * multiplier * 100) / 100 : 0;
+      return { ...base, value: actualRate, numerator: num, denominator: denom };
+    }
+
+    // Continuous (I-MR): value only
+    return { ...base, value: computeValue(monthIdx, valueRange, md.genOptions) };
+  }
+
   const batchData = [];
   for (const md of allMetricDefs) {
     for (let i = 0; i < SEED_MONTHS.length; i++) {
-      const { year, month } = SEED_MONTHS[i];
-      batchData.push({
-        metricDefinitionId: md.id,
-        departmentId: md.departmentId,
-        periodType: "monthly",
-        periodStart: new Date(Date.UTC(year, month, 1, 12, 0, 0)),
-        value: computeValue(i, md.range, md.genOptions),
-        createdById: adminUser.id,
-      });
+      batchData.push(buildEntry(md, i));
     }
   }
   await prisma.metricEntry.createMany({ data: batchData });
@@ -1567,15 +1690,9 @@ async function main() {
     const subBatch = [];
     for (const sub of subMetrics) {
       for (let i = 0; i < SEED_MONTHS.length; i++) {
-        const { year, month } = SEED_MONTHS[i];
-        subBatch.push({
-          metricDefinitionId: sub.id,
-          departmentId: sub.departmentId,
-          periodType: "monthly",
-          periodStart: new Date(Date.UTC(year, month, 1, 12, 0, 0)),
-          value: computeValue(i, sub.range, sub.genOptions),
-          createdById: adminUser.id,
-        });
+        subBatch.push(
+          buildEntry({ ...sub, dataType: "continuous", denomRange: null, rateMultiplier: null }, i)
+        );
       }
     }
     await prisma.metricEntry.createMany({ data: subBatch });
@@ -1592,16 +1709,10 @@ async function main() {
       const divId = divisionIds[dk];
       for (const md of opsMetricDefs) {
         for (let i = 0; i < SEED_MONTHS.length; i++) {
-          const { year, month } = SEED_MONTHS[i];
-          divBatch.push({
-            metricDefinitionId: md.id,
-            departmentId: opsDeptId,
-            divisionId: divId,
-            periodType: "monthly",
-            periodStart: new Date(Date.UTC(year, month, 1, 12, 0, 0)),
-            value: computeValue(i, md.range, md.genOptions),
-            createdById: adminUser.id,
-          });
+          // Division-level: ~1/6 of department-level denominators
+          divBatch.push(
+            buildEntry(md, i, { departmentId: opsDeptId, divisionId: divId, denomScale: 0.16 })
+          );
         }
       }
       if (dd.individuals?.length > 0) {
@@ -1613,17 +1724,16 @@ async function main() {
             const r = ur[md.metricName];
             if (!r) continue;
             for (let i = 0; i < SEED_MONTHS.length; i++) {
-              const { year, month } = SEED_MONTHS[i];
-              indivBatch.push({
-                metricDefinitionId: md.id,
-                departmentId: opsDeptId,
-                divisionId: divId,
-                regionId: indId,
-                periodType: "monthly",
-                periodStart: new Date(Date.UTC(year, month, 1, 12, 0, 0)),
-                value: computeValue(i, r, md.genOptions),
-                createdById: adminUser.id,
-              });
+              // Region-level: ~1/20 of department-level denominators
+              indivBatch.push(
+                buildEntry(md, i, {
+                  departmentId: opsDeptId,
+                  divisionId: divId,
+                  regionId: indId,
+                  range: r,
+                  denomScale: 0.05,
+                })
+              );
             }
           }
         }
