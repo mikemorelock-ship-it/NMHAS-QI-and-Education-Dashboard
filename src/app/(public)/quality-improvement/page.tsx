@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Target, GitBranchPlus, RefreshCcw, ArrowRight, BarChart3 } from "lucide-react";
 import { PDSA_STATUS_LABELS, PDSA_STATUS_COLORS } from "@/lib/constants";
 import { QICampaignsSection } from "@/components/qi/QICampaignsSection";
+import { QICoachPanel } from "@/components/qi-coach/QICoachPanel";
 
 export const dynamic = "force-dynamic";
 
@@ -243,6 +244,9 @@ export default async function QualityImprovementPage() {
           )}
         </section>
       )}
+
+      {/* QI Coach floating panel */}
+      <QICoachPanel />
     </div>
   );
 }

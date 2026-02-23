@@ -36,6 +36,7 @@ import {
   BookOpen,
   FileText,
   Sparkles,
+  FolderOpen,
   type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -160,7 +161,12 @@ const navEntries: NavEntry[] = [
   },
   { href: "/admin/reports", label: "Reports", icon: FileBarChart, permission: "export_reports" },
   { href: "/admin/audit-log", label: "Audit Log", icon: ScrollText, permission: "view_audit_log" },
-  { href: "/admin/resources", label: "Resources", icon: Users, permission: "manage_departments" },
+  {
+    href: "/admin/resources",
+    label: "QI Resources",
+    icon: FolderOpen,
+    permission: "manage_departments",
+  },
   { href: "/admin/users", label: "Users", icon: Shield, permission: "manage_users" },
   {
     href: "/admin/developer-guide",

@@ -23,6 +23,11 @@ export interface ReleaseInfo {
 /** All known releases, newest first. */
 export const RELEASES: ReleaseInfo[] = [
   {
+    version: "v2.3",
+    label: "February 2026 Update 4 — QI Coach, Campaign Reports & Resources",
+    date: "2026-02-23",
+  },
+  {
     version: "v2.2",
     label: "February 2026 Update 3 — Audit & Version Control",
     date: "2026-02-18",
@@ -58,6 +63,47 @@ export { CATEGORY_LABELS, CATEGORY_COLORS };
 // ---------------------------------------------------------------------------
 
 export const CHANGELOG: ChangelogEntry[] = [
+  // --- v2.3 — QI Coach, Campaign Reports & Resources -----------------------
+  {
+    date: "2026-02-23",
+    title: "AI-Powered QI Coach",
+    description:
+      "A new conversational QI Coach powered by Claude AI is available on campaign reports and metric detail pages. Ask freeform questions about QI best practices, PDSA methodology, SPC interpretation, and improvement strategies — all grounded in IHI Model for Improvement principles.",
+    category: "feature",
+    release: "v2.3",
+  },
+  {
+    date: "2026-02-23",
+    title: "QI Campaign Reports",
+    description:
+      "Campaign report pages now feature interactive control chart / trending toggle, executive summary with key metrics, Gantt timeline, driver diagram visualization, PDSA cycle summaries, and printable layout.",
+    category: "feature",
+    release: "v2.3",
+  },
+  {
+    date: "2026-02-23",
+    title: "QI & IHI Resources Hub",
+    description:
+      "The Resources page now houses curated documentation on quality improvement standards from IHI, NASEMSO, NHTSA, and other respected organizations. Includes quick-reference guides for PDSA cycles, driver diagrams, SPC charts, and the IHI Model for Improvement.",
+    category: "feature",
+    release: "v2.3",
+  },
+  {
+    date: "2026-02-23",
+    title: "PDSA Annotations on Charts",
+    description:
+      "Control charts in campaign reports now display numbered PDSA cycle annotations showing when change ideas were tested, making it easy to correlate improvements with specific interventions.",
+    category: "improvement",
+    release: "v2.3",
+  },
+  {
+    date: "2026-02-23",
+    title: "Help Documentation Updated",
+    description:
+      "Help pages updated with documentation for campaign reports, QI Coach, Resources hub, and all features added since v2.2. New glossary terms added for IHI, NASEMSO, and other QI concepts.",
+    category: "improvement",
+    release: "v2.3",
+  },
   // --- v2.2 — Audit & Version Control --------------------------------------
   {
     date: "2026-02-18",
