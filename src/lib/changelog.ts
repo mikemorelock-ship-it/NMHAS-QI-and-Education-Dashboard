@@ -23,6 +23,11 @@ export interface ReleaseInfo {
 /** All known releases, newest first. */
 export const RELEASES: ReleaseInfo[] = [
   {
+    version: "v2.4",
+    label: "February 2026 Update 5 — Campaign Enhancements & Help Refresh",
+    date: "2026-02-23",
+  },
+  {
     version: "v2.3",
     label: "February 2026 Update 4 — QI Coach, Campaign Reports & Resources",
     date: "2026-02-23",
@@ -63,6 +68,79 @@ export { CATEGORY_LABELS, CATEGORY_COLORS };
 // ---------------------------------------------------------------------------
 
 export const CHANGELOG: ChangelogEntry[] = [
+  // --- v2.4 — Campaign Enhancements & Help Refresh -------------------------
+  {
+    date: "2026-02-23",
+    title: "Campaign Sharing",
+    description:
+      "Generate shareable links for QI campaigns that can be sent to stakeholders outside the system. Share links provide read-only access to campaign reports without requiring login.",
+    category: "feature",
+    release: "v2.4",
+  },
+  {
+    date: "2026-02-23",
+    title: "Campaign Division & Department Scoping",
+    description:
+      "Campaigns can now be scoped to one or more divisions and departments using a multi-select picker. Scoping controls which metrics and data are included in campaign reports and KPI summaries.",
+    category: "feature",
+    release: "v2.4",
+  },
+  {
+    date: "2026-02-23",
+    title: "Campaign Metric Association",
+    description:
+      "Link campaigns directly to specific metric definitions. Associated metrics appear in the campaign report with trend charts and SPC analysis, making it easy to track improvement outcomes.",
+    category: "feature",
+    release: "v2.4",
+  },
+  {
+    date: "2026-02-23",
+    title: "Timeline Presets for Date Ranges",
+    description:
+      "Quick-select presets for Previous Week, Previous Month, Previous Quarter, and Previous Year make it easy to filter charts and reports to common time windows without manual date picking.",
+    category: "feature",
+    release: "v2.4",
+  },
+  {
+    date: "2026-02-23",
+    title: "Desired Direction for Metrics",
+    description:
+      "Metrics now have an optional desired direction (up or down) so trend arrows and chart colors correctly reflect whether movement is positive or negative. A downward trend in a 'lower is better' metric is now shown in green instead of red.",
+    category: "feature",
+    release: "v2.4",
+  },
+  {
+    date: "2026-02-23",
+    title: "Chart Legends & Smart Y-Axis",
+    description:
+      "Trending and control charts now display legends identifying each data series. Y-axis scaling automatically adapts to the data range, preventing charts from being squished by outliers or overly wide default ranges.",
+    category: "improvement",
+    release: "v2.4",
+  },
+  {
+    date: "2026-02-23",
+    title: "Key Findings in Campaign Reports",
+    description:
+      "Campaign reports now include a Key Findings section with best practice recommendations and an enhanced report structure for executive review.",
+    category: "improvement",
+    release: "v2.4",
+  },
+  {
+    date: "2026-02-23",
+    title: "IHI Shift & Trend Detection",
+    description:
+      "Charts now use adaptive IHI-standard thresholds for detecting special cause variation. Shifts (8+ consecutive points on one side of the center line) and trends (6+ consecutive increases or decreases) are automatically highlighted.",
+    category: "improvement",
+    release: "v2.4",
+  },
+  {
+    date: "2026-02-23",
+    title: "Comprehensive Help Refresh",
+    description:
+      "All help pages updated with documentation for every admin, public, and field training portal feature. Added entries for Campaigns, Action Items, Reports, Users, Team DORs, All Trainees, and Snapshots management. Updated glossary with new terms.",
+    category: "improvement",
+    release: "v2.4",
+  },
   // --- v2.3 — QI Coach, Campaign Reports & Resources -----------------------
   {
     date: "2026-02-23",
