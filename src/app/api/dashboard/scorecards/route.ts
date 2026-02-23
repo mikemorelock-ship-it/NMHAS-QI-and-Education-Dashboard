@@ -232,8 +232,10 @@ export async function GET(request: NextRequest) {
             })
           : [];
     } else {
-      // No filter → fetch ALL region-level entries for aggregation
-      rawEntries = await prisma.metricEntry.findMany({
+      // No filter → fetch region-level entries for metrics that have them,
+      // then fall back to department-level entries for metrics that don't
+      // (e.g., Quality, Clinical Dev, Education metrics have no region data).
+      const regionEntries = await prisma.metricEntry.findMany({
         where: {
           metricDefinitionId: { in: metricIds },
           periodStart: { gte: yearStart, lte: yearEnd },
@@ -242,6 +244,27 @@ export async function GET(request: NextRequest) {
         orderBy: { periodStart: "asc" },
         select: entrySelect,
       });
+
+      // Determine which metrics had region-level entries
+      const metricsWithRegionData = new Set(regionEntries.map((e) => e.metricDefinitionId));
+      const metricsWithoutRegionData = metricIds.filter((id) => !metricsWithRegionData.has(id));
+
+      // Fetch department-level entries for metrics that lack region data
+      let deptEntries: RawEntry[] = [];
+      if (metricsWithoutRegionData.length > 0) {
+        deptEntries = await prisma.metricEntry.findMany({
+          where: {
+            metricDefinitionId: { in: metricsWithoutRegionData },
+            periodStart: { gte: yearStart, lte: yearEnd },
+            divisionId: null,
+            regionId: null,
+          },
+          orderBy: { periodStart: "asc" },
+          select: entrySelect,
+        });
+      }
+
+      rawEntries = [...regionEntries, ...deptEntries];
     }
 
     // -----------------------------------------------------------------------
