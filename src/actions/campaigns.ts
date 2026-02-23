@@ -459,6 +459,99 @@ export async function createCampaignShareLink(
   }
 }
 
+// ---------------------------------------------------------------------------
+// Granular field-level update — used by admin inline edit mode
+// ---------------------------------------------------------------------------
+
+const CampaignFieldSchema = z.object({
+  name: z.string().min(1).max(150).optional(),
+  description: z.string().max(2000).nullable().optional(),
+  goals: z.string().max(2000).nullable().optional(),
+  keyFindings: z.string().max(5000).nullable().optional(),
+  status: z.enum(["planning", "active", "completed", "archived"]).optional(),
+  ownerId: z.string().nullable().optional(),
+  startDate: z.string().nullable().optional(),
+  endDate: z.string().nullable().optional(),
+});
+
+export async function updateCampaignField(
+  id: string,
+  field: string,
+  value: string | null
+): Promise<ActionResult> {
+  let session;
+  try {
+    session = await requireAdmin("manage_campaigns");
+  } catch {
+    return { success: false, error: "Insufficient permissions" };
+  }
+
+  // Validate the field name
+  const allowedFields = [
+    "name",
+    "description",
+    "goals",
+    "keyFindings",
+    "status",
+    "ownerId",
+    "startDate",
+    "endDate",
+  ];
+  if (!allowedFields.includes(field)) {
+    return { success: false, error: `Field "${field}" is not editable.` };
+  }
+
+  // Validate the value
+  const parsed = CampaignFieldSchema.safeParse({ [field]: value });
+  if (!parsed.success) {
+    return {
+      success: false,
+      error: parsed.error.issues.map((i) => i.message).join(", "),
+    };
+  }
+
+  try {
+    const current = await prisma.campaign.findUnique({ where: { id } });
+    if (!current) return { success: false, error: "Campaign not found." };
+
+    // Build the update data
+    const updateData: Record<string, unknown> = {};
+    if (field === "startDate" || field === "endDate") {
+      updateData[field] = parseDate(value);
+    } else if (field === "ownerId") {
+      updateData[field] = value || null;
+    } else if (field === "name") {
+      updateData.name = value;
+      updateData.slug = slugify(value!);
+    } else {
+      updateData[field] = value ?? null;
+    }
+
+    await prisma.campaign.update({ where: { id }, data: updateData });
+
+    await createAuditLog({
+      action: "UPDATE",
+      entity: "Campaign",
+      entityId: id,
+      details: `Inline update: ${field} on "${current.name}"`,
+      changes: {
+        [field]: {
+          from: String(current[field as keyof typeof current] ?? ""),
+          to: String(value ?? ""),
+        },
+      },
+      actorId: session.userId,
+      actorType: "user",
+    });
+  } catch (err) {
+    console.error("updateCampaignField error:", err);
+    return { success: false, error: "Failed to update field." };
+  }
+
+  revalidateAll();
+  return { success: true };
+}
+
 export async function revokeCampaignShareLink(linkId: string): Promise<ActionResult> {
   let session;
   try {
