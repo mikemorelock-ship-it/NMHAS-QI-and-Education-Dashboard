@@ -101,21 +101,27 @@ export function MetricChart({
   /**
    * IHI Run Chart Rules — detect shifts and trends in the data.
    *
-   * Shift: 6+ consecutive points all above or all below the median
-   *        (points exactly on the median are skipped / do not break a run).
-   * Trend: 5+ consecutive points continuously increasing or decreasing.
+   * Adaptive thresholds per IHI guidance (QI 104):
+   *   < 20 data points → Shift ≥ 6, Trend ≥ 5
+   *  ≥ 20 data points → Shift ≥ 8, Trend ≥ 6
+   *
+   * Points exactly on the median are skipped / do not break a shift run.
    */
   const runChartAnalysis = useMemo(() => {
     if (data.length < 2) {
       return { median: 0, enrichedData: data, shifts: [] as number[][], trends: [] as number[][] };
     }
 
+    // --- Adaptive thresholds (IHI QI 104) ---
+    const shiftThreshold = data.length >= 20 ? 8 : 6;
+    const trendThreshold = data.length >= 20 ? 6 : 5;
+
     // --- Compute median ---
     const sorted = [...data.map((d) => d.value)].sort((a, b) => a - b);
     const mid = Math.floor(sorted.length / 2);
     const median = sorted.length % 2 === 0 ? (sorted[mid - 1] + sorted[mid]) / 2 : sorted[mid];
 
-    // --- Detect shifts (6+ consecutive above or below median) ---
+    // --- Detect shifts (shiftThreshold+ consecutive above or below median) ---
     const shifts: number[][] = [];
     let shiftRun: number[] = [];
     let shiftSide: "above" | "below" | null = null;
@@ -130,14 +136,14 @@ export function MetricChart({
       if (side === shiftSide) {
         shiftRun.push(i);
       } else {
-        if (shiftRun.length >= 6) shifts.push([...shiftRun]);
+        if (shiftRun.length >= shiftThreshold) shifts.push([...shiftRun]);
         shiftRun = [i];
         shiftSide = side;
       }
     }
-    if (shiftRun.length >= 6) shifts.push([...shiftRun]);
+    if (shiftRun.length >= shiftThreshold) shifts.push([...shiftRun]);
 
-    // --- Detect trends (5+ consecutive increasing or decreasing) ---
+    // --- Detect trends (trendThreshold+ consecutive increasing or decreasing) ---
     const trends: number[][] = [];
     let trendRun: number[] = [0];
     let trendDir: "up" | "down" | null = null;
@@ -145,7 +151,7 @@ export function MetricChart({
     for (let i = 1; i < data.length; i++) {
       const diff = data[i].value - data[i - 1].value;
       if (diff === 0) {
-        if (trendRun.length >= 5) trends.push([...trendRun]);
+        if (trendRun.length >= trendThreshold) trends.push([...trendRun]);
         trendRun = [i];
         trendDir = null;
         continue;
@@ -154,12 +160,12 @@ export function MetricChart({
       if (dir === trendDir) {
         trendRun.push(i);
       } else {
-        if (trendRun.length >= 5) trends.push([...trendRun]);
+        if (trendRun.length >= trendThreshold) trends.push([...trendRun]);
         trendRun = [i - 1, i];
         trendDir = dir;
       }
     }
-    if (trendRun.length >= 5) trends.push([...trendRun]);
+    if (trendRun.length >= trendThreshold) trends.push([...trendRun]);
 
     // --- Expand shift ranges to include on-median points sandwiched within ---
     // IHI rules: on-median points don't count toward the 6-point threshold
