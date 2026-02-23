@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import {
   ResponsiveContainer,
   ComposedChart,
@@ -178,6 +179,8 @@ export function ControlChart({
   baselineStartPeriod,
   baselineEndPeriod,
 }: ControlChartProps) {
+  const [limitMode, setLimitMode] = useState<"fixed" | "variable">("fixed");
+
   if (!spcData || spcData.points.length === 0) {
     return (
       <div className="text-center py-12 text-muted-foreground">
@@ -186,18 +189,24 @@ export function ControlChart({
     );
   }
 
+  // Choose which point set to render based on the limit mode toggle.
+  // Variable limits (per-point UCL/LCL) are in `points`;
+  // fixed limits (constant UCL/LCL using average n̄) are in `fixedPoints`.
+  const activePoints =
+    limitMode === "fixed" && spcData.fixedPoints ? spcData.fixedPoints : spcData.points;
+
   // Determine Y-axis domain from data + limits
-  const allValues = spcData.points.flatMap((p) => [p.value, p.ucl, p.lcl]);
+  const allValues = activePoints.flatMap((p) => [p.value, p.ucl, p.lcl]);
   if (target != null) allValues.push(target);
   const yMin = Math.min(...allValues);
   const yMax = Math.max(...allValues);
   const yPadding = (yMax - yMin) * 0.1 || 1;
 
-  const specialCauseCount = spcData.points.filter((p) => p.specialCause).length;
+  const specialCauseCount = activePoints.filter((p) => p.specialCause).length;
 
   // Aggregate special cause rules for Pareto summary
   const ruleFrequencyMap = new Map<string, number>();
-  for (const point of spcData.points) {
+  for (const point of activePoints) {
     if (point.specialCauseRules) {
       for (const rule of point.specialCauseRules) {
         ruleFrequencyMap.set(rule, (ruleFrequencyMap.get(rule) ?? 0) + 1);
@@ -214,11 +223,41 @@ export function ControlChart({
 
   return (
     <div className={className}>
+      {/* Variable / Fixed limits toggle — only for P-chart and U-chart with varying denominators */}
+      {spcData.supportsVariableLimits && (
+        <div className="flex items-center justify-end mb-2 px-1 print:hidden">
+          <div className="inline-flex items-center rounded-lg border bg-muted/50 p-0.5 text-xs font-medium">
+            <button
+              type="button"
+              onClick={() => setLimitMode("fixed")}
+              className={`rounded-md px-2.5 py-1 transition-all ${
+                limitMode === "fixed"
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Fixed Limits
+            </button>
+            <button
+              type="button"
+              onClick={() => setLimitMode("variable")}
+              className={`rounded-md px-2.5 py-1 transition-all ${
+                limitMode === "variable"
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Variable Limits
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Individuals Chart */}
       <div aria-hidden="true">
         <ResponsiveContainer width="100%" height={hasAnnotations ? 380 : 350}>
           <ComposedChart
-            data={spcData.points}
+            data={activePoints}
             margin={{ top: chartTopMargin, right: 30, left: 10, bottom: 5 }}
           >
             <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
@@ -459,8 +498,9 @@ export function ControlChart({
       )}
 
       <span className="sr-only">
-        Control chart summary: {spcData.chartType.toUpperCase()} chart with {spcData.points.length}{" "}
+        Control chart summary: {spcData.chartType.toUpperCase()} chart with {activePoints.length}{" "}
         data points and {specialCauseCount} special cause{specialCauseCount !== 1 ? "s" : ""}.
+        {spcData.supportsVariableLimits && ` Using ${limitMode} control limits.`}
       </span>
       {/* SPC summary */}
       <div className="flex flex-wrap gap-4 mt-3 px-2 text-xs text-muted-foreground">
@@ -473,13 +513,13 @@ export function ControlChart({
             {formatMetricValue(spcData.centerLine, unit, rateMultiplier, rateSuffix)}
           </strong>
         </span>
-        {spcData.points.length > 0 && (
+        {activePoints.length > 0 && (
           <>
             <span>
               UCL:{" "}
               <strong className="text-foreground">
                 {formatMetricValue(
-                  spcData.points[spcData.points.length - 1].ucl,
+                  activePoints[activePoints.length - 1].ucl,
                   unit,
                   rateMultiplier,
                   rateSuffix
@@ -490,7 +530,7 @@ export function ControlChart({
               LCL:{" "}
               <strong className="text-foreground">
                 {formatMetricValue(
-                  spcData.points[spcData.points.length - 1].lcl,
+                  activePoints[activePoints.length - 1].lcl,
                   unit,
                   rateMultiplier,
                   rateSuffix
@@ -505,6 +545,14 @@ export function ControlChart({
             {specialCauseCount}
           </strong>
         </span>
+        {spcData.supportsVariableLimits && (
+          <span>
+            Limits:{" "}
+            <strong className="text-foreground">
+              {limitMode === "fixed" ? "Fixed (avg n̄)" : "Variable (per-period n)"}
+            </strong>
+          </span>
+        )}
       </div>
 
       {/* Pareto summary of special cause rules */}
