@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useTransition } from "react";
+import { useState, useMemo, useTransition, useCallback, useEffect } from "react";
 import Link from "next/link";
 import {
   createCampaign,
@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -52,6 +53,7 @@ import {
   ListChecks,
   Calendar,
   User,
+  Loader2,
 } from "lucide-react";
 import { CampaignGanttChart } from "@/components/qi/CampaignGanttChart";
 import { CAMPAIGN_STATUS_LABELS, CAMPAIGN_STATUS_COLORS } from "@/lib/constants";
@@ -71,6 +73,10 @@ interface CampaignRow {
   sortOrder: number;
   ownerId: string | null;
   ownerName: string | null;
+  metricDefinitionId: string | null;
+  metricName: string | null;
+  divisionIds: string[];
+  regionIds: string[];
   startDate: string | null;
   endDate: string | null;
   diagramCount: number;
@@ -83,9 +89,28 @@ interface UserOption {
   lastName: string;
 }
 
+interface MetricOption {
+  id: string;
+  name: string;
+}
+
+interface DivisionOption {
+  id: string;
+  name: string;
+}
+
+interface RegionOption {
+  id: string;
+  name: string;
+  divisionId: string;
+}
+
 interface Props {
   campaigns: CampaignRow[];
   users: UserOption[];
+  metrics: MetricOption[];
+  divisions: DivisionOption[];
+  regions: RegionOption[];
 }
 
 // ---------------------------------------------------------------------------
@@ -102,16 +127,150 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 // ---------------------------------------------------------------------------
-// Form fields
+// Form fields (with metric + multi-select division/department)
 // ---------------------------------------------------------------------------
 
 function CampaignFormFields({
   users,
+  metrics,
+  divisions,
+  regions,
   defaults,
 }: {
   users: UserOption[];
+  metrics: MetricOption[];
+  divisions: DivisionOption[];
+  regions: RegionOption[];
   defaults?: Partial<CampaignRow>;
 }) {
+  const [selectedMetricId, setSelectedMetricId] = useState(
+    defaults?.metricDefinitionId ?? "__none__"
+  );
+  const [selectedDivisionIds, setSelectedDivisionIds] = useState<Set<string>>(
+    new Set(defaults?.divisionIds ?? [])
+  );
+  const [selectedRegionIds, setSelectedRegionIds] = useState<Set<string>>(
+    new Set(defaults?.regionIds ?? [])
+  );
+  const [scopeMode, setScopeMode] = useState<"default" | "custom">(
+    defaults?.metricDefinitionId && (defaults?.divisionIds?.length || defaults?.regionIds?.length)
+      ? "custom"
+      : "default"
+  );
+  const [loadingAssociations, setLoadingAssociations] = useState(false);
+  const [metricDefaults, setMetricDefaults] = useState<{
+    divisionIds: string[];
+    regionIds: string[];
+  } | null>(null);
+
+  // Fetch metric associations when metric changes
+  const fetchAssociations = useCallback(async (metricId: string) => {
+    if (!metricId || metricId === "__none__") {
+      setMetricDefaults(null);
+      setScopeMode("custom");
+      return;
+    }
+    setLoadingAssociations(true);
+    try {
+      const res = await fetch(`/api/metrics/${metricId}/associations`);
+      if (res.ok) {
+        const data = await res.json();
+        setMetricDefaults({
+          divisionIds: data.divisionIds ?? [],
+          regionIds: data.regionIds ?? [],
+        });
+        // Default to accepting the metric's scope
+        setScopeMode("default");
+        setSelectedDivisionIds(new Set(data.divisionIds ?? []));
+        setSelectedRegionIds(new Set(data.regionIds ?? []));
+      }
+    } catch {
+      // silently fail — user can still select manually
+    } finally {
+      setLoadingAssociations(false);
+    }
+  }, []);
+
+  function handleMetricChange(value: string) {
+    setSelectedMetricId(value);
+    if (value !== "__none__") {
+      fetchAssociations(value);
+    } else {
+      setMetricDefaults(null);
+      setScopeMode("custom");
+      setSelectedDivisionIds(new Set());
+      setSelectedRegionIds(new Set());
+    }
+  }
+
+  function handleAcceptDefaults() {
+    if (metricDefaults) {
+      setSelectedDivisionIds(new Set(metricDefaults.divisionIds));
+      setSelectedRegionIds(new Set(metricDefaults.regionIds));
+      setScopeMode("default");
+    }
+  }
+
+  function handleCustomize() {
+    setScopeMode("custom");
+  }
+
+  function toggleDivision(divisionId: string) {
+    setSelectedDivisionIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(divisionId)) {
+        next.delete(divisionId);
+      } else {
+        next.add(divisionId);
+      }
+      return next;
+    });
+    setScopeMode("custom");
+  }
+
+  function toggleRegion(regionId: string) {
+    setSelectedRegionIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(regionId)) {
+        next.delete(regionId);
+      } else {
+        next.add(regionId);
+      }
+      return next;
+    });
+    setScopeMode("custom");
+  }
+
+  // Group regions by division for display
+  const regionsByDivision = useMemo(() => {
+    const map = new Map<string, RegionOption[]>();
+    for (const r of regions) {
+      const list = map.get(r.divisionId) ?? [];
+      list.push(r);
+      map.set(r.divisionId, list);
+    }
+    return map;
+  }, [regions]);
+
+  // On initial load for editing, if the campaign already has a metric, load defaults for comparison
+  useEffect(() => {
+    if (defaults?.metricDefinitionId) {
+      // Load metric defaults so we can show the accept/customize toggle
+      fetch(`/api/metrics/${defaults.metricDefinitionId}/associations`)
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          if (data) {
+            setMetricDefaults({
+              divisionIds: data.divisionIds ?? [],
+              regionIds: data.regionIds ?? [],
+            });
+          }
+        })
+        .catch(() => {});
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   return (
     <div className="space-y-4">
       <div>
@@ -139,6 +298,140 @@ function CampaignFormFields({
           placeholder="One goal per line, e.g.:&#10;- Reduce response time to under 8 min&#10;- Deploy in all divisions"
         />
       </div>
+
+      {/* Metric Selection */}
+      <div>
+        <Label htmlFor="metricDefinitionId">Associated Metric</Label>
+        <Select
+          name="metricDefinitionId"
+          value={selectedMetricId}
+          onValueChange={handleMetricChange}
+        >
+          <SelectTrigger id="metricDefinitionId">
+            <SelectValue placeholder="Select metric" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="__none__">None</SelectItem>
+            {metrics.map((m) => (
+              <SelectItem key={m.id} value={m.id}>
+                {m.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Metric scope prompt — shown when a metric is selected and has defaults */}
+      {selectedMetricId !== "__none__" && loadingAssociations && (
+        <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          Loading metric scope...
+        </div>
+      )}
+
+      {selectedMetricId !== "__none__" && !loadingAssociations && metricDefaults && (
+        <div className="rounded-md border p-3 space-y-3">
+          <p className="text-sm font-medium">Campaign Scope</p>
+          <p className="text-xs text-muted-foreground">
+            This metric is associated with{" "}
+            {metricDefaults.divisionIds.length > 0 &&
+              `${metricDefaults.divisionIds.length} division${metricDefaults.divisionIds.length !== 1 ? "s" : ""}`}
+            {metricDefaults.divisionIds.length > 0 &&
+              metricDefaults.regionIds.length > 0 &&
+              " and "}
+            {metricDefaults.regionIds.length > 0 &&
+              `${metricDefaults.regionIds.length} department${metricDefaults.regionIds.length !== 1 ? "s" : ""}`}
+            {metricDefaults.divisionIds.length === 0 &&
+              metricDefaults.regionIds.length === 0 &&
+              "no divisions or departments"}
+            .
+          </p>
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant={scopeMode === "default" ? "default" : "outline"}
+              size="sm"
+              onClick={handleAcceptDefaults}
+            >
+              Accept defaults
+            </Button>
+            <Button
+              type="button"
+              variant={scopeMode === "custom" ? "default" : "outline"}
+              size="sm"
+              onClick={handleCustomize}
+            >
+              Customize
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Division multi-select */}
+      {(selectedMetricId === "__none__" || scopeMode === "custom" || scopeMode === "default") && (
+        <div className="space-y-2">
+          <Label>Divisions</Label>
+          <div className="rounded-md border p-3 max-h-40 overflow-y-auto space-y-2">
+            {divisions.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No divisions available</p>
+            ) : (
+              divisions.map((d) => (
+                <label key={d.id} className="flex items-center gap-2 cursor-pointer">
+                  <Checkbox
+                    checked={selectedDivisionIds.has(d.id)}
+                    onCheckedChange={() => toggleDivision(d.id)}
+                    disabled={scopeMode === "default"}
+                  />
+                  <span className="text-sm">{d.name}</span>
+                </label>
+              ))
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Department (Region) multi-select — grouped by division */}
+      {(selectedMetricId === "__none__" || scopeMode === "custom" || scopeMode === "default") && (
+        <div className="space-y-2">
+          <Label>Departments</Label>
+          <div className="rounded-md border p-3 max-h-48 overflow-y-auto space-y-3">
+            {divisions.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No departments available</p>
+            ) : (
+              divisions.map((d) => {
+                const divRegions = regionsByDivision.get(d.id) ?? [];
+                if (divRegions.length === 0) return null;
+                return (
+                  <div key={d.id}>
+                    <p className="text-xs font-medium text-muted-foreground mb-1">{d.name}</p>
+                    <div className="space-y-1 pl-2">
+                      {divRegions.map((r) => (
+                        <label key={r.id} className="flex items-center gap-2 cursor-pointer">
+                          <Checkbox
+                            checked={selectedRegionIds.has(r.id)}
+                            onCheckedChange={() => toggleRegion(r.id)}
+                            disabled={scopeMode === "default"}
+                          />
+                          <span className="text-sm">{r.name}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Hidden inputs to submit multi-select values */}
+      {Array.from(selectedDivisionIds).map((id) => (
+        <input key={`div-${id}`} type="hidden" name="divisionIds[]" value={id} />
+      ))}
+      {Array.from(selectedRegionIds).map((id) => (
+        <input key={`reg-${id}`} type="hidden" name="regionIds[]" value={id} />
+      ))}
+
       <div className="grid grid-cols-2 gap-4">
         <div>
           <Label htmlFor="status">Status</Label>
@@ -205,7 +498,7 @@ function CampaignFormFields({
 // Main Component
 // ---------------------------------------------------------------------------
 
-export function CampaignsClient({ campaigns, users }: Props) {
+export function CampaignsClient({ campaigns, users, metrics, divisions, regions }: Props) {
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
@@ -241,7 +534,7 @@ export function CampaignsClient({ campaigns, users }: Props) {
 
   function stripNone(fd: FormData) {
     for (const [key, val] of Array.from(fd.entries())) {
-      if (val === "__none__") fd.set(key, "");
+      if (val === "__none__" && !key.endsWith("[]")) fd.set(key, "");
     }
   }
 
@@ -568,7 +861,12 @@ export function CampaignsClient({ campaigns, users }: Props) {
             <DialogTitle>Create Campaign</DialogTitle>
           </DialogHeader>
           <form action={handleCreate}>
-            <CampaignFormFields users={users} />
+            <CampaignFormFields
+              users={users}
+              metrics={metrics}
+              divisions={divisions}
+              regions={regions}
+            />
             <DialogFooter className="mt-4">
               <Button type="button" variant="outline" onClick={() => setShowCreate(false)}>
                 Cancel
@@ -594,7 +892,13 @@ export function CampaignsClient({ campaigns, users }: Props) {
           </DialogHeader>
           {editTarget && (
             <form action={handleEdit}>
-              <CampaignFormFields users={users} defaults={editTarget} />
+              <CampaignFormFields
+                users={users}
+                metrics={metrics}
+                divisions={divisions}
+                regions={regions}
+                defaults={editTarget}
+              />
               <DialogFooter className="mt-4">
                 <Button type="button" variant="outline" onClick={() => setEditTarget(null)}>
                   Cancel

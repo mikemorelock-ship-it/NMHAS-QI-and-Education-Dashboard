@@ -44,6 +44,7 @@ model Division {
   metricAssociations      MetricAssociation[]
   users                   User[]
   divisionChangeRequests  DivisionChangeRequest[]
+  campaignDivisions       CampaignDivision[]
 
   @@unique([departmentId, slug])
 }
@@ -63,6 +64,7 @@ model Region {
   metricEntries      MetricEntry[]
   scorecardRegions   ScorecardRegion[]
   metricAssociations MetricAssociation[]
+  campaignRegions    CampaignRegion[]
 
   @@map("Individual")
 }
@@ -111,6 +113,7 @@ model MetricDefinition {
   metricAssociations MetricAssociation[]
   driverDiagrams     DriverDiagram[]
   pdsaCycles         PdsaCycle[]
+  campaigns          Campaign[]
 
   @@unique([departmentId, slug])
   @@index([parentId])
@@ -286,26 +289,61 @@ model MetricAssociation {
 // ---------------------------------------------------------------------------
 
 model Campaign {
-  id          String    @id @default(cuid())
-  name        String
-  slug        String    @unique
-  description String?
-  goals       String?
-  status      String    @default("planning") // "planning" | "active" | "completed" | "archived"
-  ownerId     String?
-  startDate   DateTime?
-  endDate     DateTime?
-  sortOrder   Int       @default(0)
-  isActive    Boolean   @default(true)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id                 String    @id @default(cuid())
+  name               String
+  slug               String    @unique
+  description        String?
+  goals              String?
+  status             String    @default("planning") // "planning" | "active" | "completed" | "archived"
+  ownerId            String?
+  metricDefinitionId String?
+  startDate          DateTime?
+  endDate            DateTime?
+  sortOrder          Int       @default(0)
+  isActive           Boolean   @default(true)
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
 
-  owner          User?           @relation("CampaignOwner", fields: [ownerId], references: [id], onDelete: SetNull)
-  driverDiagrams DriverDiagram[]
-  actionItems    ActionItem[]
+  owner            User?              @relation("CampaignOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  metricDefinition MetricDefinition?  @relation(fields: [metricDefinitionId], references: [id], onDelete: SetNull)
+  driverDiagrams   DriverDiagram[]
+  actionItems      ActionItem[]
+  campaignDivisions CampaignDivision[]
+  campaignRegions   CampaignRegion[]
 
   @@index([ownerId])
   @@index([status])
+  @@index([metricDefinitionId])
+}
+
+// Many-to-many: Campaign <-> Division scope
+model CampaignDivision {
+  id         String   @id @default(cuid())
+  campaignId String
+  divisionId String
+  createdAt  DateTime @default(now())
+
+  campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  division Division @relation(fields: [divisionId], references: [id], onDelete: Cascade)
+
+  @@unique([campaignId, divisionId])
+  @@index([campaignId])
+  @@index([divisionId])
+}
+
+// Many-to-many: Campaign <-> Region (Department in UI) scope
+model CampaignRegion {
+  id         String   @id @default(cuid())
+  campaignId String
+  regionId   String
+  createdAt  DateTime @default(now())
+
+  campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  region   Region   @relation(fields: [regionId], references: [id], onDelete: Cascade)
+
+  @@unique([campaignId, regionId])
+  @@index([campaignId])
+  @@index([regionId])
 }
 
 // ---------------------------------------------------------------------------

@@ -72,6 +72,9 @@ interface CampaignInfo {
   goals: string | null;
   status: string;
   ownerName: string | null;
+  metricName: string | null;
+  divisionNames: string[];
+  regionNames: string[];
   startDate: string | null;
   endDate: string | null;
 }
@@ -281,6 +284,52 @@ export function CampaignDetailClient({
           </CardContent>
         </Card>
       </div>
+
+      {/* Metric & Scope */}
+      {(campaign.metricName ||
+        campaign.divisionNames.length > 0 ||
+        campaign.regionNames.length > 0) && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Card>
+            <CardContent className="pt-6">
+              <p className="text-xs text-muted-foreground mb-1">Associated Metric</p>
+              <p className="text-sm font-medium">{campaign.metricName ?? "None"}</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-6">
+              <p className="text-xs text-muted-foreground mb-1">Divisions</p>
+              {campaign.divisionNames.length > 0 ? (
+                <div className="flex flex-wrap gap-1">
+                  {campaign.divisionNames.map((name) => (
+                    <Badge key={name} variant="outline" className="text-xs">
+                      {name}
+                    </Badge>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">All divisions</p>
+              )}
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-6">
+              <p className="text-xs text-muted-foreground mb-1">Departments</p>
+              {campaign.regionNames.length > 0 ? (
+                <div className="flex flex-wrap gap-1">
+                  {campaign.regionNames.map((name) => (
+                    <Badge key={name} variant="outline" className="text-xs">
+                      {name}
+                    </Badge>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">All departments</p>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {/* Driver Diagrams */}
       <Card>
