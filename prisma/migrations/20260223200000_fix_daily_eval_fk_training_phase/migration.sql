@@ -1,7 +1,6 @@
 -- Fix DailyEvaluation FK constraint: phaseId should reference TrainingPhase, not FtoPhase
 -- The 20260221000000_overall_rating_to_float migration incorrectly referenced "FtoPhase"
--- when recreating the table (FtoPhase was the old name; init migration used TrainingPhase).
--- Note: PRAGMA statements removed — Turso/libSQL HTTP API does not support them.
+-- when recreating the table (FtoPhase was the old name, init migration used TrainingPhase).
 
 CREATE TABLE "new_DailyEvaluation" (
     "id" TEXT NOT NULL PRIMARY KEY,
