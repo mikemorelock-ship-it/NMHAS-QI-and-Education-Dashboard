@@ -19,8 +19,7 @@ const CampaignSchema = z.object({
   keyFindings: z.string().max(5000).optional().nullable(),
   status: z.enum(["planning", "active", "completed", "archived"]).default("planning"),
   ownerId: z.string().optional().nullable(),
-  divisionId: z.string().optional().nullable(),
-  regionId: z.string().optional().nullable(),
+  metricDefinitionId: z.string().optional().nullable(),
   startDate: z.string().optional().nullable(),
   endDate: z.string().optional().nullable(),
   sortOrder: z.coerce.number().int().min(0).default(0),
@@ -43,9 +42,19 @@ function revalidateAll() {
 function formDataToRecord(formData: FormData): Record<string, string> {
   const raw: Record<string, string> = {};
   formData.forEach((value, key) => {
-    raw[key] = value.toString();
+    // Skip array keys (handled separately)
+    if (!key.endsWith("[]")) {
+      raw[key] = value.toString();
+    }
   });
   return raw;
+}
+
+function getFormDataArray(formData: FormData, key: string): string[] {
+  return formData
+    .getAll(key)
+    .map((v) => v.toString())
+    .filter(Boolean);
 }
 
 function parseDate(value: string | null | undefined): Date | null {
@@ -67,6 +76,9 @@ export async function createCampaign(formData: FormData): Promise<ActionResult<{
   }
 
   const raw = formDataToRecord(formData);
+  const divisionIds = getFormDataArray(formData, "divisionIds[]");
+  const regionIds = getFormDataArray(formData, "regionIds[]");
+
   const parsed = CampaignSchema.safeParse({
     name: raw.name,
     description: raw.description || null,
@@ -74,8 +86,10 @@ export async function createCampaign(formData: FormData): Promise<ActionResult<{
     keyFindings: raw.keyFindings || null,
     status: raw.status || "planning",
     ownerId: raw.ownerId && raw.ownerId !== "__none__" ? raw.ownerId : null,
-    divisionId: raw.divisionId && raw.divisionId !== "__none__" ? raw.divisionId : null,
-    regionId: raw.regionId && raw.regionId !== "__none__" ? raw.regionId : null,
+    metricDefinitionId:
+      raw.metricDefinitionId && raw.metricDefinitionId !== "__none__"
+        ? raw.metricDefinitionId
+        : null,
     startDate: raw.startDate || null,
     endDate: raw.endDate || null,
     sortOrder: raw.sortOrder ?? 0,
@@ -103,20 +117,39 @@ export async function createCampaign(formData: FormData): Promise<ActionResult<{
         keyFindings: data.keyFindings ?? null,
         status: data.status,
         ownerId: data.ownerId || null,
-        divisionId: data.divisionId || null,
-        regionId: data.regionId || null,
+        metricDefinitionId: data.metricDefinitionId || null,
         startDate: parseDate(data.startDate),
         endDate: parseDate(data.endDate),
         sortOrder: data.sortOrder,
       },
     });
 
+    // Create division scope records
+    if (divisionIds.length > 0) {
+      await prisma.campaignDivision.createMany({
+        data: divisionIds.map((divisionId) => ({
+          campaignId: campaign.id,
+          divisionId,
+        })),
+      });
+    }
+
+    // Create region (department) scope records
+    if (regionIds.length > 0) {
+      await prisma.campaignRegion.createMany({
+        data: regionIds.map((regionId) => ({
+          campaignId: campaign.id,
+          regionId,
+        })),
+      });
+    }
+
     await prisma.auditLog.create({
       data: {
         action: "CREATE",
         entity: "Campaign",
         entityId: campaign.id,
-        details: `Created campaign "${data.name}"`,
+        details: `Created campaign "${data.name}" with ${divisionIds.length} divisions and ${regionIds.length} departments`,
         actorId: session.userId,
         actorType: "admin",
       },
@@ -131,7 +164,7 @@ export async function createCampaign(formData: FormData): Promise<ActionResult<{
     if (msg.includes("Foreign key constraint") || msg.includes("foreign key")) {
       return {
         success: false,
-        error: "Invalid owner selected. Please choose a valid user or leave unassigned.",
+        error: "Invalid owner or metric selected. Please choose valid options or leave unassigned.",
       };
     }
     if (msg.includes("Unique constraint") || msg.includes("unique")) {
@@ -153,6 +186,9 @@ export async function updateCampaign(id: string, formData: FormData): Promise<Ac
   }
 
   const raw = formDataToRecord(formData);
+  const divisionIds = getFormDataArray(formData, "divisionIds[]");
+  const regionIds = getFormDataArray(formData, "regionIds[]");
+
   const parsed = CampaignSchema.safeParse({
     name: raw.name,
     description: raw.description || null,
@@ -160,8 +196,10 @@ export async function updateCampaign(id: string, formData: FormData): Promise<Ac
     keyFindings: raw.keyFindings || null,
     status: raw.status || "planning",
     ownerId: raw.ownerId && raw.ownerId !== "__none__" ? raw.ownerId : null,
-    divisionId: raw.divisionId && raw.divisionId !== "__none__" ? raw.divisionId : null,
-    regionId: raw.regionId && raw.regionId !== "__none__" ? raw.regionId : null,
+    metricDefinitionId:
+      raw.metricDefinitionId && raw.metricDefinitionId !== "__none__"
+        ? raw.metricDefinitionId
+        : null,
     startDate: raw.startDate || null,
     endDate: raw.endDate || null,
     sortOrder: raw.sortOrder ?? 0,
@@ -199,13 +237,34 @@ export async function updateCampaign(id: string, formData: FormData): Promise<Ac
         keyFindings: data.keyFindings ?? null,
         status: data.status,
         ownerId: data.ownerId || null,
-        divisionId: data.divisionId || null,
-        regionId: data.regionId || null,
+        metricDefinitionId: data.metricDefinitionId || null,
         startDate: parseDate(data.startDate),
         endDate: parseDate(data.endDate),
         sortOrder: data.sortOrder,
       },
     });
+
+    // Replace division scope records
+    await prisma.campaignDivision.deleteMany({ where: { campaignId: id } });
+    if (divisionIds.length > 0) {
+      await prisma.campaignDivision.createMany({
+        data: divisionIds.map((divisionId) => ({
+          campaignId: id,
+          divisionId,
+        })),
+      });
+    }
+
+    // Replace region (department) scope records
+    await prisma.campaignRegion.deleteMany({ where: { campaignId: id } });
+    if (regionIds.length > 0) {
+      await prisma.campaignRegion.createMany({
+        data: regionIds.map((regionId) => ({
+          campaignId: id,
+          regionId,
+        })),
+      });
+    }
 
     const changes = computeChanges(
       {
@@ -214,8 +273,7 @@ export async function updateCampaign(id: string, formData: FormData): Promise<Ac
         goals: current.goals,
         keyFindings: current.keyFindings,
         ownerId: current.ownerId,
-        divisionId: current.divisionId,
-        regionId: current.regionId,
+        metricDefinitionId: current.metricDefinitionId,
         description: current.description,
       },
       {
@@ -224,8 +282,7 @@ export async function updateCampaign(id: string, formData: FormData): Promise<Ac
         goals: data.goals ?? null,
         keyFindings: data.keyFindings ?? null,
         ownerId: data.ownerId || null,
-        divisionId: data.divisionId || null,
-        regionId: data.regionId || null,
+        metricDefinitionId: data.metricDefinitionId || null,
         description: data.description ?? null,
       }
     );
@@ -234,7 +291,7 @@ export async function updateCampaign(id: string, formData: FormData): Promise<Ac
       action: "UPDATE",
       entity: "Campaign",
       entityId: id,
-      details: `Updated campaign "${data.name}"`,
+      details: `Updated campaign "${data.name}" with ${divisionIds.length} divisions and ${regionIds.length} departments`,
       changes: changes ?? undefined,
       actorId: session.userId,
       actorType: "user",
@@ -245,7 +302,7 @@ export async function updateCampaign(id: string, formData: FormData): Promise<Ac
     if (msg.includes("Foreign key constraint") || msg.includes("foreign key")) {
       return {
         success: false,
-        error: "Invalid owner selected. Please choose a valid user or leave unassigned.",
+        error: "Invalid owner or metric selected. Please choose valid options or leave unassigned.",
       };
     }
     return { success: false, error: `Failed to update campaign: ${msg.slice(0, 200)}` };

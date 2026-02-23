@@ -12,6 +12,7 @@ export interface KpiData {
   chartType: string;
   category: string | null;
   aggregationType?: string;
+  desiredDirection?: "up" | "down";
   rateMultiplier?: number | null;
   rateSuffix?: string | null;
 }

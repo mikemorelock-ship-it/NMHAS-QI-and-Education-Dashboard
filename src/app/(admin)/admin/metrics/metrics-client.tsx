@@ -84,6 +84,9 @@ import {
   SPC_SIGMA_LEVELS,
   SPC_SIGMA_LABELS,
   defaultDataType,
+  DESIRED_DIRECTIONS,
+  DESIRED_DIRECTION_LABELS,
+  defaultDesiredDirection,
 } from "@/lib/constants";
 
 // ---------------------------------------------------------------------------
@@ -113,6 +116,7 @@ interface MetricRow {
   denominatorLabel: string | null;
   rateMultiplier: number | null;
   rateSuffix: string | null;
+  desiredDirection: string;
   sortOrder: number;
   description: string | null;
   dataDefinition: string | null;
@@ -985,10 +989,13 @@ function MetricFormFields({
     [formAssociations, onAssociationsChange]
   );
 
-  // Track current unit + dataType to conditionally show rate/ND fields
+  // Track current unit + dataType + desiredDirection to conditionally show fields
   const [formUnit, setFormUnit] = useState(defaultValues?.unit ?? "count");
   const [formDataType, setFormDataType] = useState(
     defaultValues?.dataType ?? defaultDataType(defaultValues?.unit ?? "count")
+  );
+  const [formDesiredDirection, setFormDesiredDirection] = useState(
+    defaultValues?.desiredDirection ?? defaultDesiredDirection(defaultValues?.unit ?? "count")
   );
   const isNDDataType = formDataType === "proportion" || formDataType === "rate";
 
@@ -1046,6 +1053,7 @@ function MetricFormFields({
             onValueChange={(val) => {
               setFormUnit(val);
               setFormDataType(defaultDataType(val));
+              setFormDesiredDirection(defaultDesiredDirection(val));
             }}
             required
           >
@@ -1092,7 +1100,7 @@ function MetricFormFields({
           </Select>
         </div>
       </div>
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-3 gap-4">
         <div className="space-y-2">
           <Label htmlFor="aggregationType">Aggregation</Label>
           <Select name="aggregationType" defaultValue={defaultValues?.aggregationType ?? "average"}>
@@ -1109,6 +1117,28 @@ function MetricFormFields({
           </Select>
           <p className="text-xs text-muted-foreground">
             How department values roll up to the division level.
+          </p>
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="desiredDirection">Desired Direction</Label>
+          <Select
+            name="desiredDirection"
+            value={formDesiredDirection}
+            onValueChange={setFormDesiredDirection}
+          >
+            <SelectTrigger className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {DESIRED_DIRECTIONS.map((dd) => (
+                <SelectItem key={dd} value={dd}>
+                  {DESIRED_DIRECTION_LABELS[dd]}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <p className="text-xs text-muted-foreground">
+            Controls trend arrow colors. Auto-set from unit type.
           </p>
         </div>
         <div className="space-y-2">

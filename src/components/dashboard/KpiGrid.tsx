@@ -14,7 +14,7 @@ export function KpiGrid({ kpis, divisionSlug }: KpiGridProps) {
   }
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 auto-rows-[1fr] gap-4">
       {kpis.map((kpi) => {
         const effectiveSlug = kpi.divisionSlug || divisionSlug || "";
         const metricHref = kpi.metricSlug
@@ -33,6 +33,7 @@ export function KpiGrid({ kpis, divisionSlug }: KpiGridProps) {
             target={kpi.target}
             sparkline={kpi.sparkline}
             href={metricHref}
+            desiredDirection={kpi.desiredDirection}
             rateMultiplier={kpi.rateMultiplier}
             rateSuffix={kpi.rateSuffix}
           />

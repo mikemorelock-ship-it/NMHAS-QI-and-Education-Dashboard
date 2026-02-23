@@ -18,6 +18,13 @@ export default async function CampaignDetailPage({ params }: { params: Promise<{
     where: { id },
     include: {
       owner: { select: { id: true, firstName: true, lastName: true } },
+      metricDefinition: { select: { id: true, name: true } },
+      campaignDivisions: {
+        include: { division: { select: { id: true, name: true } } },
+      },
+      campaignRegions: {
+        include: { region: { select: { id: true, name: true } } },
+      },
     },
   });
 
@@ -88,6 +95,9 @@ export default async function CampaignDetailPage({ params }: { params: Promise<{
     goals: campaign.goals,
     status: campaign.status,
     ownerName: campaign.owner ? `${campaign.owner.firstName} ${campaign.owner.lastName}` : null,
+    metricName: campaign.metricDefinition?.name ?? null,
+    divisionNames: campaign.campaignDivisions.map((cd) => cd.division.name),
+    regionNames: campaign.campaignRegions.map((cr) => cr.region.name),
     startDate: campaign.startDate?.toISOString().split("T")[0] ?? null,
     endDate: campaign.endDate?.toISOString().split("T")[0] ?? null,
   };

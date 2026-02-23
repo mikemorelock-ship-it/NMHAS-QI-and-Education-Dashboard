@@ -1,6 +1,19 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
-import { format, subMonths, startOfMonth } from "date-fns";
+import {
+  format,
+  subMonths,
+  subWeeks,
+  subYears,
+  startOfMonth,
+  endOfMonth,
+  startOfWeek,
+  endOfWeek,
+  startOfQuarter,
+  endOfQuarter,
+  startOfYear,
+  endOfYear,
+} from "date-fns";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -117,6 +130,26 @@ export function parseDateRangeFilter(range: string): {
       return { gte: startOfMonth(subMonths(now, 12)) };
     case "ytd":
       return { gte: new Date(now.getFullYear(), 0, 1) };
+    case "prev-week": {
+      const lastWeek = subWeeks(now, 1);
+      return {
+        gte: startOfWeek(lastWeek, { weekStartsOn: 1 }),
+        lte: endOfWeek(lastWeek, { weekStartsOn: 1 }),
+      };
+    }
+    case "prev-month": {
+      const lastMonth = subMonths(now, 1);
+      return { gte: startOfMonth(lastMonth), lte: endOfMonth(lastMonth) };
+    }
+    case "prev-quarter": {
+      const currentQStart = startOfQuarter(now);
+      const prevQEnd = new Date(currentQStart.getTime() - 1);
+      return { gte: startOfQuarter(prevQEnd), lte: endOfQuarter(prevQEnd) };
+    }
+    case "prev-year": {
+      const lastYear = subYears(now, 1);
+      return { gte: startOfYear(lastYear), lte: endOfYear(lastYear) };
+    }
     case "all":
     default:
       return {};
