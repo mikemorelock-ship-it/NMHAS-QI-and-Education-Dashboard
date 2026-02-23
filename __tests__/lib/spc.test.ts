@@ -446,6 +446,79 @@ describe("sigma levels", () => {
 });
 
 // ---------------------------------------------------------------------------
+// Variable vs Fixed control limits
+// ---------------------------------------------------------------------------
+
+describe("variable vs fixed control limits", () => {
+  it("P-chart with equal denominators: supportsVariableLimits is false", () => {
+    const data: SPCDataPoint[] = [
+      { period: "P1", value: 90, numerator: 90, denominator: 100 },
+      { period: "P2", value: 92, numerator: 92, denominator: 100 },
+      { period: "P3", value: 88, numerator: 88, denominator: 100 },
+    ];
+    const result = calculateSPC("proportion", data);
+    expect(result.supportsVariableLimits).toBe(false);
+    expect(result.fixedPoints).toBeDefined();
+  });
+
+  it("P-chart with varying denominators (>25%): supportsVariableLimits is true", () => {
+    const data: SPCDataPoint[] = [
+      { period: "P1", value: 90, numerator: 45, denominator: 50 },
+      { period: "P2", value: 92, numerator: 184, denominator: 200 },
+      { period: "P3", value: 88, numerator: 66, denominator: 75 },
+    ];
+    const result = calculateSPC("proportion", data);
+    expect(result.supportsVariableLimits).toBe(true);
+  });
+
+  it("U-chart with varying denominators: supportsVariableLimits is true", () => {
+    const data: SPCDataPoint[] = [
+      { period: "P1", value: 0.05, numerator: 5, denominator: 100 },
+      { period: "P2", value: 0.1, numerator: 20, denominator: 200 },
+      { period: "P3", value: 0.04, numerator: 2, denominator: 50 },
+    ];
+    const result = calculateSPC("rate", data);
+    expect(result.supportsVariableLimits).toBe(true);
+  });
+
+  it("I-MR: supportsVariableLimits is always false", () => {
+    const data: SPCDataPoint[] = [
+      { period: "P1", value: 10 },
+      { period: "P2", value: 12 },
+      { period: "P3", value: 11 },
+    ];
+    const result = calculateSPC("continuous", data);
+    expect(result.supportsVariableLimits).toBe(false);
+    expect(result.fixedPoints).toBeUndefined();
+  });
+
+  it("fixedPoints have constant UCL/LCL across all points", () => {
+    const data: SPCDataPoint[] = [
+      { period: "P1", value: 90, numerator: 45, denominator: 50 },
+      { period: "P2", value: 92, numerator: 184, denominator: 200 },
+      { period: "P3", value: 88, numerator: 66, denominator: 75 },
+    ];
+    const result = calculateSPC("proportion", data);
+    const fixedUcls = new Set(result.fixedPoints!.map((p) => p.ucl));
+    const fixedLcls = new Set(result.fixedPoints!.map((p) => p.lcl));
+    expect(fixedUcls.size).toBe(1);
+    expect(fixedLcls.size).toBe(1);
+  });
+
+  it("variable points have different UCL/LCL when denominators differ", () => {
+    const data: SPCDataPoint[] = [
+      { period: "P1", value: 0.05, numerator: 5, denominator: 100 },
+      { period: "P2", value: 0.1, numerator: 20, denominator: 200 },
+      { period: "P3", value: 0.04, numerator: 2, denominator: 50 },
+    ];
+    const result = calculateSPC("rate", data);
+    const ucls = result.points.map((p) => p.ucl);
+    // Larger denominator => narrower limits => lower UCL
+    expect(ucls[1]).toBeLessThan(ucls[2]); // n=200 vs n=50
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Realistic integration tests
 // ---------------------------------------------------------------------------
 

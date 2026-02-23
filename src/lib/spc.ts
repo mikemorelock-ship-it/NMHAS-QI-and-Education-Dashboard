@@ -46,6 +46,15 @@ export interface SPCResult {
   centerLine: number;
   points: SPCPoint[];
   movingRange?: SPCMovingRangePoint[];
+  /** Fixed-limit points using average denominator (for P-chart and U-chart only) */
+  fixedPoints?: SPCPoint[];
+  /**
+   * Whether variable control limits are statistically appropriate for this data.
+   * True when subgroup sizes (denominators) vary by more than ±25% of the
+   * average — the standard threshold from SPC best practice (Wheeler).
+   * Only relevant for P-chart and U-chart; always false for I-MR.
+   */
+  supportsVariableLimits: boolean;
 }
 
 export interface SPCOptions {
@@ -80,6 +89,19 @@ function getBaselineData<T extends { period: string }>(data: T[], options: SPCOp
 
 function round4(n: number): number {
   return Math.round(n * 10000) / 10000;
+}
+
+/**
+ * Determine whether subgroup sizes vary enough to warrant variable control
+ * limits. Per Wheeler's SPC guidance, variable limits are appropriate when
+ * any subgroup size falls outside ±25% of the average subgroup size.
+ */
+function denominatorsVarySignificantly(data: SPCDataPoint[]): boolean {
+  const denoms = data.map((d) => d.denominator ?? 1);
+  if (denoms.length < 2) return false;
+  const avg = denoms.reduce((s, v) => s + v, 0) / denoms.length;
+  if (avg === 0) return false;
+  return denoms.some((n) => Math.abs(n - avg) / avg > 0.25);
 }
 
 // ---------------------------------------------------------------------------
@@ -147,19 +169,18 @@ function calculatePChart(data: SPCDataPoint[], options: SPCOptions): SPCResult {
     pBar = baseline.length > 0 ? baseline.reduce((s, d) => s + d.value, 0) / baseline.length : 0;
   }
 
+  // --- Variable limits (per-point denominator) ---
   const points: SPCPoint[] = data.map((d) => {
     const ni = d.denominator ?? 1;
     let ucl: number;
     let lcl: number;
 
     if (isPercentageScale) {
-      // Work in percentage scale (0-100)
-      const pFrac = pBar / 100; // convert to 0-1 for the formula
-      const se = Math.sqrt((pFrac * (1 - pFrac)) / ni) * 100; // back to %
+      const pFrac = pBar / 100;
+      const se = Math.sqrt((pFrac * (1 - pFrac)) / ni) * 100;
       ucl = Math.min(pBar + z * se, 100);
       lcl = Math.max(pBar - z * se, 0);
     } else {
-      // Work in proportion scale (0-1)
       const se = Math.sqrt((pBar * (1 - pBar)) / ni);
       ucl = Math.min(pBar + z * se, 1);
       lcl = Math.max(pBar - z * se, 0);
@@ -178,10 +199,43 @@ function calculatePChart(data: SPCDataPoint[], options: SPCOptions): SPCResult {
 
   detectSpecialCauses(points);
 
+  // --- Fixed limits (average denominator n̄) ---
+  const nBar =
+    data.length > 0 ? data.reduce((s, d) => s + (d.denominator ?? 1), 0) / data.length : 1;
+  let fixedUcl: number;
+  let fixedLcl: number;
+
+  if (isPercentageScale) {
+    const pFrac = pBar / 100;
+    const se = Math.sqrt((pFrac * (1 - pFrac)) / nBar) * 100;
+    fixedUcl = Math.min(pBar + z * se, 100);
+    fixedLcl = Math.max(pBar - z * se, 0);
+  } else {
+    const se = Math.sqrt((pBar * (1 - pBar)) / nBar);
+    fixedUcl = Math.min(pBar + z * se, 1);
+    fixedLcl = Math.max(pBar - z * se, 0);
+  }
+
+  const fixedPoints: SPCPoint[] = data.map((d) => ({
+    period: d.period,
+    value: d.value,
+    ucl: round4(fixedUcl),
+    lcl: round4(fixedLcl),
+    centerLine: round4(pBar),
+    specialCause: false,
+    specialCauseRules: [],
+  }));
+
+  detectSpecialCauses(fixedPoints);
+
+  const supportsVariableLimits = denominatorsVarySignificantly(data);
+
   return {
     chartType: "p-chart",
     centerLine: round4(pBar),
     points,
+    fixedPoints,
+    supportsVariableLimits,
   };
 }
 
@@ -199,6 +253,7 @@ function calculateUChart(data: SPCDataPoint[], options: SPCOptions): SPCResult {
 
   const uBar = totalExposure > 0 ? totalEvents / totalExposure : 0;
 
+  // --- Variable limits (per-point denominator) ---
   const points: SPCPoint[] = data.map((d) => {
     const ni = d.denominator ?? 1;
     const se = Math.sqrt(uBar / ni);
@@ -218,10 +273,33 @@ function calculateUChart(data: SPCDataPoint[], options: SPCOptions): SPCResult {
 
   detectSpecialCauses(points);
 
+  // --- Fixed limits (average denominator n̄) ---
+  const nBar =
+    data.length > 0 ? data.reduce((s, d) => s + (d.denominator ?? 1), 0) / data.length : 1;
+  const fixedSe = Math.sqrt(uBar / nBar);
+  const fixedUcl = uBar + z * fixedSe;
+  const fixedLcl = Math.max(uBar - z * fixedSe, 0);
+
+  const fixedPoints: SPCPoint[] = data.map((d) => ({
+    period: d.period,
+    value: d.value,
+    ucl: round4(fixedUcl),
+    lcl: round4(fixedLcl),
+    centerLine: round4(uBar),
+    specialCause: false,
+    specialCauseRules: [],
+  }));
+
+  detectSpecialCauses(fixedPoints);
+
+  const supportsVariableLimits = denominatorsVarySignificantly(data);
+
   return {
     chartType: "u-chart",
     centerLine: round4(uBar),
     points,
+    fixedPoints,
+    supportsVariableLimits,
   };
 }
 
@@ -234,7 +312,13 @@ function calculateIMR(data: SPCDataPoint[], options: SPCOptions): SPCResult {
   const baseline = getBaselineData(data, options);
 
   if (data.length === 0) {
-    return { chartType: "i-mr", centerLine: 0, points: [], movingRange: [] };
+    return {
+      chartType: "i-mr",
+      centerLine: 0,
+      points: [],
+      movingRange: [],
+      supportsVariableLimits: false,
+    };
   }
 
   // Center line: x̄ = mean of baseline values
@@ -289,6 +373,7 @@ function calculateIMR(data: SPCDataPoint[], options: SPCOptions): SPCResult {
     centerLine: round4(xBar),
     points,
     movingRange,
+    supportsVariableLimits: false,
   };
 }
 
@@ -325,7 +410,7 @@ export function calculateSPC(
 ): SPCResult {
   if (data.length === 0) {
     const chartType = spcChartTypeForDataType(dataType);
-    return { chartType, centerLine: 0, points: [] };
+    return { chartType, centerLine: 0, points: [], supportsVariableLimits: false };
   }
 
   switch (dataType) {
