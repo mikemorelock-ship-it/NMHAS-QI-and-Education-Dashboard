@@ -286,6 +286,97 @@ export async function deletePdsaCycle(id: string): Promise<ActionResult> {
   return { success: true };
 }
 
+// ---------------------------------------------------------------------------
+// Granular field-level update — used by admin inline edit mode
+// ---------------------------------------------------------------------------
+
+const PdsaCycleFieldSchema = z.object({
+  title: z.string().min(1).max(200).optional(),
+  status: z.enum(["planning", "doing", "studying", "acting", "completed", "abandoned"]).optional(),
+  outcome: z.enum(["adopt", "adapt", "abandon"]).nullable().optional(),
+  planDescription: z.string().max(2000).nullable().optional(),
+  planPrediction: z.string().max(2000).nullable().optional(),
+  doStartDate: z.string().nullable().optional(),
+  doEndDate: z.string().nullable().optional(),
+  doObservations: z.string().max(2000).nullable().optional(),
+  studyResults: z.string().max(2000).nullable().optional(),
+  studyLearnings: z.string().max(2000).nullable().optional(),
+  actDecision: z.string().max(2000).nullable().optional(),
+  actNextSteps: z.string().max(2000).nullable().optional(),
+});
+
+const PDSA_DATE_FIELDS = ["doStartDate", "doEndDate"];
+const PDSA_ALLOWED_FIELDS = [
+  "title",
+  "status",
+  "outcome",
+  "planDescription",
+  "planPrediction",
+  "doStartDate",
+  "doEndDate",
+  "doObservations",
+  "studyResults",
+  "studyLearnings",
+  "actDecision",
+  "actNextSteps",
+];
+
+export async function updatePdsaCycleField(
+  id: string,
+  field: string,
+  value: string | null
+): Promise<ActionResult> {
+  let session;
+  try {
+    session = await requireAdmin("manage_driver_diagrams");
+  } catch {
+    return { success: false, error: "Insufficient permissions" };
+  }
+
+  if (!PDSA_ALLOWED_FIELDS.includes(field)) {
+    return { success: false, error: `Field "${field}" is not editable.` };
+  }
+
+  const parsed = PdsaCycleFieldSchema.safeParse({ [field]: value });
+  if (!parsed.success) {
+    return {
+      success: false,
+      error: parsed.error.issues.map((i) => i.message).join(", "),
+    };
+  }
+
+  try {
+    const current = await prisma.pdsaCycle.findUnique({ where: { id } });
+    if (!current) return { success: false, error: "Cycle not found." };
+
+    const updateData: Record<string, unknown> = {};
+    if (PDSA_DATE_FIELDS.includes(field)) {
+      updateData[field] = parseDate(value);
+    } else {
+      updateData[field] = value ?? null;
+    }
+
+    await prisma.pdsaCycle.update({ where: { id }, data: updateData });
+
+    await prisma.auditLog.create({
+      data: {
+        action: "UPDATE",
+        entity: "PdsaCycle",
+        entityId: id,
+        details: `Inline update: ${field} on "${current.title}"`,
+        actorId: session.userId,
+        actorType: "admin",
+      },
+    });
+  } catch (err) {
+    console.error("updatePdsaCycleField error:", err);
+    return { success: false, error: "Failed to update field." };
+  }
+
+  revalidateAll();
+  return { success: true };
+}
+
 const STATUS_ORDER = ["planning", "doing", "studying", "acting", "completed"] as const;
 
 export async function advancePdsaCycle(id: string): Promise<ActionResult> {
