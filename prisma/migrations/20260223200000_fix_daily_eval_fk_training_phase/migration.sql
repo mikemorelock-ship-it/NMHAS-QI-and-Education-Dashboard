@@ -4,6 +4,8 @@
 
 PRAGMA defer_foreign_keys=ON;
 PRAGMA foreign_keys=OFF;
+-- Clean up temp table left by a previous failed attempt (if any).
+DROP TABLE IF EXISTS "new_DailyEvaluation";
 CREATE TABLE "new_DailyEvaluation" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "traineeId" TEXT NOT NULL,
