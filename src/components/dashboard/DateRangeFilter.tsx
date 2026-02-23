@@ -28,6 +28,10 @@ const PRESETS = [
   { label: "6 Mo", value: "6mo" },
   { label: "1 Year", value: "1yr" },
   { label: "YTD", value: "ytd" },
+  { label: "Prev Wk", value: "prev-week" },
+  { label: "Prev Mo", value: "prev-month" },
+  { label: "Prev Qtr", value: "prev-quarter" },
+  { label: "Prev Yr", value: "prev-year" },
   { label: "All", value: "all" },
 ] as const;
 

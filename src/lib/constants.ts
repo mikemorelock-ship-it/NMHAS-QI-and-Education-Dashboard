@@ -53,6 +53,19 @@ export const METRIC_UNITS = [
 
 export const AGGREGATION_TYPES = ["sum", "average", "min", "max", "latest"] as const;
 
+export const DESIRED_DIRECTIONS = ["up", "down"] as const;
+
+export const DESIRED_DIRECTION_LABELS: Record<string, string> = {
+  up: "Higher is Better",
+  down: "Lower is Better",
+};
+
+/** Infer a sensible default desiredDirection from the metric unit */
+export function defaultDesiredDirection(unit: string): "up" | "down" {
+  if (unit === "duration") return "down";
+  return "up";
+}
+
 export const AGGREGATION_TYPE_LABELS: Record<string, string> = {
   sum: "Sum",
   average: "Average",

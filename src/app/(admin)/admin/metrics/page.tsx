@@ -67,6 +67,7 @@ export default async function MetricsPage() {
     denominatorLabel: m.denominatorLabel ?? null,
     rateMultiplier: m.rateMultiplier ?? null,
     rateSuffix: m.rateSuffix ?? null,
+    desiredDirection: m.desiredDirection,
     sortOrder: m.sortOrder,
     description: m.description,
     dataDefinition: m.dataDefinition,

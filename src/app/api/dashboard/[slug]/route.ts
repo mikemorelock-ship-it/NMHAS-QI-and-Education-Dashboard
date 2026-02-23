@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { formatPeriod, parseDateRangeFilter } from "@/lib/utils";
 import {
   aggregateByPeriodWeighted,
+  aggregateValues,
   type AggregationType,
   type MetricDataType,
 } from "@/lib/aggregation";
@@ -99,15 +100,31 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       }
 
       const kpis = kpiMetrics.map((metric) => {
-        const entries = allByMetric.get(metric.id) ?? [];
-        const recent = entries.slice(-2);
-        const currentValue = recent.length > 0 ? recent[recent.length - 1].value : 0;
-        const previousValue = recent.length > 1 ? recent[recent.length - 2].value : 0;
+        const filteredEntries = filteredByMetric.get(metric.id) ?? [];
+        const allValues = filteredEntries.map((e) => e.value);
+        const aggType = (metric.aggregationType ?? "average") as AggregationType;
+
+        let currentValue = 0;
+        let previousValue = 0;
         let trend = 0;
-        if (previousValue !== 0) {
-          trend = ((currentValue - previousValue) / Math.abs(previousValue)) * 100;
+
+        if (allValues.length > 0) {
+          currentValue = aggregateValues(allValues, aggType) ?? 0;
+
+          if (allValues.length >= 2) {
+            const midpoint = Math.ceil(allValues.length / 2);
+            const olderHalf = allValues.slice(0, midpoint);
+            const recentHalf = allValues.slice(midpoint);
+
+            previousValue = aggregateValues(olderHalf, aggType) ?? 0;
+            const recentAggregate = aggregateValues(recentHalf, aggType) ?? 0;
+
+            if (previousValue !== 0) {
+              trend = ((recentAggregate - previousValue) / Math.abs(previousValue)) * 100;
+            }
+          }
         }
-        const sparkEntries = filteredByMetric.get(metric.id) ?? [];
+
         return {
           metricId: metric.id,
           metricSlug: metric.slug,
@@ -119,10 +136,11 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
           unit: metric.unit,
           target: metric.target,
           trend: Math.round(trend * 10) / 10,
-          sparkline: sparkEntries.slice(-12).map((e) => e.value),
+          sparkline: filteredEntries.slice(-12).map((e) => e.value),
           chartType: metric.chartType,
           category: metric.categoryLegacy,
           aggregationType: metric.aggregationType,
+          desiredDirection: (metric.desiredDirection ?? "up") as "up" | "down",
           rateMultiplier: metric.rateMultiplier ?? null,
           rateSuffix: metric.rateSuffix ?? null,
         };
@@ -275,22 +293,34 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       const aggType = metric.aggregationType as AggregationType;
       const dataType = (metric.dataType ?? "continuous") as MetricDataType;
 
-      const entries = allByMetric.get(metric.id) ?? [];
-      const aggregatedSeries = aggregateByPeriodWeighted(entries, dataType, aggType);
+      const filteredEntries = filteredByMetric.get(metric.id) ?? [];
+      const aggregatedSeries = aggregateByPeriodWeighted(filteredEntries, dataType, aggType);
+      const allValues = aggregatedSeries.map((s) => s.value);
 
-      const recent = aggregatedSeries.slice(-2);
-      const currentValue = recent.length > 0 ? recent[recent.length - 1].value : 0;
-      const previousValue = recent.length > 1 ? recent[recent.length - 2].value : 0;
-
+      let currentValue = 0;
+      let previousValue = 0;
       let trend = 0;
-      if (previousValue !== 0) {
-        trend = ((currentValue - previousValue) / Math.abs(previousValue)) * 100;
+
+      if (allValues.length > 0) {
+        // Aggregate all period values across the selected date range
+        currentValue = aggregateValues(allValues, aggType) ?? 0;
+
+        if (allValues.length >= 2) {
+          // Split the range into older/recent halves for trend comparison
+          const midpoint = Math.ceil(allValues.length / 2);
+          const olderHalf = allValues.slice(0, midpoint);
+          const recentHalf = allValues.slice(midpoint);
+
+          previousValue = aggregateValues(olderHalf, aggType) ?? 0;
+          const recentAggregate = aggregateValues(recentHalf, aggType) ?? 0;
+
+          if (previousValue !== 0) {
+            trend = ((recentAggregate - previousValue) / Math.abs(previousValue)) * 100;
+          }
+        }
       }
 
-      const sparkEntries = filteredByMetric.get(metric.id) ?? [];
-      const sparklineSeries = aggregateByPeriodWeighted(sparkEntries, dataType, aggType)
-        .slice(-12)
-        .map((s) => s.value);
+      const sparklineSeries = aggregatedSeries.slice(-12).map((s) => s.value);
 
       return {
         metricId: metric.id,
@@ -307,6 +337,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         chartType: metric.chartType,
         category: metric.categoryLegacy,
         aggregationType: metric.aggregationType,
+        desiredDirection: (metric.desiredDirection ?? "up") as "up" | "down",
         rateMultiplier: metric.rateMultiplier ?? null,
         rateSuffix: metric.rateSuffix ?? null,
       };

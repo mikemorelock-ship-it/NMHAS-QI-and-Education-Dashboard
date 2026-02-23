@@ -45,6 +45,7 @@ model Division {
   users                   User[]
   divisionChangeRequests  DivisionChangeRequest[]
   campaigns               Campaign[]              @relation("CampaignDivision")
+  campaignDivisions       CampaignDivision[]
 
   @@unique([departmentId, slug])
 }
@@ -65,6 +66,7 @@ model Region {
   scorecardRegions   ScorecardRegion[]
   metricAssociations MetricAssociation[]
   campaigns          Campaign[]          @relation("CampaignRegion")
+  campaignRegions    CampaignRegion[]
 
   @@map("Individual")
 }
@@ -96,6 +98,7 @@ model MetricDefinition {
   denominatorLabel   String?                         // custom label for denominator (e.g. "Total", "Exposure")
   rateMultiplier     Int?                            // e.g. 1000, 10000 — display multiplier for rate unit
   rateSuffix         String?                         // e.g. "per 1,000 transports"
+  desiredDirection   String   @default("up")          // "up" | "down" — which trend direction is good
   isActive        Boolean  @default(true)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
@@ -112,6 +115,7 @@ model MetricDefinition {
   metricAssociations MetricAssociation[]
   driverDiagrams     DriverDiagram[]
   pdsaCycles         PdsaCycle[]
+  campaigns          Campaign[]
 
   @@unique([departmentId, slug])
   @@index([parentId])
@@ -287,33 +291,68 @@ model MetricAssociation {
 // ---------------------------------------------------------------------------
 
 model Campaign {
-  id          String    @id @default(cuid())
-  name        String
-  slug        String    @unique
-  description String?
-  goals       String?
-  keyFindings String?   // editable narrative summary of key findings / lessons learned
-  status      String    @default("planning") // "planning" | "active" | "completed" | "archived"
-  ownerId     String?
-  divisionId  String?   // optional scope — limits metrics to this division
-  regionId    String?   // optional scope — limits metrics to this region ("department" in UI)
-  startDate   DateTime?
-  endDate     DateTime?
-  sortOrder   Int       @default(0)
-  isActive    Boolean   @default(true)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id                 String    @id @default(cuid())
+  name               String
+  slug               String    @unique
+  description        String?
+  goals              String?
+  keyFindings        String?   // editable narrative summary of key findings / lessons learned
+  status             String    @default("planning") // "planning" | "active" | "completed" | "archived"
+  ownerId            String?
+  metricDefinitionId String?
+  divisionId         String?   // legacy — use campaignDivisions for multi-select scope
+  regionId           String?   // legacy — use campaignRegions for multi-select scope
+  startDate          DateTime?
+  endDate            DateTime?
+  sortOrder          Int       @default(0)
+  isActive           Boolean   @default(true)
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
 
-  owner          User?           @relation("CampaignOwner", fields: [ownerId], references: [id], onDelete: SetNull)
-  division       Division?       @relation("CampaignDivision", fields: [divisionId], references: [id], onDelete: SetNull)
-  region         Region?         @relation("CampaignRegion", fields: [regionId], references: [id], onDelete: SetNull)
-  driverDiagrams DriverDiagram[]
-  actionItems    ActionItem[]
-  shareLinks     CampaignShareLink[]
+  owner             User?              @relation("CampaignOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  metricDefinition  MetricDefinition?  @relation(fields: [metricDefinitionId], references: [id], onDelete: SetNull)
+  division          Division?          @relation("CampaignDivision", fields: [divisionId], references: [id], onDelete: SetNull)
+  region            Region?            @relation("CampaignRegion", fields: [regionId], references: [id], onDelete: SetNull)
+  driverDiagrams    DriverDiagram[]
+  actionItems       ActionItem[]
+  campaignDivisions CampaignDivision[]
+  campaignRegions   CampaignRegion[]
+  shareLinks        CampaignShareLink[]
 
   @@index([ownerId])
   @@index([status])
+  @@index([metricDefinitionId])
   @@index([divisionId])
+  @@index([regionId])
+}
+
+// Many-to-many: Campaign <-> Division scope
+model CampaignDivision {
+  id         String   @id @default(cuid())
+  campaignId String
+  divisionId String
+  createdAt  DateTime @default(now())
+
+  campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  division Division @relation(fields: [divisionId], references: [id], onDelete: Cascade)
+
+  @@unique([campaignId, divisionId])
+  @@index([campaignId])
+  @@index([divisionId])
+}
+
+// Many-to-many: Campaign <-> Region (Department in UI) scope
+model CampaignRegion {
+  id         String   @id @default(cuid())
+  campaignId String
+  regionId   String
+  createdAt  DateTime @default(now())
+
+  campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  region   Region   @relation(fields: [regionId], references: [id], onDelete: Cascade)
+
+  @@unique([campaignId, regionId])
+  @@index([campaignId])
   @@index([regionId])
 }
 
