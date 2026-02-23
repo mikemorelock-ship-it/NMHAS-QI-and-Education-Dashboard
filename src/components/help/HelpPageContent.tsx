@@ -31,6 +31,13 @@ import {
   ArrowRight,
   Sparkles,
   ChevronDown,
+  Target,
+  ListChecks,
+  Wand2,
+  Shield,
+  FileBarChart,
+  Camera,
+  ShieldAlert,
   type LucideIcon,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -91,6 +98,14 @@ const ICON_MAP: Record<string, LucideIcon> = {
   Settings,
   ScrollText,
   BookOpen,
+  Target,
+  ListChecks,
+  Wand2,
+  Shield,
+  FileBarChart,
+  Camera,
+  ShieldAlert,
+  Sparkles,
 };
 
 function getIcon(name: string): LucideIcon {

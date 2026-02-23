@@ -96,15 +96,17 @@ export const HELP_FEATURES: HelpFeature[] = [
   {
     id: "public-qi",
     portals: ["public"],
-    title: "Quality Improvement Tools",
+    title: "Quality Improvement Hub",
     icon: "GitBranchPlus",
     description:
-      "The QI hub shows active driver diagrams and PDSA (Plan-Do-Study-Act) cycles. Driver diagrams visualize improvement strategies from aims to change ideas. PDSA cycles track the progress of specific improvement experiments.",
+      "The QI hub shows active campaigns, driver diagrams, and PDSA cycles. Switch between Cards, List, and Gantt timeline views to browse campaigns. Click any campaign to view its full report with executive summary, charts, and PDSA details.",
     path: "/quality-improvement",
     tips: [
+      "Toggle between Cards, List, and Gantt views using the view switcher.",
+      "The Gantt chart supports Day, Week, Month, Year, and 3-Year zoom levels.",
+      "Click a campaign card to open its detailed report page.",
       "Click on a driver diagram to see its full tree structure from Aim through Change Ideas.",
       "Change Ideas with linked PDSA cycles show a badge — click them to see cycle details.",
-      "Use tabs to toggle between cycles when a Change Idea has multiple PDSA experiments.",
     ],
   },
   {
@@ -198,12 +200,13 @@ export const HELP_FEATURES: HelpFeature[] = [
     title: "Metrics",
     icon: "BarChart3",
     description:
-      "Define and configure metric definitions including name, unit, period type, aggregation method, targets, and control limits. Metrics are linked to departments and appear on the dashboard.",
+      "Define and configure metric definitions including name, unit, period type, aggregation method, targets, control limits, and desired direction. Metrics are linked to departments and appear on the dashboard.",
     path: "/admin/metrics",
     tips: [
       "Set upper and lower control limits for SPC (Statistical Process Control) charting.",
       "The 'KPI' flag determines whether a metric appears in scorecard KPI views.",
       "Use rate-type metrics for numerator/denominator calculations.",
+      "Set the Desired Direction (up or down) so trend arrows and chart colors correctly reflect whether movement is positive or negative.",
     ],
   },
   {
@@ -374,11 +377,14 @@ export const HELP_FEATURES: HelpFeature[] = [
     title: "Data Entry",
     icon: "PenLine",
     description:
-      "Manually enter metric values for specific divisions and departments. Select the metric, period, and enter the value. Useful for metrics that aren't automatically imported.",
+      "Manually enter metric values for specific divisions and departments. Select the metric, period, and enter the value. The recent entries table updates instantly with optimistic UI and supports sortable columns. Each entry shows who entered it and when.",
     path: "/admin/data-entry",
     tips: [
       "Select the division and department first to see available metrics.",
       "The date picker defaults to the current period.",
+      "Click any column header in the recent entries table to sort by that field.",
+      "New entries appear instantly in the table — no need to refresh.",
+      "The 'Entered' and 'By' columns show when each value was entered and by whom.",
     ],
   },
   {
@@ -398,7 +404,7 @@ export const HELP_FEATURES: HelpFeature[] = [
   {
     id: "admin-resources",
     portals: ["admin"],
-    title: "Resources",
+    title: "QI Resources",
     icon: "FolderOpen",
     description:
       "A curated hub for quality improvement standards, training materials, and reference documentation from IHI, NASEMSO, NHTSA, and other respected organizations. Browse quick-reference guides for PDSA cycles, driver diagrams, SPC charts, and the IHI Model for Improvement.",
@@ -410,18 +416,105 @@ export const HELP_FEATURES: HelpFeature[] = [
     ],
   },
   {
+    id: "admin-campaigns",
+    portals: ["admin"],
+    title: "Campaigns",
+    icon: "Target",
+    description:
+      "Create, edit, and manage QI campaigns — the top-level organizing concept for improvement initiatives. Set campaign name, owner, status, timeline, goals, and aim statement. Scope campaigns to specific divisions and departments, associate them with metrics, and generate shareable links for stakeholders.",
+    path: "/admin/campaigns",
+    tips: [
+      "Use the multi-select pickers to scope a campaign to specific divisions and departments.",
+      "Link a metric definition to track quantitative outcomes directly on the campaign report.",
+      "Generate a share link to give read-only report access to stakeholders without login.",
+      "Campaign statuses are Planning, Active, Completed, and Archived.",
+      "Drag campaigns to reorder them on the list.",
+    ],
+  },
+  {
+    id: "admin-action-items",
+    portals: ["admin"],
+    title: "Action Items",
+    icon: "ListChecks",
+    description:
+      "Track corrective and improvement actions across QI campaigns. Each action item has a title, description, priority (Low, Medium, High, Critical), assignee, due date, status, and optional link to a campaign or PDSA cycle.",
+    path: "/admin/action-items",
+    tips: [
+      "Filter actions by status, priority, campaign, or assignee.",
+      "Overdue items are visually flagged so nothing falls through the cracks.",
+      "Link action items to specific PDSA cycles to connect tasks to improvement experiments.",
+    ],
+  },
+  {
+    id: "admin-reports",
+    portals: ["admin"],
+    title: "Reports",
+    icon: "FileBarChart",
+    description:
+      "Export metric data and performance reports. Select divisions, departments, metrics, and date ranges to generate CSV downloads for offline analysis, presentations, or regulatory submissions.",
+    path: "/admin/reports",
+    tips: [
+      "Use the division and department filters to scope the export to specific areas.",
+      "Select a date range to limit the data to the period of interest.",
+      "Downloaded CSV files include custom column labels and sectioned formatting.",
+    ],
+  },
+  {
+    id: "admin-users",
+    portals: ["admin"],
+    title: "User Management",
+    icon: "Shield",
+    description:
+      "Manage user accounts, roles, and access. Create new users, assign roles (Admin, Manager, Supervisor, FTO, Trainee, Data Entry), activate or deactivate accounts, and reset passwords. Roles determine which portal pages and actions are available.",
+    path: "/admin/users",
+    tips: [
+      "Super admins can reset passwords for any user directly from the user list.",
+      "Deactivating a user immediately invalidates their active sessions.",
+      "Roles control permissions — Admins have full access, while Data Entry users can only enter metric values.",
+    ],
+  },
+  {
+    id: "admin-ft-resources",
+    portals: ["admin"],
+    title: "FT Resources",
+    icon: "FileText",
+    description:
+      "Manage training resources and reference materials available to FTOs and trainees in the Field Training portal. Upload documents, link to external resources, and organize materials by category.",
+    path: "/admin/field-training/resources",
+    tips: [
+      "Resources added here are accessible from the Field Training portal.",
+      "Organize materials by category to make them easy to find.",
+    ],
+  },
+  {
+    id: "admin-ft-coaching",
+    portals: ["admin"],
+    title: "Coaching Management",
+    icon: "Sparkles",
+    description:
+      "Manage the coaching activity library and review trainee coaching progress. Configure which activities are assigned for specific evaluation categories and DOR score thresholds. View completion rates across the program.",
+    path: "/admin/field-training/coaching",
+    tips: [
+      "Coaching activities are auto-assigned when trainees receive DOR scores of 3 or below.",
+      "Activity types include readings, reflections, scenarios, and quizzes.",
+      "Review completion rates to identify trainees who may need additional support.",
+    ],
+  },
+  {
     id: "public-campaign-reports",
     portals: ["public"],
     title: "Campaign Reports",
     icon: "FileText",
     description:
-      "Comprehensive QI campaign reports with executive summary, Gantt timeline, driver diagram visualization, PDSA cycle summaries, metric performance charts, milestones, and action item tracking. Reports are printable and include interactive chart toggles between control chart and trending views.",
+      "Comprehensive QI campaign reports with executive summary, key findings, Gantt timeline, driver diagram visualization, PDSA cycle summaries, metric performance charts with IHI shift/trend detection, milestones, and action item tracking. Reports are printable and shareable via unique links. Charts include interactive toggles between control chart and trending views with legends and smart Y-axis scaling.",
     path: "/quality-improvement",
     tips: [
       "Click the chart mode toggle to switch between Control Chart (SPC) and Trending views.",
       "Use the Print Report button to generate a printer-friendly version of the full report.",
       "PDSA annotations on charts show numbered markers indicating when change ideas were tested.",
       "The QI Coach button provides AI-powered guidance specific to the campaign you're viewing.",
+      "Charts automatically detect IHI-standard shifts (8+ consecutive points) and trends (6+ consecutive changes).",
+      "Use date range presets (Previous Week, Month, Quarter, Year) to quickly filter chart data.",
     ],
   },
   {
@@ -619,6 +712,53 @@ export const HELP_FEATURES: HelpFeature[] = [
       "Completing all skills and achieving consistent 'Acceptable' (4+) ratings supports advancement.",
     ],
   },
+
+  // ---- Field Training Portal (Supervisor/Manager features) ----
+  {
+    id: "ft-team-dors",
+    portals: ["fieldtraining"],
+    title: "Team DORs",
+    icon: "ClipboardCheck",
+    description:
+      "Supervisors and managers can view all DORs submitted across their division. Click any DOR to open the full read-only detail view, including draft DORs for users with review permissions. Timestamped supervisor notes allow threaded conversations on each DOR.",
+    path: "/fieldtraining/team-dors",
+    tips: [
+      "Filter the DOR list by trainee, FTO, date, status, or recommendation action.",
+      "Click through to the full DOR detail to see all category ratings and narrative comments.",
+      "Add supervisor notes directly on any DOR — notes are threaded with timestamps and author tracking.",
+      "Division-scoped supervisors see DORs only for trainees in their division.",
+    ],
+  },
+  {
+    id: "ft-all-trainees",
+    portals: ["fieldtraining"],
+    title: "All Trainees",
+    icon: "Users",
+    description:
+      "View all trainees across the program with their current phase, assigned FTOs, DOR counts, and average ratings. Click a trainee to see their full profile with phase timeline, DOR history, and performance trends. Supervisors and managers can manage FTO-trainee assignments from this page.",
+    path: "/fieldtraining/trainees",
+    tips: [
+      "Click a trainee row to see their full detail profile with phase progress and DOR history.",
+      "Manage FTO-trainee assignments using the assignments interface.",
+      "Trainees can have multiple FTOs assigned (co-FTO model).",
+      "Filter by phase, division, or status to narrow the view.",
+    ],
+  },
+  {
+    id: "ft-snapshots",
+    portals: ["fieldtraining"],
+    title: "Trainee Snapshots",
+    icon: "Camera",
+    description:
+      "Generate shareable, point-in-time progress reports for trainees. Snapshots capture DOR performance, phase progress, skill completion, coaching activity status, and strengths/weaknesses into a printable report accessible via a unique link — no login required.",
+    path: "/fieldtraining/snapshots",
+    tips: [
+      "Multi-select trainees to generate several snapshot reports at once.",
+      "Each snapshot gets a unique shareable link — send it to directors, medical directors, or educators.",
+      "Snapshots are frozen at creation time and won't change if the trainee's data updates later.",
+      "Deactivate a snapshot to revoke access to the shared link.",
+    ],
+  },
 ];
 
 // ---------------------------------------------------------------------------
@@ -699,9 +839,23 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
   {
     term: "Campaign",
     definition:
-      "A top-level improvement initiative that groups related driver diagrams, PDSA cycles, and action items. Campaigns have a status (Planning, Active, Completed, Archived) and an optional owner.",
-    portals: ["admin"],
+      "A top-level improvement initiative that groups related driver diagrams, PDSA cycles, and action items. Campaigns have a status (Planning, Active, Completed, Archived), an optional owner, and can be scoped to specific divisions and departments. Campaigns can be linked to a metric for quantitative outcome tracking.",
+    portals: ["public", "admin"],
     relatedTerms: ["QI", "Driver Diagram", "PDSA", "Action Item"],
+  },
+  {
+    term: "Action Item",
+    definition:
+      "A trackable corrective or improvement task within a QI campaign. Action items have a priority (Low, Medium, High, Critical), assignee, due date, status (Open, In Progress, Completed, Cancelled), and can be linked to a specific PDSA cycle.",
+    portals: ["admin"],
+    relatedTerms: ["Campaign", "PDSA", "QI"],
+  },
+  {
+    term: "Desired Direction",
+    definition:
+      "An optional property on metric definitions indicating whether higher or lower values represent improvement. When set, trend arrows and chart colors correctly reflect positive or negative movement — for example, a downward trend in a 'lower is better' metric (like response time) is shown in green.",
+    portals: ["admin"],
+    relatedTerms: ["Metric", "SPC", "Control Chart"],
   },
   {
     term: "KPI",
