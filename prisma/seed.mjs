@@ -1220,6 +1220,7 @@ async function main() {
           target: m.target,
           dataDefinition: m.dataDefinition || null,
           methodology: m.methodology || null,
+          desiredDirection: m.unit === "duration" ? "down" : "up",
           sortOrder: i + 1,
           isActive: true,
         },
