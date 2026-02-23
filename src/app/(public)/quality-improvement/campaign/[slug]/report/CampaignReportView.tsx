@@ -44,6 +44,7 @@ import { ControlChart } from "@/components/dashboard/ControlChart";
 import { MetricChart } from "@/components/dashboard/MetricChart";
 import { differenceInDays, addDays, format } from "date-fns";
 import type { ChartDataPoint, SPCChartData, QIAnnotation } from "@/types";
+import { QICoachPanel } from "@/components/qi-coach/QICoachPanel";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -1107,6 +1108,17 @@ export function CampaignReportView({
         </p>
         <p>North Memorial Health Ambulance Service — Quality Improvement Department</p>
       </footer>
+
+      {/* QI Coach floating panel */}
+      <QICoachPanel
+        context={{
+          campaignName: campaign.name,
+          campaignGoals: campaign.goals ?? undefined,
+          campaignStatus: campaign.status,
+          pdsaCycleCount: totalCycles,
+          completedCycles: completedCycles.length,
+        }}
+      />
     </div>
   );
 }

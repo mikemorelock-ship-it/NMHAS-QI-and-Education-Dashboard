@@ -49,6 +49,7 @@ import { ControlChart } from "@/components/dashboard/ControlChart";
 import { formatMetricValue, toUTCDate, cn } from "@/lib/utils";
 import { NMH_COLORS, CHART_COLORS } from "@/lib/constants";
 import type { MetricDetailData, ChartDataPoint, QIAnnotation, ChildMetricSummary } from "@/types";
+import { QICoachPanel } from "@/components/qi-coach/QICoachPanel";
 
 // ---------------------------------------------------------------------------
 // Props
@@ -1134,6 +1135,15 @@ export function MetricDetailClient({
           </Card>
         </section>
       )}
+
+      {/* QI Coach floating panel */}
+      <QICoachPanel
+        context={{
+          metricName: data.name,
+          metricUnit: data.unit,
+          metricTarget: data.target,
+        }}
+      />
     </div>
   );
 }

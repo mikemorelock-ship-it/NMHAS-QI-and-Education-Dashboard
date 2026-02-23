@@ -401,8 +401,43 @@ export const HELP_FEATURES: HelpFeature[] = [
     title: "Resources",
     icon: "FolderOpen",
     description:
-      "A hub for training materials, protocol documents, reference links, and other resources. (Coming soon — this feature is under development.)",
+      "A curated hub for quality improvement standards, training materials, and reference documentation from IHI, NASEMSO, NHTSA, and other respected organizations. Browse quick-reference guides for PDSA cycles, driver diagrams, SPC charts, and the IHI Model for Improvement.",
     path: "/admin/resources",
+    tips: [
+      "Use the category tabs to filter resources by topic (QI Standards, EMS-specific, SPC, etc.).",
+      "External links open in a new tab and connect to official organization websites.",
+      "The IHI Model for Improvement section aligns with the QI Workflow Wizard coaching content.",
+    ],
+  },
+  {
+    id: "public-campaign-reports",
+    portals: ["public"],
+    title: "Campaign Reports",
+    icon: "FileText",
+    description:
+      "Comprehensive QI campaign reports with executive summary, Gantt timeline, driver diagram visualization, PDSA cycle summaries, metric performance charts, milestones, and action item tracking. Reports are printable and include interactive chart toggles between control chart and trending views.",
+    path: "/quality-improvement",
+    tips: [
+      "Click the chart mode toggle to switch between Control Chart (SPC) and Trending views.",
+      "Use the Print Report button to generate a printer-friendly version of the full report.",
+      "PDSA annotations on charts show numbered markers indicating when change ideas were tested.",
+      "The QI Coach button provides AI-powered guidance specific to the campaign you're viewing.",
+    ],
+  },
+  {
+    id: "qi-coach",
+    portals: ["public", "admin"],
+    title: "QI Coach (AI-Powered)",
+    icon: "MessageSquare",
+    description:
+      "An AI-powered quality improvement coaching assistant available on campaign reports and metric detail pages. Ask freeform questions about QI best practices, PDSA methodology, SPC chart interpretation, and improvement strategies. Responses are grounded in the IHI Model for Improvement and EMS-specific best practices.",
+    tips: [
+      "The coach is context-aware — it knows which campaign or metric you're viewing.",
+      "Ask about specific topics like 'How do I interpret special cause variation?' or 'What balancing measures should I track?'",
+      "Use the suggested questions to explore common QI topics quickly.",
+      "The coach also includes pre-written quick-reference cards you can browse without asking questions.",
+      "Requires an ANTHROPIC_API_KEY environment variable to enable AI responses.",
+    ],
   },
 
   // ---- Field Training Portal (FTO features) ----
@@ -779,6 +814,62 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
       "Confirmation by an FTO that a trainee has demonstrated competency in a specific skill. Once signed off, the skill shows the FTO's name and date of completion.",
     portals: ["admin", "fieldtraining"],
     relatedTerms: ["FTEP", "Training Phase"],
+  },
+  {
+    term: "IHI",
+    definition:
+      "Institute for Healthcare Improvement — a leading global organization dedicated to improving health and healthcare worldwide. IHI developed the Model for Improvement (three fundamental questions + PDSA cycles) that forms the foundation of this dashboard's QI methodology.",
+    portals: ["public", "admin"],
+    relatedTerms: ["QI", "IHI Model for Improvement", "PDSA"],
+  },
+  {
+    term: "NASEMSO",
+    definition:
+      "National Association of State EMS Officials — the organization representing state EMS directors and their agencies. NASEMSO provides guidance on EMS quality improvement standards, performance measures, and system design.",
+    portals: ["public", "admin"],
+    relatedTerms: ["QI", "NHTSA", "EMS"],
+  },
+  {
+    term: "NHTSA",
+    definition:
+      "National Highway Traffic Safety Administration — the federal agency that oversees EMS at the national level. NHTSA's Office of EMS publishes the EMS Agenda 2050, the National EMS Education Standards, and evidence-based guidelines for EMS performance measurement.",
+    portals: ["public", "admin"],
+    relatedTerms: ["NASEMSO", "QI"],
+  },
+  {
+    term: "Special Cause Variation",
+    definition:
+      "Variation in a process metric caused by identifiable, non-routine factors. On an SPC chart, special cause variation is signaled by points beyond control limits or specific patterns (runs, trends). Indicates the process has changed and warrants investigation.",
+    portals: ["public", "admin"],
+    relatedTerms: ["SPC", "Common Cause Variation", "Control Chart"],
+  },
+  {
+    term: "Common Cause Variation",
+    definition:
+      "The natural, inherent variation present in every process. On an SPC chart, common cause variation appears as random points within control limits. Reducing common cause variation requires changing the process itself, not investigating individual data points.",
+    portals: ["public", "admin"],
+    relatedTerms: ["SPC", "Special Cause Variation", "Control Chart"],
+  },
+  {
+    term: "Control Chart",
+    definition:
+      "A statistical tool that plots data over time with a center line (mean) and upper/lower control limits (typically at 3 standard deviations). Used to distinguish between common cause and special cause variation, helping teams know when to investigate a change versus when variation is normal.",
+    portals: ["public", "admin"],
+    relatedTerms: ["SPC", "Special Cause Variation", "Metric"],
+  },
+  {
+    term: "Campaign Report",
+    definition:
+      "A comprehensive summary document for a QI campaign that includes executive summary, Gantt timeline, driver diagrams, PDSA cycle details, metric performance charts with SPC analysis, milestones, and action items. Can be printed or shared as a status update.",
+    portals: ["public", "admin"],
+    relatedTerms: ["Campaign", "PDSA", "Driver Diagram"],
+  },
+  {
+    term: "QI Coach",
+    definition:
+      "An AI-powered coaching assistant built into the dashboard that answers questions about quality improvement best practices, PDSA methodology, SPC interpretation, and improvement strategies. Responses are grounded in IHI Model for Improvement principles and EMS-specific context.",
+    portals: ["public", "admin"],
+    relatedTerms: ["QI", "IHI", "PDSA"],
   },
 ];
 
