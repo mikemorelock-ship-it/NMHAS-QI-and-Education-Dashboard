@@ -44,6 +44,7 @@ model Division {
   metricAssociations      MetricAssociation[]
   users                   User[]
   divisionChangeRequests  DivisionChangeRequest[]
+  campaigns               Campaign[]              @relation("CampaignDivision")
 
   @@unique([departmentId, slug])
 }
@@ -63,6 +64,7 @@ model Region {
   metricEntries      MetricEntry[]
   scorecardRegions   ScorecardRegion[]
   metricAssociations MetricAssociation[]
+  campaigns          Campaign[]          @relation("CampaignRegion")
 
   @@map("Individual")
 }
@@ -290,8 +292,11 @@ model Campaign {
   slug        String    @unique
   description String?
   goals       String?
+  keyFindings String?   // editable narrative summary of key findings / lessons learned
   status      String    @default("planning") // "planning" | "active" | "completed" | "archived"
   ownerId     String?
+  divisionId  String?   // optional scope — limits metrics to this division
+  regionId    String?   // optional scope — limits metrics to this region ("department" in UI)
   startDate   DateTime?
   endDate     DateTime?
   sortOrder   Int       @default(0)
@@ -300,11 +305,16 @@ model Campaign {
   updatedAt   DateTime  @updatedAt
 
   owner          User?           @relation("CampaignOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  division       Division?       @relation("CampaignDivision", fields: [divisionId], references: [id], onDelete: SetNull)
+  region         Region?         @relation("CampaignRegion", fields: [regionId], references: [id], onDelete: SetNull)
   driverDiagrams DriverDiagram[]
   actionItems    ActionItem[]
+  shareLinks     CampaignShareLink[]
 
   @@index([ownerId])
   @@index([status])
+  @@index([divisionId])
+  @@index([regionId])
 }
 
 // ---------------------------------------------------------------------------
@@ -913,4 +923,23 @@ model TraineeSnapshot {
 
   @@index([token])
   @@index([traineeId])
+}
+
+// ---------------------------------------------------------------------------
+// Campaign Share Links — public, unauthenticated access to campaign reports
+// ---------------------------------------------------------------------------
+
+model CampaignShareLink {
+  id          String    @id @default(cuid())
+  token       String    @unique @default(cuid())   // public access token
+  campaignId  String
+  createdById String?
+  expiresAt   DateTime?                             // optional expiry
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+
+  campaign  Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([campaignId])
 }

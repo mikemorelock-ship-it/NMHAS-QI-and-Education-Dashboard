@@ -52,6 +52,7 @@ import {
   ListChecks,
   Calendar,
   User,
+  Building2,
 } from "lucide-react";
 import { CampaignGanttChart } from "@/components/qi/CampaignGanttChart";
 import { CAMPAIGN_STATUS_LABELS, CAMPAIGN_STATUS_COLORS } from "@/lib/constants";
@@ -66,11 +67,16 @@ interface CampaignRow {
   slug: string;
   description: string | null;
   goals: string | null;
+  keyFindings: string | null;
   status: string;
   isActive: boolean;
   sortOrder: number;
   ownerId: string | null;
   ownerName: string | null;
+  divisionId: string | null;
+  divisionName: string | null;
+  regionId: string | null;
+  regionName: string | null;
   startDate: string | null;
   endDate: string | null;
   diagramCount: number;
@@ -83,9 +89,16 @@ interface UserOption {
   lastName: string;
 }
 
+interface DivisionOption {
+  id: string;
+  name: string;
+  regions: { id: string; name: string }[];
+}
+
 interface Props {
   campaigns: CampaignRow[];
   users: UserOption[];
+  divisions: DivisionOption[];
 }
 
 // ---------------------------------------------------------------------------
@@ -102,16 +115,35 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 // ---------------------------------------------------------------------------
+// Scope label helper
+// ---------------------------------------------------------------------------
+
+function scopeLabel(c: CampaignRow): string | null {
+  if (c.regionName) return c.regionName;
+  if (c.divisionName) return c.divisionName;
+  return null;
+}
+
+// ---------------------------------------------------------------------------
 // Form fields
 // ---------------------------------------------------------------------------
 
 function CampaignFormFields({
   users,
+  divisions,
   defaults,
 }: {
   users: UserOption[];
+  divisions: DivisionOption[];
   defaults?: Partial<CampaignRow>;
 }) {
+  const [selectedDivisionId, setSelectedDivisionId] = useState(defaults?.divisionId ?? "__none__");
+
+  const regionsForDivision = useMemo(() => {
+    if (!selectedDivisionId || selectedDivisionId === "__none__") return [];
+    return divisions.find((d) => d.id === selectedDivisionId)?.regions ?? [];
+  }, [selectedDivisionId, divisions]);
+
   return (
     <div className="space-y-4">
       <div>
@@ -137,6 +169,17 @@ function CampaignFormFields({
           rows={3}
           maxLength={2000}
           placeholder="One goal per line, e.g.:&#10;- Reduce response time to under 8 min&#10;- Deploy in all divisions"
+        />
+      </div>
+      <div>
+        <Label htmlFor="keyFindings">Key Findings / Summary of Learning</Label>
+        <Textarea
+          id="keyFindings"
+          name="keyFindings"
+          defaultValue={defaults?.keyFindings ?? ""}
+          rows={4}
+          maxLength={5000}
+          placeholder="Summarize key findings, lessons learned, and interpretations of the data..."
         />
       </div>
       <div className="grid grid-cols-2 gap-4">
@@ -166,6 +209,52 @@ function CampaignFormFields({
               {users.map((u) => (
                 <SelectItem key={u.id} value={u.id}>
                   {u.firstName} {u.lastName}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <Label htmlFor="divisionId">Division (scope)</Label>
+          <Select
+            name="divisionId"
+            defaultValue={defaults?.divisionId ?? "__none__"}
+            onValueChange={setSelectedDivisionId}
+          >
+            <SelectTrigger id="divisionId">
+              <SelectValue placeholder="All (org-wide)" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__none__">All (org-wide)</SelectItem>
+              {divisions.map((d) => (
+                <SelectItem key={d.id} value={d.id}>
+                  {d.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div>
+          <Label htmlFor="regionId">Department (scope)</Label>
+          <Select
+            name="regionId"
+            defaultValue={defaults?.regionId ?? "__none__"}
+            disabled={regionsForDivision.length === 0}
+          >
+            <SelectTrigger id="regionId">
+              <SelectValue
+                placeholder={
+                  regionsForDivision.length === 0 ? "Select division first" : "All in division"
+                }
+              />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__none__">All in division</SelectItem>
+              {regionsForDivision.map((r) => (
+                <SelectItem key={r.id} value={r.id}>
+                  {r.name}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -205,7 +294,7 @@ function CampaignFormFields({
 // Main Component
 // ---------------------------------------------------------------------------
 
-export function CampaignsClient({ campaigns, users }: Props) {
+export function CampaignsClient({ campaigns, users, divisions }: Props) {
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
@@ -374,6 +463,7 @@ export function CampaignsClient({ campaigns, users }: Props) {
                   <TableRow>
                     <TableHead>Name</TableHead>
                     <TableHead>Status</TableHead>
+                    <TableHead>Scope</TableHead>
                     <TableHead>Owner</TableHead>
                     <TableHead>Dates</TableHead>
                     <TableHead className="text-center">Diagrams</TableHead>
@@ -384,7 +474,7 @@ export function CampaignsClient({ campaigns, users }: Props) {
                 <TableBody>
                   {filteredCampaigns.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                      <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
                         {hasFilters
                           ? "No campaigns match the current filters."
                           : "No campaigns yet. Create one to get started."}
@@ -404,6 +494,9 @@ export function CampaignsClient({ campaigns, users }: Props) {
                         </TableCell>
                         <TableCell>
                           <StatusBadge status={c.status} />
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {scopeLabel(c) ?? "Org-wide"}
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground">
                           {c.ownerName ?? "—"}
@@ -493,6 +586,11 @@ export function CampaignsClient({ campaigns, users }: Props) {
                           <User className="h-3 w-3" /> {c.ownerName}
                         </span>
                       )}
+                      {scopeLabel(c) && (
+                        <span className="flex items-center gap-1">
+                          <Building2 className="h-3 w-3" /> {scopeLabel(c)}
+                        </span>
+                      )}
                       <span className="flex items-center gap-1">
                         <GitBranchPlus className="h-3 w-3" /> {c.diagramCount} diagram
                         {c.diagramCount !== 1 ? "s" : ""}
@@ -568,7 +666,7 @@ export function CampaignsClient({ campaigns, users }: Props) {
             <DialogTitle>Create Campaign</DialogTitle>
           </DialogHeader>
           <form action={handleCreate}>
-            <CampaignFormFields users={users} />
+            <CampaignFormFields users={users} divisions={divisions} />
             <DialogFooter className="mt-4">
               <Button type="button" variant="outline" onClick={() => setShowCreate(false)}>
                 Cancel
@@ -594,7 +692,7 @@ export function CampaignsClient({ campaigns, users }: Props) {
           </DialogHeader>
           {editTarget && (
             <form action={handleEdit}>
-              <CampaignFormFields users={users} defaults={editTarget} />
+              <CampaignFormFields users={users} divisions={divisions} defaults={editTarget} />
               <DialogFooter className="mt-4">
                 <Button type="button" variant="outline" onClick={() => setEditTarget(null)}>
                   Cancel
