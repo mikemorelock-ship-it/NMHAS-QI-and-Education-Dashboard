@@ -90,36 +90,17 @@ async function applyMigration({ name, sql }) {
   const startedAt = new Date().toISOString();
   const id = randomUUID();
 
-  // Strip SQL comment lines first (before splitting on ";") so that semicolons
-  // inside comments don't produce bogus statements.  Then split and trim.
-  const stripped = sql
-    .split("\n")
-    .filter((line) => !line.trimStart().startsWith("--"))
-    .join("\n");
-  const statements = stripped
-    .split(";")
-    .map((s) => s.trim())
-    .filter((s) => s.length > 0);
-
-  for (const stmt of statements) {
-    try {
-      await client.execute(stmt);
-    } catch (err) {
-      // Tolerate "already exists" errors for idempotent re-runs
-      const msg = err.message || "";
-      if (msg.includes("already exists") || msg.includes("duplicate column name")) {
-        console.log(`     ⚠️  Skipped (already exists): ${stmt.slice(0, 80)}...`);
-        continue;
-      }
-      throw err;
-    }
-  }
+  // Use executeMultiple to send the entire SQL string to the libSQL server in a
+  // single "sequence" request.  The server's SQL parser handles PRAGMAs, comments,
+  // and semicolons natively — no client-side splitting required.  This is critical
+  // for table-rebuild migrations that use PRAGMA foreign_keys=OFF / defer_foreign_keys.
+  await client.executeMultiple(sql);
 
   // Record the migration
   await client.execute({
     sql: `INSERT INTO _prisma_migrations (id, checksum, finished_at, migration_name, started_at, applied_steps_count)
           VALUES (?, ?, ?, ?, ?, ?)`,
-    args: [id, "", new Date().toISOString(), name, startedAt, statements.length],
+    args: [id, "", new Date().toISOString(), name, startedAt, 1],
   });
 }
 
