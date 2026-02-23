@@ -1,9 +1,8 @@
 -- Fix DailyEvaluation FK constraint: phaseId should reference TrainingPhase, not FtoPhase
 -- The 20260221000000_overall_rating_to_float migration incorrectly referenced "FtoPhase"
 -- when recreating the table (FtoPhase was the old name; init migration used TrainingPhase).
+-- Note: PRAGMA statements removed — Turso/libSQL HTTP API does not support them.
 
-PRAGMA defer_foreign_keys=ON;
-PRAGMA foreign_keys=OFF;
 CREATE TABLE "new_DailyEvaluation" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "traineeId" TEXT NOT NULL,
@@ -37,5 +36,3 @@ CREATE INDEX "DailyEvaluation_ftoId_idx" ON "DailyEvaluation"("ftoId");
 CREATE INDEX "DailyEvaluation_date_idx" ON "DailyEvaluation"("date");
 CREATE INDEX "DailyEvaluation_phaseId_idx" ON "DailyEvaluation"("phaseId");
 CREATE INDEX "DailyEvaluation_status_idx" ON "DailyEvaluation"("status");
-PRAGMA foreign_keys=ON;
-PRAGMA defer_foreign_keys=OFF;
