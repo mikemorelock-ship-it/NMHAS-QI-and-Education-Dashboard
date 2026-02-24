@@ -263,6 +263,7 @@ export default async function CampaignDetailPage({ params }: { params: Promise<{
       status: c.status,
       outcome: c.outcome,
       changeIdea: c.changeIdeaNode?.text ?? null,
+      changeIdeaNodeId: c.changeIdeaNodeId,
       metricName: c.metricDefinition?.name ?? null,
       planDescription: c.planDescription,
       planPrediction: c.planPrediction,
