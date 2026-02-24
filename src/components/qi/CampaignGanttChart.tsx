@@ -24,6 +24,11 @@ import {
 
 type ZoomPreset = "fit" | "day" | "month" | "quarter" | "year" | "2year" | "3year" | "custom";
 
+/** Parse a YYYY-MM-DD string as local midnight (not UTC) */
+function toLocalDate(str: string): Date {
+  return new Date(str + "T00:00:00");
+}
+
 const ZOOM_PRESETS: { value: ZoomPreset; label: string }[] = [
   { value: "fit", label: "Fit All" },
   { value: "day", label: "Day" },
@@ -102,7 +107,7 @@ export function CampaignGanttChart({ campaigns, linkPrefix }: Props) {
       if (!a.endDate && !b.endDate) return 0;
       if (!a.endDate) return 1;
       if (!b.endDate) return -1;
-      return new Date(a.endDate).getTime() - new Date(b.endDate).getTime();
+      return toLocalDate(a.endDate).getTime() - toLocalDate(b.endDate).getTime();
     });
   }, [campaigns]);
 
@@ -124,8 +129,8 @@ export function CampaignGanttChart({ campaigns, linkPrefix }: Props) {
       // - startDate + 365 days for ongoing campaigns (no end date)
       const effectiveEnds = campaigns
         .map((c) => {
-          if (c.endDate) return new Date(c.endDate).getTime();
-          if (c.startDate) return addDays(new Date(c.startDate), 365).getTime();
+          if (c.endDate) return toLocalDate(c.endDate).getTime();
+          if (c.startDate) return addDays(toLocalDate(c.startDate), 365).getTime();
           return null;
         })
         .filter((t): t is number => t !== null && !isNaN(t));
@@ -205,16 +210,21 @@ export function CampaignGanttChart({ campaigns, linkPrefix }: Props) {
 
   const getBarStyle = (startStr: string | null, endStr: string | null) => {
     if (!startStr) return null;
-    const startDate = new Date(startStr);
+    const startDate = toLocalDate(startStr);
     const fallbackDays = totalDays > 365 ? 30 : 14;
-    const endDate = endStr ? new Date(endStr) : addDays(startDate, fallbackDays);
+    const endDate = endStr ? toLocalDate(endStr) : addDays(startDate, fallbackDays);
 
+    // Compute left and right edges relative to the timeline, then clamp to
+    // the visible area so bars starting before the timeline don't overshoot.
     const leftPct = (differenceInDays(startDate, timelineStart) / totalDays) * 100;
-    const widthPct = (differenceInDays(endDate, startDate) / totalDays) * 100;
+    const rightPct = (differenceInDays(endDate, timelineStart) / totalDays) * 100;
+
+    const clampedLeft = Math.max(0, leftPct);
+    const clampedWidth = Math.max(0.5, rightPct - clampedLeft);
 
     return {
-      left: `${Math.max(0, leftPct)}%`,
-      width: `${Math.max(0.5, widthPct)}%`,
+      left: `${clampedLeft}%`,
+      width: `${clampedWidth}%`,
     };
   };
 
@@ -227,8 +237,8 @@ export function CampaignGanttChart({ campaigns, linkPrefix }: Props) {
       const today = new Date();
       const effectiveEnds = campaigns
         .map((c) => {
-          if (c.endDate) return new Date(c.endDate).getTime();
-          if (c.startDate) return addDays(new Date(c.startDate), 365).getTime();
+          if (c.endDate) return toLocalDate(c.endDate).getTime();
+          if (c.startDate) return addDays(toLocalDate(c.startDate), 365).getTime();
           return null;
         })
         .filter((t): t is number => t !== null && !isNaN(t));
