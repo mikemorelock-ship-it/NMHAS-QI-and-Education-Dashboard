@@ -72,6 +72,9 @@ import {
   GripVertical,
   Save,
   Check,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
 } from "lucide-react";
 import {
   METRIC_UNITS,
@@ -170,6 +173,8 @@ export function MetricsClient({
   const [filterCategory, setFilterCategory] = useState<string>("all");
   const [filterDivision, setFilterDivision] = useState<string>("all");
   const [collapsedParents, setCollapsedParents] = useState<Set<string>>(new Set());
+  const [sortKey, setSortKey] = useState<string | null>(null);
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
 
@@ -272,6 +277,41 @@ export function MetricsClient({
     }
   }
 
+  // Apply column sorting when active (overrides hierarchy/drag order)
+  if (sortKey) {
+    orderedRows.sort((a, b) => {
+      const ma = a.metric;
+      const mb = b.metric;
+      let cmp = 0;
+
+      switch (sortKey) {
+        case "name":
+          cmp = ma.name.localeCompare(mb.name);
+          break;
+        case "associations": {
+          const aa = getAssociationSummary(ma.id) ?? "";
+          const ab = getAssociationSummary(mb.id) ?? "";
+          cmp = aa.localeCompare(ab);
+          break;
+        }
+        case "unit":
+          cmp = ma.unit.localeCompare(mb.unit);
+          break;
+        case "kpi":
+          cmp = (ma.isKpi ? 1 : 0) - (mb.isKpi ? 1 : 0);
+          break;
+        case "target":
+          cmp = (ma.target ?? -Infinity) - (mb.target ?? -Infinity);
+          break;
+        case "entries":
+          cmp = ma.entriesCount - mb.entriesCount;
+          break;
+      }
+
+      return sortDir === "asc" ? cmp : -cmp;
+    });
+  }
+
   const sortableIds = orderedRows.map((r) => r.metric.id);
 
   function handleDragEnd(event: DragEndEvent) {
@@ -371,6 +411,23 @@ export function MetricsClient({
     }
     return parts.length > 0 ? parts.join(", ") : null;
   }
+
+  function handleSort(key: string) {
+    if (sortKey === key) {
+      if (sortDir === "asc") {
+        setSortDir("desc");
+      } else {
+        // Third click resets to default order
+        setSortKey(null);
+        setSortDir("asc");
+      }
+    } else {
+      setSortKey(key);
+      setSortDir("asc");
+    }
+  }
+
+  const isCustomSorted = sortKey !== null;
 
   return (
     <div className="space-y-6">
@@ -583,12 +640,56 @@ export function MetricsClient({
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-8"></TableHead>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Associations</TableHead>
-                  <TableHead>Unit</TableHead>
-                  <TableHead>KPI</TableHead>
-                  <TableHead className="text-right">Target</TableHead>
-                  <TableHead className="text-center">Entries</TableHead>
+                  <SortableTableHead
+                    sortKey="name"
+                    activeSortKey={sortKey}
+                    sortDir={sortDir}
+                    onSort={handleSort}
+                  >
+                    Name
+                  </SortableTableHead>
+                  <SortableTableHead
+                    sortKey="associations"
+                    activeSortKey={sortKey}
+                    sortDir={sortDir}
+                    onSort={handleSort}
+                  >
+                    Associations
+                  </SortableTableHead>
+                  <SortableTableHead
+                    sortKey="unit"
+                    activeSortKey={sortKey}
+                    sortDir={sortDir}
+                    onSort={handleSort}
+                  >
+                    Unit
+                  </SortableTableHead>
+                  <SortableTableHead
+                    sortKey="kpi"
+                    activeSortKey={sortKey}
+                    sortDir={sortDir}
+                    onSort={handleSort}
+                  >
+                    KPI
+                  </SortableTableHead>
+                  <SortableTableHead
+                    sortKey="target"
+                    activeSortKey={sortKey}
+                    sortDir={sortDir}
+                    onSort={handleSort}
+                    className="text-right"
+                  >
+                    Target
+                  </SortableTableHead>
+                  <SortableTableHead
+                    sortKey="entries"
+                    activeSortKey={sortKey}
+                    sortDir={sortDir}
+                    onSort={handleSort}
+                    className="text-center"
+                  >
+                    Entries
+                  </SortableTableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -607,6 +708,7 @@ export function MetricsClient({
                       openEditDialog={openEditDialog}
                       setDeleteTarget={setDeleteTarget}
                       isPending={isPending}
+                      hideDragHandle={isCustomSorted}
                     />
                   ))}
                 </SortableContext>
@@ -735,6 +837,49 @@ export function MetricsClient({
 }
 
 // ---------------------------------------------------------------------------
+// SortableTableHead — clickable column header with sort indicator
+// ---------------------------------------------------------------------------
+
+function SortableTableHead({
+  sortKey: key,
+  activeSortKey,
+  sortDir,
+  onSort,
+  className,
+  children,
+}: {
+  sortKey: string;
+  activeSortKey: string | null;
+  sortDir: "asc" | "desc";
+  onSort: (key: string) => void;
+  className?: string;
+  children: React.ReactNode;
+}) {
+  const isActive = activeSortKey === key;
+
+  return (
+    <TableHead className={className}>
+      <button
+        type="button"
+        onClick={() => onSort(key)}
+        className="inline-flex items-center gap-1 hover:text-foreground transition-colors -ml-1 px-1 py-0.5 rounded"
+      >
+        {children}
+        {isActive ? (
+          sortDir === "asc" ? (
+            <ArrowUp className="h-3.5 w-3.5 text-nmh-teal" />
+          ) : (
+            <ArrowDown className="h-3.5 w-3.5 text-nmh-teal" />
+          )
+        ) : (
+          <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground/40" />
+        )}
+      </button>
+    </TableHead>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // SortableMetricRow — drag-and-drop wrapper for table rows
 // ---------------------------------------------------------------------------
 
@@ -749,6 +894,7 @@ function SortableMetricRow({
   openEditDialog,
   setDeleteTarget,
   isPending,
+  hideDragHandle,
 }: {
   metric: MetricRow;
   isChild: boolean;
@@ -760,6 +906,7 @@ function SortableMetricRow({
   openEditDialog: (m: MetricRow) => void;
   setDeleteTarget: (m: MetricRow) => void;
   isPending: boolean;
+  hideDragHandle?: boolean;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: metric.id,
@@ -787,14 +934,16 @@ function SortableMetricRow({
       }
     >
       <TableCell className="w-8 px-1">
-        <button
-          type="button"
-          className="cursor-grab active:cursor-grabbing p-1 rounded hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
-          {...attributes}
-          {...listeners}
-        >
-          <GripVertical className="h-4 w-4" />
-        </button>
+        {!hideDragHandle && (
+          <button
+            type="button"
+            className="cursor-grab active:cursor-grabbing p-1 rounded hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+            {...attributes}
+            {...listeners}
+          >
+            <GripVertical className="h-4 w-4" />
+          </button>
+        )}
       </TableCell>
       <TableCell>
         <div className={isChild ? "pl-7" : ""}>
