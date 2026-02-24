@@ -870,7 +870,7 @@ export function CampaignReportView({
         <section className="space-y-4">
           <h2 className="text-lg font-semibold text-nmh-gray flex items-center gap-2">
             <RefreshCcw className="h-5 w-5 text-nmh-orange" />
-            PDSA Cycles ({totalCycles})
+            Change Ideas &amp; PDSA Cycles ({totalCycles})
           </h2>
 
           {/* Legend */}
