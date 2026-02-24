@@ -26,6 +26,15 @@ import {
   X,
   Loader2,
   CopyPlus,
+  ClipboardList,
+  Play,
+  Search,
+  Zap,
+  XCircle,
+  ThumbsUp,
+  Repeat2,
+  Ban,
+  type LucideIcon,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -227,6 +236,23 @@ const MILESTONE_ICONS: Record<string, string> = {
   campaign: "\u{1F3C1}",
   pdsa: "\u{1F504}",
   action: "\u2705",
+};
+
+/** Lucide icon for each PDSA status / phase */
+const PDSA_STATUS_ICONS: Record<string, LucideIcon> = {
+  planning: ClipboardList,
+  doing: Play,
+  studying: Search,
+  acting: Zap,
+  completed: CheckCircle2,
+  abandoned: XCircle,
+};
+
+/** Lucide icon for each PDSA outcome */
+const PDSA_OUTCOME_ICONS: Record<string, LucideIcon> = {
+  adopt: ThumbsUp,
+  adapt: Repeat2,
+  abandon: Ban,
 };
 
 function formatDate(iso: string) {
@@ -621,7 +647,11 @@ function PdsaCycleExpandedContent({
 
       <div className="grid grid-cols-2 gap-3 text-sm">
         <div>
-          <span className="font-medium" style={{ color: PDSA_STATUS_COLORS.planning }}>
+          <span
+            className="font-medium inline-flex items-center gap-1"
+            style={{ color: PDSA_STATUS_COLORS.planning }}
+          >
+            <ClipboardList className="h-3.5 w-3.5" />
             Plan:
           </span>{" "}
           <EditableText
@@ -643,7 +673,11 @@ function PdsaCycleExpandedContent({
           />
         </div>
         <div>
-          <span className="font-medium" style={{ color: PDSA_STATUS_COLORS.doing }}>
+          <span
+            className="font-medium inline-flex items-center gap-1"
+            style={{ color: PDSA_STATUS_COLORS.doing }}
+          >
+            <Play className="h-3.5 w-3.5" />
             Do:
           </span>{" "}
           <EditableDateField
@@ -669,7 +703,11 @@ function PdsaCycleExpandedContent({
           />
         </div>
         <div>
-          <span className="font-medium" style={{ color: PDSA_STATUS_COLORS.studying }}>
+          <span
+            className="font-medium inline-flex items-center gap-1"
+            style={{ color: PDSA_STATUS_COLORS.studying }}
+          >
+            <Search className="h-3.5 w-3.5" />
             Study:
           </span>{" "}
           <EditableText
@@ -691,7 +729,11 @@ function PdsaCycleExpandedContent({
           />
         </div>
         <div>
-          <span className="font-medium" style={{ color: PDSA_STATUS_COLORS.acting }}>
+          <span
+            className="font-medium inline-flex items-center gap-1"
+            style={{ color: PDSA_STATUS_COLORS.acting }}
+          >
+            <Zap className="h-3.5 w-3.5" />
             Act:
           </span>{" "}
           <EditableText
@@ -744,6 +786,8 @@ function PdsaCycleExpandedContent({
 /** Compact header for collapsed PDSA cycle */
 function PdsaCycleCompactHeader({ cycle }: { cycle: CycleInfo }) {
   const statusColor = PDSA_STATUS_COLORS[cycle.status] ?? "#4b4f54";
+  const StatusIcon = PDSA_STATUS_ICONS[cycle.status];
+  const OutcomeIcon = cycle.outcome ? PDSA_OUTCOME_ICONS[cycle.outcome] : null;
 
   return (
     <div className="flex items-center gap-2 flex-wrap flex-1 min-w-0">
@@ -751,15 +795,16 @@ function PdsaCycleCompactHeader({ cycle }: { cycle: CycleInfo }) {
       <span className="text-sm text-muted-foreground">#{cycle.cycleNumber}</span>
       <Badge
         variant="secondary"
-        className="text-xs"
+        className="text-xs gap-1"
         style={{ backgroundColor: `${statusColor}15`, color: statusColor }}
       >
+        {StatusIcon && <StatusIcon className="h-3 w-3" />}
         {PDSA_STATUS_LABELS[cycle.status] ?? cycle.status}
       </Badge>
       {cycle.outcome && (
         <Badge
           variant="secondary"
-          className={`text-xs ${
+          className={`text-xs gap-1 ${
             cycle.outcome === "adopt"
               ? "bg-green-100 text-green-700"
               : cycle.outcome === "adapt"
@@ -767,6 +812,7 @@ function PdsaCycleCompactHeader({ cycle }: { cycle: CycleInfo }) {
                 : "bg-red-100 text-red-700"
           }`}
         >
+          {OutcomeIcon && <OutcomeIcon className="h-3 w-3" />}
           {PDSA_OUTCOME_LABELS[cycle.outcome] ?? cycle.outcome}
         </Badge>
       )}
@@ -1395,6 +1441,86 @@ export function AdminCampaignReport({
             PDSA Cycles ({totalCycles})
           </h2>
 
+          {/* Legend */}
+          <div className="border rounded-lg p-4 bg-muted/10">
+            <p className="text-xs font-semibold text-nmh-gray mb-2">Legend</p>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-2.5 text-xs">
+              <div className="space-y-1.5">
+                <p className="font-medium text-muted-foreground uppercase tracking-wide text-[10px]">
+                  PDSA Phases
+                </p>
+                {(
+                  [
+                    ["planning", "Plan"],
+                    ["doing", "Do"],
+                    ["studying", "Study"],
+                    ["acting", "Act"],
+                    ["completed", "Completed"],
+                    ["abandoned", "Abandoned"],
+                  ] as const
+                ).map(([key, label]) => {
+                  const Icon = PDSA_STATUS_ICONS[key];
+                  const color = PDSA_STATUS_COLORS[key] ?? "#4b4f54";
+                  return (
+                    <div key={key} className="flex items-center gap-1.5">
+                      {Icon && <Icon className="h-3.5 w-3.5" style={{ color }} />}
+                      <span style={{ color }}>{label}</span>
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="space-y-1.5">
+                <p className="font-medium text-muted-foreground uppercase tracking-wide text-[10px]">
+                  Outcomes
+                </p>
+                {(
+                  [
+                    ["adopt", "Adopt", "text-green-700"],
+                    ["adapt", "Adapt", "text-yellow-700"],
+                    ["abandon", "Abandon", "text-red-700"],
+                  ] as const
+                ).map(([key, label, cls]) => {
+                  const Icon = PDSA_OUTCOME_ICONS[key];
+                  return (
+                    <div key={key} className={`flex items-center gap-1.5 ${cls}`}>
+                      {Icon && <Icon className="h-3.5 w-3.5" />}
+                      <span>{label}</span>
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="space-y-1.5">
+                <p className="font-medium text-muted-foreground uppercase tracking-wide text-[10px]">
+                  Report Sections
+                </p>
+                <div className="flex items-center gap-1.5 text-muted-foreground">
+                  <Target className="h-3.5 w-3.5 text-nmh-teal" />
+                  <span>Campaign</span>
+                </div>
+                <div className="flex items-center gap-1.5 text-muted-foreground">
+                  <GitBranchPlus className="h-3.5 w-3.5 text-nmh-teal" />
+                  <span>Driver Diagram</span>
+                </div>
+                <div className="flex items-center gap-1.5 text-muted-foreground">
+                  <RefreshCcw className="h-3.5 w-3.5 text-nmh-orange" />
+                  <span>PDSA Cycle</span>
+                </div>
+                <div className="flex items-center gap-1.5 text-muted-foreground">
+                  <BarChart3 className="h-3.5 w-3.5 text-nmh-teal" />
+                  <span>Metrics</span>
+                </div>
+                <div className="flex items-center gap-1.5 text-muted-foreground">
+                  <ListChecks className="h-3.5 w-3.5 text-nmh-teal" />
+                  <span>Action Items</span>
+                </div>
+                <div className="flex items-center gap-1.5 text-muted-foreground">
+                  <Flag className="h-3.5 w-3.5 text-nmh-teal" />
+                  <span>Milestones</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
           {diagrams.map((diagram) => {
             if (diagram.cycles.length === 0) return null;
 
@@ -1432,28 +1558,34 @@ export function AdminCampaignReport({
                       </div>
                       {/* Progression chain */}
                       <div className="flex items-center gap-1.5 flex-wrap text-sm">
-                        {cycles.map((c, idx) => (
-                          <span key={c.id} className="flex items-center gap-1">
-                            {idx > 0 && <span className="text-muted-foreground/40">&rarr;</span>}
-                            <Badge
-                              variant="secondary"
-                              className={`text-xs ${
-                                c.outcome === "adopt"
-                                  ? "bg-green-100 text-green-700"
-                                  : c.outcome === "adapt"
-                                    ? "bg-yellow-100 text-yellow-700"
-                                    : c.outcome === "abandon"
-                                      ? "bg-red-100 text-red-700"
-                                      : "bg-muted"
-                              }`}
-                            >
-                              Cycle {c.cycleNumber}
-                              {c.outcome
-                                ? `: ${PDSA_OUTCOME_LABELS[c.outcome] ?? c.outcome}`
-                                : ` (${PDSA_STATUS_LABELS[c.status] ?? c.status})`}
-                            </Badge>
-                          </span>
-                        ))}
+                        {cycles.map((c, idx) => {
+                          const ChainIcon = c.outcome
+                            ? PDSA_OUTCOME_ICONS[c.outcome]
+                            : PDSA_STATUS_ICONS[c.status];
+                          return (
+                            <span key={c.id} className="flex items-center gap-1">
+                              {idx > 0 && <span className="text-muted-foreground/40">&rarr;</span>}
+                              <Badge
+                                variant="secondary"
+                                className={`text-xs gap-1 ${
+                                  c.outcome === "adopt"
+                                    ? "bg-green-100 text-green-700"
+                                    : c.outcome === "adapt"
+                                      ? "bg-yellow-100 text-yellow-700"
+                                      : c.outcome === "abandon"
+                                        ? "bg-red-100 text-red-700"
+                                        : "bg-muted"
+                                }`}
+                              >
+                                {ChainIcon && <ChainIcon className="h-3 w-3" />}
+                                Cycle {c.cycleNumber}
+                                {c.outcome
+                                  ? `: ${PDSA_OUTCOME_LABELS[c.outcome] ?? c.outcome}`
+                                  : ` (${PDSA_STATUS_LABELS[c.status] ?? c.status})`}
+                              </Badge>
+                            </span>
+                          );
+                        })}
                       </div>
                       {/* Collapsible cycle cards */}
                       <Accordion
