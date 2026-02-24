@@ -124,9 +124,11 @@ export function CampaignGanttChart({ campaigns, linkPrefix }: Props) {
       end = new Date(customEnd + "T00:00:00");
       if (end <= start) end = addDays(start, 30);
     } else if (zoom === "fit") {
-      // Compute effective end dates for all campaigns:
-      // - explicit endDate when available
-      // - startDate + 365 days for ongoing campaigns (no end date)
+      // Compute effective start and end dates for all campaigns
+      const effectiveStarts = campaigns
+        .map((c) => (c.startDate ? toLocalDate(c.startDate).getTime() : null))
+        .filter((t): t is number => t !== null && !isNaN(t));
+
       const effectiveEnds = campaigns
         .map((c) => {
           if (c.endDate) return toLocalDate(c.endDate).getTime();
@@ -135,19 +137,21 @@ export function CampaignGanttChart({ campaigns, linkPrefix }: Props) {
         })
         .filter((t): t is number => t !== null && !isNaN(t));
 
-      const latestEffectiveEnd =
-        effectiveEnds.length > 0 ? new Date(Math.max(...effectiveEnds)) : addDays(today, 395);
+      // Start from the earlier of today or the earliest campaign start
+      const earliestStart =
+        effectiveStarts.length > 0
+          ? new Date(Math.min(Math.min(...effectiveStarts), today.getTime()))
+          : today;
 
-      // Minimum of 395 days (year preset) so Fit All never picks a cramped view
-      const daysNeeded = Math.max(differenceInDays(latestEffectiveEnd, today), 395);
+      const latestEnd =
+        effectiveEnds.length > 0 ? new Date(Math.max(...effectiveEnds)) : addDays(today, 90);
 
-      // Pick the smallest preset whose forwardDays covers the latest effective end
-      const preset =
-        PRESET_CONFIGS.find((p) => p.forwardDays >= daysNeeded) ??
-        PRESET_CONFIGS[PRESET_CONFIGS.length - 1];
+      // Add a small proportional buffer (5% of range, clamped 7–30 days)
+      const rawRange = Math.max(differenceInDays(latestEnd, earliestStart), 30);
+      const buffer = Math.min(30, Math.max(7, Math.round(rawRange * 0.05)));
 
-      start = addDays(today, -preset.paddingBefore);
-      end = addDays(today, preset.forwardDays);
+      start = addDays(earliestStart, -buffer);
+      end = addDays(latestEnd, buffer);
     } else {
       const config = PRESET_CONFIG[zoom] ?? { forwardDays: 90, paddingBefore: 14 };
       start = addDays(today, -config.paddingBefore);
@@ -235,6 +239,10 @@ export function CampaignGanttChart({ campaigns, linkPrefix }: Props) {
   function handleZoomChange(preset: ZoomPreset) {
     if (preset === "custom" && !customStart) {
       const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const effectiveStarts = campaigns
+        .map((c) => (c.startDate ? toLocalDate(c.startDate).getTime() : null))
+        .filter((t): t is number => t !== null && !isNaN(t));
       const effectiveEnds = campaigns
         .map((c) => {
           if (c.endDate) return toLocalDate(c.endDate).getTime();
@@ -242,14 +250,16 @@ export function CampaignGanttChart({ campaigns, linkPrefix }: Props) {
           return null;
         })
         .filter((t): t is number => t !== null && !isNaN(t));
-      const latestEffectiveEnd =
-        effectiveEnds.length > 0 ? new Date(Math.max(...effectiveEnds)) : addDays(today, 395);
-      const daysNeeded = Math.max(differenceInDays(latestEffectiveEnd, today), 395);
-      const fitPreset =
-        PRESET_CONFIGS.find((p) => p.forwardDays >= daysNeeded) ??
-        PRESET_CONFIGS[PRESET_CONFIGS.length - 1];
-      setCustomStart(format(addDays(today, -fitPreset.paddingBefore), "yyyy-MM-dd"));
-      setCustomEnd(format(addDays(today, fitPreset.forwardDays), "yyyy-MM-dd"));
+      const earliestStart =
+        effectiveStarts.length > 0
+          ? new Date(Math.min(Math.min(...effectiveStarts), today.getTime()))
+          : today;
+      const latestEnd =
+        effectiveEnds.length > 0 ? new Date(Math.max(...effectiveEnds)) : addDays(today, 90);
+      const rawRange = Math.max(differenceInDays(latestEnd, earliestStart), 30);
+      const buffer = Math.min(30, Math.max(7, Math.round(rawRange * 0.05)));
+      setCustomStart(format(addDays(earliestStart, -buffer), "yyyy-MM-dd"));
+      setCustomEnd(format(addDays(latestEnd, buffer), "yyyy-MM-dd"));
     }
     setZoom(preset);
   }
