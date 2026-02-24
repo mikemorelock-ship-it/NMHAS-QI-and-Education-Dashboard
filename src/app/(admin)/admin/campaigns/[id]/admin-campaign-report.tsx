@@ -25,6 +25,7 @@ import {
   Check,
   X,
   Loader2,
+  CopyPlus,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -47,7 +48,13 @@ import {
 import { Label } from "@/components/ui/label";
 import { updateCampaignField } from "@/actions/campaigns";
 import { assignDiagramToCampaign } from "@/actions/campaigns";
-import { updatePdsaCycleField } from "@/actions/pdsa-cycles";
+import { updatePdsaCycleField, clonePdsaCycle } from "@/actions/pdsa-cycles";
+import {
+  Accordion,
+  AccordionItem,
+  AccordionTrigger,
+  AccordionContent,
+} from "@/components/ui/accordion";
 import {
   createActionItem,
   updateActionItem,
@@ -112,6 +119,7 @@ interface CycleInfo {
   status: string;
   outcome: string | null;
   changeIdea: string | null;
+  changeIdeaNodeId: string | null;
   metricName: string | null;
   planDescription: string | null;
   planPrediction: string | null;
@@ -552,28 +560,31 @@ function ReportGanttChart({ items }: { items: GanttItem[] }) {
 }
 
 // ---------------------------------------------------------------------------
-// Editable PDSA Cycle Summary
+// Editable PDSA Cycle Summary (expanded content)
 // ---------------------------------------------------------------------------
 
-function EditablePdsaCycleSummary({
+function PdsaCycleExpandedContent({
   cycle,
   editing,
   onFieldSave,
+  onStartNextCycle,
+  isCloning,
 }: {
   cycle: CycleInfo;
   editing: boolean;
   onFieldSave: (cycleId: string, field: string, value: string | null) => void;
+  onStartNextCycle?: (cycleId: string) => void;
+  isCloning?: boolean;
 }) {
   const statusColor = PDSA_STATUS_COLORS[cycle.status] ?? "#4b4f54";
+  const canStartNext = cycle.status === "acting" || cycle.status === "completed";
 
   return (
-    <div className="border rounded-md p-3 text-sm space-y-2 break-inside-avoid">
-      <div className="flex items-center justify-between gap-2 flex-wrap">
-        <div className="flex items-center gap-2">
-          <span className="font-semibold">{cycle.title}</span>
-          <span className="text-xs text-muted-foreground">Cycle #{cycle.cycleNumber}</span>
-        </div>
-        <div className="flex items-center gap-1.5">
+    <div className="text-sm space-y-2">
+      {/* Status + outcome controls (in edit mode) */}
+      {editing && (
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-xs text-muted-foreground">Status:</span>
           <EditableSelect
             value={cycle.status}
             options={PDSA_STATUS_LABELS}
@@ -589,36 +600,20 @@ function EditablePdsaCycleSummary({
               </Badge>
             )}
           />
-          {editing ? (
-            <EditableSelect
-              value={cycle.outcome ?? "__none__"}
-              options={{
-                __none__: "No outcome",
-                adopt: "Adopt",
-                adapt: "Adapt",
-                abandon: "Abandon",
-              }}
-              editing={editing}
-              onSave={(val) => onFieldSave(cycle.id, "outcome", val === "__none__" ? null : val)}
-            />
-          ) : (
-            cycle.outcome && (
-              <Badge
-                variant="secondary"
-                className={`text-[10px] ${
-                  cycle.outcome === "adopt"
-                    ? "bg-green-100 text-green-700"
-                    : cycle.outcome === "adapt"
-                      ? "bg-yellow-100 text-yellow-700"
-                      : "bg-red-100 text-red-700"
-                }`}
-              >
-                {PDSA_OUTCOME_LABELS[cycle.outcome] ?? cycle.outcome}
-              </Badge>
-            )
-          )}
+          <span className="text-xs text-muted-foreground ml-2">Outcome:</span>
+          <EditableSelect
+            value={cycle.outcome ?? "__none__"}
+            options={{
+              __none__: "No outcome",
+              adopt: "Adopt",
+              adapt: "Adapt",
+              abandon: "Abandon",
+            }}
+            editing={editing}
+            onSave={(val) => onFieldSave(cycle.id, "outcome", val === "__none__" ? null : val)}
+          />
         </div>
-      </div>
+      )}
 
       {cycle.changeIdea && (
         <p className="text-xs text-muted-foreground">Change Idea: {cycle.changeIdea}</p>
@@ -718,6 +713,64 @@ function EditablePdsaCycleSummary({
           />
         </div>
       </div>
+
+      {/* Start Next Cycle button */}
+      {canStartNext && onStartNextCycle && (
+        <div className="pt-2 border-t mt-2">
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-1.5 text-xs"
+            onClick={() => onStartNextCycle(cycle.id)}
+            disabled={isCloning}
+          >
+            {isCloning ? (
+              <>
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                Creating...
+              </>
+            ) : (
+              <>
+                <CopyPlus className="h-3.5 w-3.5" />
+                Start Next Cycle
+              </>
+            )}
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Compact header for collapsed PDSA cycle */
+function PdsaCycleCompactHeader({ cycle }: { cycle: CycleInfo }) {
+  const statusColor = PDSA_STATUS_COLORS[cycle.status] ?? "#4b4f54";
+
+  return (
+    <div className="flex items-center gap-2 flex-wrap flex-1 min-w-0">
+      <span className="font-semibold text-sm">{cycle.title}</span>
+      <span className="text-xs text-muted-foreground">#{cycle.cycleNumber}</span>
+      <Badge
+        variant="secondary"
+        className="text-[10px]"
+        style={{ backgroundColor: `${statusColor}15`, color: statusColor }}
+      >
+        {PDSA_STATUS_LABELS[cycle.status] ?? cycle.status}
+      </Badge>
+      {cycle.outcome && (
+        <Badge
+          variant="secondary"
+          className={`text-[10px] ${
+            cycle.outcome === "adopt"
+              ? "bg-green-100 text-green-700"
+              : cycle.outcome === "adapt"
+                ? "bg-yellow-100 text-yellow-700"
+                : "bg-red-100 text-red-700"
+          }`}
+        >
+          {PDSA_OUTCOME_LABELS[cycle.outcome] ?? cycle.outcome}
+        </Badge>
+      )}
     </div>
   );
 }
@@ -910,6 +963,16 @@ export function AdminCampaignReport({
   const setChartMode = (metricId: string, mode: ChartMode) =>
     setChartModes((prev) => ({ ...prev, [metricId]: mode }));
 
+  // Collapsible PDSA cycle state — active cycles expand by default
+  const [expandedCycleIds, setExpandedCycleIds] = useState<string[]>(() => {
+    const activeStatuses = new Set(["planning", "doing", "studying", "acting"]);
+    return diagrams
+      .flatMap((d) => d.cycles)
+      .filter((c) => activeStatuses.has(c.status))
+      .map((c) => c.id);
+  });
+  const [cloningCycleId, setCloningCycleId] = useState<string | null>(null);
+
   // Computed stats
   const completedCycles = diagrams.flatMap((d) => d.cycles).filter((c) => c.status === "completed");
   const totalCycles = diagrams.flatMap((d) => d.cycles).length;
@@ -941,6 +1004,29 @@ export function AdminCampaignReport({
       const res = await updatePdsaCycleField(cycleId, field, value);
       if (!res.success) setError(res.error ?? "Failed to save");
       else flashSave();
+    });
+  }
+
+  function handleStartNextCycle(sourceCycleId: string) {
+    setCloningCycleId(sourceCycleId);
+    startTransition(async () => {
+      const res = await clonePdsaCycle(sourceCycleId);
+      setCloningCycleId(null);
+      if (!res.success) {
+        setError(res.error ?? "Failed to create next cycle");
+      } else if (res.data) {
+        // Auto-expand the newly created cycle
+        setExpandedCycleIds((prev) => [...prev, res.data!.id]);
+        flashSave("New cycle created");
+      }
+    });
+  }
+
+  /** Helper to update expandedCycleIds for a specific change idea group's accordion */
+  function handleAccordionChange(groupCycleIds: string[], newExpandedIds: string[]) {
+    setExpandedCycleIds((prev) => {
+      const withoutGroup = prev.filter((id) => !groupCycleIds.includes(id));
+      return [...withoutGroup, ...newExpandedIds];
     });
   }
 
@@ -1329,16 +1415,23 @@ export function AdminCampaignReport({
               <div key={diagram.id} className="space-y-3">
                 <h3 className="text-sm font-medium text-muted-foreground">{diagram.name}</h3>
 
-                {Array.from(grouped.entries()).map(([changeIdea, cycles]) => (
-                  <div key={changeIdea} className="border rounded-lg p-3 space-y-2">
-                    <div className="flex items-center gap-2 text-xs">
-                      <span className="font-medium text-nmh-gray">Change Idea:</span>
-                      <span className="text-muted-foreground">{changeIdea}</span>
-                      <span className="text-muted-foreground/50">
-                        ({cycles.length} cycle{cycles.length !== 1 ? "s" : ""})
-                      </span>
-                    </div>
-                    {!editMode && (
+                {/* Grouped by change idea */}
+                {Array.from(grouped.entries()).map(([changeIdea, cycles]) => {
+                  const groupCycleIds = cycles.map((c) => c.id);
+                  const groupExpandedIds = expandedCycleIds.filter((id) =>
+                    groupCycleIds.includes(id)
+                  );
+
+                  return (
+                    <div key={changeIdea} className="border rounded-lg p-3 space-y-2">
+                      <div className="flex items-center gap-2 text-xs">
+                        <span className="font-medium text-nmh-gray">Change Idea:</span>
+                        <span className="text-muted-foreground">{changeIdea}</span>
+                        <span className="text-muted-foreground/50">
+                          ({cycles.length} cycle{cycles.length !== 1 ? "s" : ""})
+                        </span>
+                      </div>
+                      {/* Progression chain */}
                       <div className="flex items-center gap-1 flex-wrap text-xs">
                         {cycles.map((c, idx) => (
                           <span key={c.id} className="flex items-center gap-1">
@@ -1363,32 +1456,76 @@ export function AdminCampaignReport({
                           </span>
                         ))}
                       </div>
-                    )}
-                    <div className="space-y-2">
-                      {cycles.map((cycle) => (
-                        <EditablePdsaCycleSummary
-                          key={cycle.id}
-                          cycle={cycle}
-                          editing={editMode}
-                          onFieldSave={savePdsaField}
-                        />
-                      ))}
+                      {/* Collapsible cycle cards */}
+                      <Accordion
+                        type="multiple"
+                        value={groupExpandedIds}
+                        onValueChange={(val: string[]) => handleAccordionChange(groupCycleIds, val)}
+                        className="space-y-1"
+                      >
+                        {cycles.map((cycle) => (
+                          <AccordionItem
+                            key={cycle.id}
+                            value={cycle.id}
+                            className="border rounded-md px-3"
+                          >
+                            <AccordionTrigger className="py-2 hover:no-underline">
+                              <PdsaCycleCompactHeader cycle={cycle} />
+                            </AccordionTrigger>
+                            <AccordionContent>
+                              <PdsaCycleExpandedContent
+                                cycle={cycle}
+                                editing={editMode}
+                                onFieldSave={savePdsaField}
+                                onStartNextCycle={handleStartNextCycle}
+                                isCloning={cloningCycleId === cycle.id}
+                              />
+                            </AccordionContent>
+                          </AccordionItem>
+                        ))}
+                      </Accordion>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
 
-                {ungrouped.length > 0 && (
-                  <div className="space-y-2">
-                    {ungrouped.map((cycle) => (
-                      <EditablePdsaCycleSummary
-                        key={cycle.id}
-                        cycle={cycle}
-                        editing={editMode}
-                        onFieldSave={savePdsaField}
-                      />
-                    ))}
-                  </div>
-                )}
+                {/* Ungrouped cycles (no change idea linked) */}
+                {ungrouped.length > 0 &&
+                  (() => {
+                    const ungroupedIds = ungrouped.map((c) => c.id);
+                    const ungroupedExpandedIds = expandedCycleIds.filter((id) =>
+                      ungroupedIds.includes(id)
+                    );
+
+                    return (
+                      <Accordion
+                        type="multiple"
+                        value={ungroupedExpandedIds}
+                        onValueChange={(val: string[]) => handleAccordionChange(ungroupedIds, val)}
+                        className="space-y-1"
+                      >
+                        {ungrouped.map((cycle) => (
+                          <AccordionItem
+                            key={cycle.id}
+                            value={cycle.id}
+                            className="border rounded-md px-3"
+                          >
+                            <AccordionTrigger className="py-2 hover:no-underline">
+                              <PdsaCycleCompactHeader cycle={cycle} />
+                            </AccordionTrigger>
+                            <AccordionContent>
+                              <PdsaCycleExpandedContent
+                                cycle={cycle}
+                                editing={editMode}
+                                onFieldSave={savePdsaField}
+                                onStartNextCycle={handleStartNextCycle}
+                                isCloning={cloningCycleId === cycle.id}
+                              />
+                            </AccordionContent>
+                          </AccordionItem>
+                        ))}
+                      </Accordion>
+                    );
+                  })()}
               </div>
             );
           })}
