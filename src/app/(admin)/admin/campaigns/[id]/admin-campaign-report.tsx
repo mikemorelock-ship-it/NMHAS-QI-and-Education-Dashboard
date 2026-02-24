@@ -718,9 +718,8 @@ function PdsaCycleExpandedContent({
       {canStartNext && onStartNextCycle && (
         <div className="pt-2 border-t mt-2">
           <Button
-            variant="outline"
             size="sm"
-            className="gap-1.5 text-xs"
+            className="gap-1.5 text-xs bg-nmh-teal hover:bg-nmh-teal/90 text-white"
             onClick={() => onStartNextCycle(cycle.id)}
             disabled={isCloning}
           >
