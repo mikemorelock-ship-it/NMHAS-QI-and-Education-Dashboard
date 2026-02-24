@@ -296,7 +296,13 @@ export function CampaignGanttChart({ campaigns, linkPrefix }: Props) {
 
       {/* Gantt Grid */}
       <div className="border rounded-lg overflow-x-auto">
-        <div style={{ minWidth: CAMPAIGN_COL_WIDTH + columns.length * colWidth }}>
+        <div
+          style={
+            zoom === "fit"
+              ? undefined
+              : { minWidth: CAMPAIGN_COL_WIDTH + columns.length * colWidth }
+          }
+        >
           {/* Timeline Header */}
           <div className="flex border-b bg-muted/30 sticky top-0 z-10">
             <div
