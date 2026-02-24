@@ -35,15 +35,19 @@ const ZOOM_PRESETS: { value: ZoomPreset; label: string }[] = [
   { value: "custom", label: "Custom" },
 ];
 
-/** Forward days and leading padding for each named preset */
-const PRESET_CONFIG: Record<string, { forwardDays: number; paddingBefore: number }> = {
-  day: { forwardDays: 28, paddingBefore: 3 },
-  month: { forwardDays: 90, paddingBefore: 7 },
-  quarter: { forwardDays: 180, paddingBefore: 14 },
-  year: { forwardDays: 395, paddingBefore: 30 },
-  "2year": { forwardDays: 760, paddingBefore: 30 },
-  "3year": { forwardDays: 1125, paddingBefore: 60 },
-};
+/** Forward days and leading padding for each named preset, ordered smallest → largest */
+const PRESET_CONFIGS: { key: string; forwardDays: number; paddingBefore: number }[] = [
+  { key: "day", forwardDays: 28, paddingBefore: 3 },
+  { key: "month", forwardDays: 90, paddingBefore: 7 },
+  { key: "quarter", forwardDays: 180, paddingBefore: 14 },
+  { key: "year", forwardDays: 395, paddingBefore: 30 },
+  { key: "2year", forwardDays: 760, paddingBefore: 30 },
+  { key: "3year", forwardDays: 1125, paddingBefore: 60 },
+];
+
+/** Lookup helper for named presets */
+const PRESET_CONFIG: Record<string, { forwardDays: number; paddingBefore: number }> =
+  Object.fromEntries(PRESET_CONFIGS.map((p) => [p.key, p]));
 
 /** Auto-select column granularity from the visible day range */
 function getGranularity(rangeDays: number): "day" | "week" | "month" | "quarter" | "year" {
@@ -61,15 +65,6 @@ const COL_MIN_WIDTHS: Record<string, number> = {
   month: 90,
   quarter: 110,
   year: 130,
-};
-
-/** Trailing buffer (days) added after the latest end date, scaled to granularity */
-const GRANULARITY_BUFFER_DAYS: Record<string, number> = {
-  day: 7,
-  week: 14,
-  month: 45,
-  quarter: 100,
-  year: 180,
 };
 
 /** Width of the campaign name column (px) */
@@ -124,22 +119,21 @@ export function CampaignGanttChart({ campaigns, linkPrefix }: Props) {
       end = new Date(customEnd + "T00:00:00");
       if (end <= start) end = addDays(start, 30);
     } else if (zoom === "fit") {
-      // Show all campaign end dates with a granularity-appropriate buffer
+      // Auto-select the smallest preset that covers all campaign end dates
       const endDates = campaigns
         .filter((c) => c.endDate)
         .map((c) => new Date(c.endDate!).getTime());
 
       const latestEnd = endDates.length > 0 ? new Date(Math.max(...endDates)) : addDays(today, 90);
+      const daysNeeded = Math.max(differenceInDays(latestEnd, today), 60);
 
-      start = addDays(today, -14);
-      const minEnd = addDays(today, 60);
-      const rawEnd = new Date(Math.max(latestEnd.getTime(), minEnd.getTime()));
+      // Pick the smallest preset whose forwardDays covers the latest end date
+      const preset =
+        PRESET_CONFIGS.find((p) => p.forwardDays >= daysNeeded) ??
+        PRESET_CONFIGS[PRESET_CONFIGS.length - 1];
 
-      // Determine granularity from the preliminary range, then add scaled buffer
-      const prelimDays = differenceInDays(rawEnd, start) || 1;
-      const prelimGran = getGranularity(prelimDays);
-      const buffer = GRANULARITY_BUFFER_DAYS[prelimGran] ?? 30;
-      end = addDays(rawEnd, buffer);
+      start = addDays(today, -preset.paddingBefore);
+      end = addDays(today, preset.forwardDays);
     } else {
       const config = PRESET_CONFIG[zoom] ?? { forwardDays: 90, paddingBefore: 14 };
       start = addDays(today, -config.paddingBefore);
@@ -222,16 +216,16 @@ export function CampaignGanttChart({ campaigns, linkPrefix }: Props) {
   function handleZoomChange(preset: ZoomPreset) {
     if (preset === "custom" && !customStart) {
       const today = new Date();
-      setCustomStart(format(addDays(today, -14), "yyyy-MM-dd"));
       const endDates = campaigns
         .filter((c) => c.endDate)
         .map((c) => new Date(c.endDate!).getTime());
       const latestEnd = endDates.length > 0 ? new Date(Math.max(...endDates)) : addDays(today, 90);
-      const rawEnd = new Date(Math.max(latestEnd.getTime(), addDays(today, 60).getTime()));
-      const prelimDays = differenceInDays(rawEnd, addDays(today, -14)) || 1;
-      const prelimGran = getGranularity(prelimDays);
-      const buffer = GRANULARITY_BUFFER_DAYS[prelimGran] ?? 30;
-      setCustomEnd(format(addDays(rawEnd, buffer), "yyyy-MM-dd"));
+      const daysNeeded = Math.max(differenceInDays(latestEnd, today), 60);
+      const fitPreset =
+        PRESET_CONFIGS.find((p) => p.forwardDays >= daysNeeded) ??
+        PRESET_CONFIGS[PRESET_CONFIGS.length - 1];
+      setCustomStart(format(addDays(today, -fitPreset.paddingBefore), "yyyy-MM-dd"));
+      setCustomEnd(format(addDays(today, fitPreset.forwardDays), "yyyy-MM-dd"));
     }
     setZoom(preset);
   }
