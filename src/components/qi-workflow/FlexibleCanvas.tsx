@@ -169,10 +169,10 @@ export function FlexibleCanvas({ campaigns, diagrams, pdsaCycles }: FlexibleCanv
                           Cycle #{p.cycleNumber} &middot; {p.status}
                         </p>
                       </div>
-                      <Link href="/admin/pdsa-cycles">
+                      <Link href="/admin/change-ideas">
                         <Button variant="outline" size="sm">
                           <ExternalLink className="h-3 w-3 mr-1" />
-                          Edit in PDSA Admin
+                          View in Change Ideas
                         </Button>
                       </Link>
                     </div>

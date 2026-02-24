@@ -109,8 +109,8 @@ const navEntries: NavEntry[] = [
         permission: "manage_driver_diagrams",
       },
       {
-        href: "/admin/pdsa-cycles",
-        label: "PDSA Cycles",
+        href: "/admin/change-ideas",
+        label: "Change Ideas",
         icon: RefreshCcw,
         permission: "manage_driver_diagrams",
       },

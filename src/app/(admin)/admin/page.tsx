@@ -140,7 +140,7 @@ export default async function AdminOverviewPage() {
       label: "Active PDSA Cycles",
       value: activePdsaCount,
       icon: RefreshCcw,
-      href: "/admin/pdsa-cycles",
+      href: "/admin/change-ideas",
       color: "text-nmh-orange",
     },
     {

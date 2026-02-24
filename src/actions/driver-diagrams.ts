@@ -36,6 +36,7 @@ const NodeSchema = z.object({
 function revalidateAll() {
   revalidatePath("/admin/driver-diagrams");
   revalidatePath("/admin/pdsa-cycles");
+  revalidatePath("/admin/change-ideas");
   revalidatePath("/admin/campaigns");
   revalidatePath("/admin/qi-workflow");
   revalidatePath("/admin");
