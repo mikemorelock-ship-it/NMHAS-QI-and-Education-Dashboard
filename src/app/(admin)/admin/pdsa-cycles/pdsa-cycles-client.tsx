@@ -341,7 +341,7 @@ export function PdsaCyclesClient({
                               c.driverDiagramId === cycle.driverDiagramId &&
                               c.id !== cycle.id
                           ) && (
-                            <Badge variant="outline" className="ml-1 text-[10px] px-1 py-0">
+                            <Badge variant="outline" className="ml-1 text-xs px-1.5 py-0">
                               series
                             </Badge>
                           )}
@@ -438,7 +438,7 @@ export function PdsaCyclesClient({
                 {/* Cards */}
                 <div className="space-y-2 min-h-[200px] rounded-lg border border-dashed border-muted-foreground/20 p-2 bg-muted/30">
                   {cyclesByStatus[status].length === 0 ? (
-                    <p className="text-xs text-muted-foreground text-center py-8">No cycles</p>
+                    <p className="text-sm text-muted-foreground text-center py-8">No cycles</p>
                   ) : (
                     cyclesByStatus[status].map((cycle) => (
                       <Card
@@ -451,14 +451,14 @@ export function PdsaCyclesClient({
                             <p className="text-sm font-medium leading-tight line-clamp-2">
                               {cycle.title}
                             </p>
-                            <span className="text-xs text-muted-foreground shrink-0">
+                            <span className="text-sm text-muted-foreground shrink-0">
                               #{cycle.cycleNumber}
                             </span>
                           </div>
                         </CardHeader>
                         <CardContent className="p-3 pt-0 space-y-1.5">
                           {cycle.driverDiagramName && (
-                            <p className="text-xs text-muted-foreground truncate">
+                            <p className="text-sm text-muted-foreground truncate">
                               {cycle.driverDiagramName}
                             </p>
                           )}

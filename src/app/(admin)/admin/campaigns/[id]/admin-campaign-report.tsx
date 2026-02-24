@@ -580,11 +580,11 @@ function PdsaCycleExpandedContent({
   const canStartNext = cycle.status === "acting" || cycle.status === "completed";
 
   return (
-    <div className="text-sm space-y-2">
+    <div className="text-sm space-y-3">
       {/* Status + outcome controls (in edit mode) */}
       {editing && (
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-xs text-muted-foreground">Status:</span>
+          <span className="text-sm text-muted-foreground">Status:</span>
           <EditableSelect
             value={cycle.status}
             options={PDSA_STATUS_LABELS}
@@ -593,14 +593,14 @@ function PdsaCycleExpandedContent({
             renderValue={(val) => (
               <Badge
                 variant="secondary"
-                className="text-[10px]"
+                className="text-xs"
                 style={{ backgroundColor: `${statusColor}15`, color: statusColor }}
               >
                 {PDSA_STATUS_LABELS[val] ?? val}
               </Badge>
             )}
           />
-          <span className="text-xs text-muted-foreground ml-2">Outcome:</span>
+          <span className="text-sm text-muted-foreground ml-2">Outcome:</span>
           <EditableSelect
             value={cycle.outcome ?? "__none__"}
             options={{
@@ -616,10 +616,10 @@ function PdsaCycleExpandedContent({
       )}
 
       {cycle.changeIdea && (
-        <p className="text-xs text-muted-foreground">Change Idea: {cycle.changeIdea}</p>
+        <p className="text-sm text-muted-foreground">Change Idea: {cycle.changeIdea}</p>
       )}
 
-      <div className="grid grid-cols-2 gap-2 text-xs">
+      <div className="grid grid-cols-2 gap-3 text-sm">
         <div>
           <span className="font-medium" style={{ color: PDSA_STATUS_COLORS.planning }}>
             Plan:
@@ -748,10 +748,10 @@ function PdsaCycleCompactHeader({ cycle }: { cycle: CycleInfo }) {
   return (
     <div className="flex items-center gap-2 flex-wrap flex-1 min-w-0">
       <span className="font-semibold text-sm">{cycle.title}</span>
-      <span className="text-xs text-muted-foreground">#{cycle.cycleNumber}</span>
+      <span className="text-sm text-muted-foreground">#{cycle.cycleNumber}</span>
       <Badge
         variant="secondary"
-        className="text-[10px]"
+        className="text-xs"
         style={{ backgroundColor: `${statusColor}15`, color: statusColor }}
       >
         {PDSA_STATUS_LABELS[cycle.status] ?? cycle.status}
@@ -759,7 +759,7 @@ function PdsaCycleCompactHeader({ cycle }: { cycle: CycleInfo }) {
       {cycle.outcome && (
         <Badge
           variant="secondary"
-          className={`text-[10px] ${
+          className={`text-xs ${
             cycle.outcome === "adopt"
               ? "bg-green-100 text-green-700"
               : cycle.outcome === "adapt"
@@ -1411,8 +1411,8 @@ export function AdminCampaignReport({
             }
 
             return (
-              <div key={diagram.id} className="space-y-3">
-                <h3 className="text-sm font-medium text-muted-foreground">{diagram.name}</h3>
+              <div key={diagram.id} className="space-y-4">
+                <h3 className="text-base font-medium text-muted-foreground">{diagram.name}</h3>
 
                 {/* Grouped by change idea */}
                 {Array.from(grouped.entries()).map(([changeIdea, cycles]) => {
@@ -1422,8 +1422,8 @@ export function AdminCampaignReport({
                   );
 
                   return (
-                    <div key={changeIdea} className="border rounded-lg p-3 space-y-2">
-                      <div className="flex items-center gap-2 text-xs">
+                    <div key={changeIdea} className="border rounded-lg p-4 space-y-3">
+                      <div className="flex items-center gap-2 text-sm">
                         <span className="font-medium text-nmh-gray">Change Idea:</span>
                         <span className="text-muted-foreground">{changeIdea}</span>
                         <span className="text-muted-foreground/50">
@@ -1431,13 +1431,13 @@ export function AdminCampaignReport({
                         </span>
                       </div>
                       {/* Progression chain */}
-                      <div className="flex items-center gap-1 flex-wrap text-xs">
+                      <div className="flex items-center gap-1.5 flex-wrap text-sm">
                         {cycles.map((c, idx) => (
                           <span key={c.id} className="flex items-center gap-1">
                             {idx > 0 && <span className="text-muted-foreground/40">&rarr;</span>}
                             <Badge
                               variant="secondary"
-                              className={`text-[10px] ${
+                              className={`text-xs ${
                                 c.outcome === "adopt"
                                   ? "bg-green-100 text-green-700"
                                   : c.outcome === "adapt"

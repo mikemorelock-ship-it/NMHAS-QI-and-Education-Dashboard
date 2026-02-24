@@ -98,7 +98,7 @@ export default async function PublicPdsaPage() {
                           {statusLabels[c.status] ?? c.status}
                         </Badge>
                       </div>
-                      <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
+                      <div className="flex items-center gap-3 text-sm text-muted-foreground flex-wrap">
                         {c.driverDiagram && (
                           <Link
                             href={`/quality-improvement/diagram/${c.driverDiagram.slug}`}
@@ -118,7 +118,7 @@ export default async function PublicPdsaPage() {
                       {/* Phase summaries */}
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-3">
                         {c.planDescription && (
-                          <div className="text-xs">
+                          <div className="text-sm">
                             <span className="font-medium text-[#00b0ad]">Plan:</span>{" "}
                             <span className="text-muted-foreground line-clamp-2">
                               {c.planDescription}
@@ -126,7 +126,7 @@ export default async function PublicPdsaPage() {
                           </div>
                         )}
                         {c.doObservations && (
-                          <div className="text-xs">
+                          <div className="text-sm">
                             <span className="font-medium text-[#e04726]">Do:</span>{" "}
                             <span className="text-muted-foreground line-clamp-2">
                               {c.doObservations}
@@ -134,7 +134,7 @@ export default async function PublicPdsaPage() {
                           </div>
                         )}
                         {c.studyResults && (
-                          <div className="text-xs">
+                          <div className="text-sm">
                             <span className="font-medium text-[#fcb526]">Study:</span>{" "}
                             <span className="text-muted-foreground line-clamp-2">
                               {c.studyResults}
@@ -142,7 +142,7 @@ export default async function PublicPdsaPage() {
                           </div>
                         )}
                         {c.actDecision && (
-                          <div className="text-xs">
+                          <div className="text-sm">
                             <span className="font-medium text-[#4b4f54]">Act:</span>{" "}
                             <span className="text-muted-foreground line-clamp-2">
                               {c.actDecision}
@@ -189,12 +189,12 @@ export default async function PublicPdsaPage() {
                           </Badge>
                         )}
                       </div>
-                      <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
+                      <div className="flex items-center gap-3 text-sm text-muted-foreground mt-1">
                         {c.driverDiagram && <span>{c.driverDiagram.name}</span>}
                         {c.metricDefinition && <span>Metric: {c.metricDefinition.name}</span>}
                       </div>
                     </div>
-                    <span className="text-xs text-muted-foreground whitespace-nowrap">
+                    <span className="text-sm text-muted-foreground whitespace-nowrap">
                       {new Date(c.updatedAt).toLocaleDateString("en-US", {
                         month: "short",
                         day: "numeric",
