@@ -531,7 +531,7 @@ export function CampaignsClient({ campaigns, users, metrics, divisions, regions 
   const [deleteTarget, setDeleteTarget] = useState<CampaignRow | null>(null);
 
   // View & filter state
-  const [view, setView] = useState<string>("table");
+  const [view, setView] = useState<string>("gantt");
   const [filterStatus, setFilterStatus] = useState("__all__");
   const [filterOwner, setFilterOwner] = useState("__all__");
 
