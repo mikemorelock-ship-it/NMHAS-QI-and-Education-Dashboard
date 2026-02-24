@@ -24,6 +24,11 @@ import {
 
 type ZoomPreset = "fit" | "day" | "month" | "quarter" | "year" | "2year" | "3year" | "custom";
 
+/** Parse a YYYY-MM-DD string as local midnight (not UTC) */
+function toLocalDate(str: string): Date {
+  return new Date(str + "T00:00:00");
+}
+
 const ZOOM_PRESETS: { value: ZoomPreset; label: string }[] = [
   { value: "fit", label: "Fit All" },
   { value: "day", label: "Day" },
@@ -35,15 +40,19 @@ const ZOOM_PRESETS: { value: ZoomPreset; label: string }[] = [
   { value: "custom", label: "Custom" },
 ];
 
-/** Forward days and leading padding for each named preset */
-const PRESET_CONFIG: Record<string, { forwardDays: number; paddingBefore: number }> = {
-  day: { forwardDays: 28, paddingBefore: 3 },
-  month: { forwardDays: 90, paddingBefore: 7 },
-  quarter: { forwardDays: 180, paddingBefore: 14 },
-  year: { forwardDays: 395, paddingBefore: 30 },
-  "2year": { forwardDays: 760, paddingBefore: 30 },
-  "3year": { forwardDays: 1125, paddingBefore: 60 },
-};
+/** Forward days and leading padding for each named preset, ordered smallest → largest */
+const PRESET_CONFIGS: { key: string; forwardDays: number; paddingBefore: number }[] = [
+  { key: "day", forwardDays: 28, paddingBefore: 3 },
+  { key: "month", forwardDays: 90, paddingBefore: 7 },
+  { key: "quarter", forwardDays: 180, paddingBefore: 14 },
+  { key: "year", forwardDays: 395, paddingBefore: 30 },
+  { key: "2year", forwardDays: 760, paddingBefore: 30 },
+  { key: "3year", forwardDays: 1125, paddingBefore: 60 },
+];
+
+/** Lookup helper for named presets */
+const PRESET_CONFIG: Record<string, { forwardDays: number; paddingBefore: number }> =
+  Object.fromEntries(PRESET_CONFIGS.map((p) => [p.key, p]));
 
 /** Auto-select column granularity from the visible day range */
 function getGranularity(rangeDays: number): "day" | "week" | "month" | "quarter" | "year" {
@@ -98,7 +107,7 @@ export function CampaignGanttChart({ campaigns, linkPrefix }: Props) {
       if (!a.endDate && !b.endDate) return 0;
       if (!a.endDate) return 1;
       if (!b.endDate) return -1;
-      return new Date(a.endDate).getTime() - new Date(b.endDate).getTime();
+      return toLocalDate(a.endDate).getTime() - toLocalDate(b.endDate).getTime();
     });
   }, [campaigns]);
 
@@ -115,15 +124,34 @@ export function CampaignGanttChart({ campaigns, linkPrefix }: Props) {
       end = new Date(customEnd + "T00:00:00");
       if (end <= start) end = addDays(start, 30);
     } else if (zoom === "fit") {
-      // Start slightly before today; extend to the latest campaign end date
-      const endDates = campaigns
-        .filter((c) => c.endDate)
-        .map((c) => new Date(c.endDate!).getTime());
+      // Compute effective start and end dates for all campaigns
+      const effectiveStarts = campaigns
+        .map((c) => (c.startDate ? toLocalDate(c.startDate).getTime() : null))
+        .filter((t): t is number => t !== null && !isNaN(t));
+
+      const effectiveEnds = campaigns
+        .map((c) => {
+          if (c.endDate) return toLocalDate(c.endDate).getTime();
+          if (c.startDate) return addDays(toLocalDate(c.startDate), 365).getTime();
+          return null;
+        })
+        .filter((t): t is number => t !== null && !isNaN(t));
+
+      // Start from the earlier of today or the earliest campaign start
+      const earliestStart =
+        effectiveStarts.length > 0
+          ? new Date(Math.min(Math.min(...effectiveStarts), today.getTime()))
+          : today;
+
       const latestEnd =
-        endDates.length > 0 ? new Date(Math.max(...endDates)) : addDays(today, 90);
-      start = addDays(today, -14);
-      const minEnd = addDays(today, 60);
-      end = addDays(new Date(Math.max(latestEnd.getTime(), minEnd.getTime())), 14);
+        effectiveEnds.length > 0 ? new Date(Math.max(...effectiveEnds)) : addDays(today, 90);
+
+      // Add a small proportional buffer (5% of range, clamped 7–30 days)
+      const rawRange = Math.max(differenceInDays(latestEnd, earliestStart), 30);
+      const buffer = Math.min(30, Math.max(7, Math.round(rawRange * 0.05)));
+
+      start = addDays(earliestStart, -buffer);
+      end = addDays(latestEnd, buffer);
     } else {
       const config = PRESET_CONFIG[zoom] ?? { forwardDays: 90, paddingBefore: 14 };
       start = addDays(today, -config.paddingBefore);
@@ -133,34 +161,40 @@ export function CampaignGanttChart({ campaigns, linkPrefix }: Props) {
     const rangeDays = differenceInDays(end, start) || 1;
     const gran = getGranularity(rangeDays);
 
-    let cols: { date: Date; label: string }[] = [];
+    let rawCols: { date: Date; label: string }[] = [];
 
     if (gran === "day") {
-      cols = eachDayOfInterval({ start, end }).map((d) => ({
+      rawCols = eachDayOfInterval({ start, end }).map((d) => ({
         date: d,
         label: format(d, "MMM d"),
       }));
     } else if (gran === "week") {
-      cols = eachWeekOfInterval({ start, end }).map((d) => ({
+      rawCols = eachWeekOfInterval({ start, end }).map((d) => ({
         date: d,
         label: format(d, "MMM d"),
       }));
     } else if (gran === "month") {
-      cols = eachMonthOfInterval({ start, end }).map((d) => ({
+      rawCols = eachMonthOfInterval({ start, end }).map((d) => ({
         date: d,
         label: format(d, "MMM yyyy"),
       }));
     } else if (gran === "quarter") {
-      cols = eachQuarterOfInterval({ start, end }).map((d) => ({
+      rawCols = eachQuarterOfInterval({ start, end }).map((d) => ({
         date: d,
         label: format(d, "QQQ yyyy"),
       }));
     } else {
-      cols = eachYearOfInterval({ start, end }).map((d) => ({
+      rawCols = eachYearOfInterval({ start, end }).map((d) => ({
         date: d,
         label: format(d, "yyyy"),
       }));
     }
+
+    // Clamp the first column to start no earlier than timelineStart so that
+    // percentage widths always sum to exactly 100%.
+    const cols = rawCols
+      .filter((c) => c.date < end)
+      .map((c, i) => (i === 0 && c.date < start ? { ...c, date: start } : c));
 
     return { timelineStart: start, timelineEnd: end, columns: cols, granularity: gran };
   }, [campaigns, zoom, customStart, customEnd]);
@@ -180,16 +214,21 @@ export function CampaignGanttChart({ campaigns, linkPrefix }: Props) {
 
   const getBarStyle = (startStr: string | null, endStr: string | null) => {
     if (!startStr) return null;
-    const startDate = new Date(startStr);
+    const startDate = toLocalDate(startStr);
     const fallbackDays = totalDays > 365 ? 30 : 14;
-    const endDate = endStr ? new Date(endStr) : addDays(startDate, fallbackDays);
+    const endDate = endStr ? toLocalDate(endStr) : addDays(startDate, fallbackDays);
 
+    // Compute left and right edges relative to the timeline, then clamp to
+    // the visible area so bars starting before the timeline don't overshoot.
     const leftPct = (differenceInDays(startDate, timelineStart) / totalDays) * 100;
-    const widthPct = (differenceInDays(endDate, startDate) / totalDays) * 100;
+    const rightPct = (differenceInDays(endDate, timelineStart) / totalDays) * 100;
+
+    const clampedLeft = Math.max(0, leftPct);
+    const clampedWidth = Math.max(0.5, rightPct - clampedLeft);
 
     return {
-      left: `${Math.max(0, leftPct)}%`,
-      width: `${Math.max(0.5, widthPct)}%`,
+      left: `${clampedLeft}%`,
+      width: `${clampedWidth}%`,
     };
   };
 
@@ -200,13 +239,27 @@ export function CampaignGanttChart({ campaigns, linkPrefix }: Props) {
   function handleZoomChange(preset: ZoomPreset) {
     if (preset === "custom" && !customStart) {
       const today = new Date();
-      setCustomStart(format(addDays(today, -14), "yyyy-MM-dd"));
-      const endDates = campaigns
-        .filter((c) => c.endDate)
-        .map((c) => new Date(c.endDate!).getTime());
+      today.setHours(0, 0, 0, 0);
+      const effectiveStarts = campaigns
+        .map((c) => (c.startDate ? toLocalDate(c.startDate).getTime() : null))
+        .filter((t): t is number => t !== null && !isNaN(t));
+      const effectiveEnds = campaigns
+        .map((c) => {
+          if (c.endDate) return toLocalDate(c.endDate).getTime();
+          if (c.startDate) return addDays(toLocalDate(c.startDate), 365).getTime();
+          return null;
+        })
+        .filter((t): t is number => t !== null && !isNaN(t));
+      const earliestStart =
+        effectiveStarts.length > 0
+          ? new Date(Math.min(Math.min(...effectiveStarts), today.getTime()))
+          : today;
       const latestEnd =
-        endDates.length > 0 ? new Date(Math.max(...endDates)) : addDays(today, 90);
-      setCustomEnd(format(addDays(latestEnd, 14), "yyyy-MM-dd"));
+        effectiveEnds.length > 0 ? new Date(Math.max(...effectiveEnds)) : addDays(today, 90);
+      const rawRange = Math.max(differenceInDays(latestEnd, earliestStart), 30);
+      const buffer = Math.min(30, Math.max(7, Math.round(rawRange * 0.05)));
+      setCustomStart(format(addDays(earliestStart, -buffer), "yyyy-MM-dd"));
+      setCustomEnd(format(addDays(latestEnd, buffer), "yyyy-MM-dd"));
     }
     setZoom(preset);
   }
@@ -263,7 +316,13 @@ export function CampaignGanttChart({ campaigns, linkPrefix }: Props) {
 
       {/* Gantt Grid */}
       <div className="border rounded-lg overflow-x-auto">
-        <div style={{ minWidth: CAMPAIGN_COL_WIDTH + columns.length * colWidth }}>
+        <div
+          style={
+            zoom === "fit"
+              ? undefined
+              : { minWidth: CAMPAIGN_COL_WIDTH + columns.length * colWidth }
+          }
+        >
           {/* Timeline Header */}
           <div className="flex border-b bg-muted/30 sticky top-0 z-10">
             <div

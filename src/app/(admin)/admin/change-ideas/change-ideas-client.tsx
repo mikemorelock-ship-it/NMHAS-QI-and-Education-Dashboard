@@ -1,7 +1,13 @@
 "use client";
 
 import React, { useState, useTransition, useMemo, useCallback } from "react";
-import { createPdsaCycle, updatePdsaCycleField, clonePdsaCycle } from "@/actions/pdsa-cycles";
+import {
+  createPdsaCycle,
+  updatePdsaCycleField,
+  clonePdsaCycle,
+  deletePdsaCycle,
+} from "@/actions/pdsa-cycles";
+import { deleteDriverNode } from "@/actions/driver-diagrams";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -39,6 +45,8 @@ import {
   CopyPlus,
   Loader2,
   Search,
+  Trash2,
+  AlertTriangle,
 } from "lucide-react";
 import { PDSA_STATUS_LABELS, PDSA_STATUS_COLORS, PDSA_OUTCOME_LABELS } from "@/lib/constants";
 
@@ -269,12 +277,14 @@ function PdsaCycleExpandedContent({
   onFieldSave,
   onStartNextCycle,
   isCloning,
+  onDelete,
 }: {
   cycle: PdsaCycleInfo;
   editing: boolean;
   onFieldSave: (cycleId: string, field: string, value: string | null) => void;
   onStartNextCycle?: (cycleId: string) => void;
   isCloning?: boolean;
+  onDelete?: (cycle: PdsaCycleInfo) => void;
 }) {
   const statusColor = PDSA_STATUS_COLORS[cycle.status] ?? "#4b4f54";
   const canStartNext = cycle.status === "acting" || cycle.status === "completed";
@@ -413,27 +423,40 @@ function PdsaCycleExpandedContent({
         </div>
       </div>
 
-      {/* Start Next Cycle button */}
-      {canStartNext && onStartNextCycle && (
-        <div className="pt-2 border-t mt-2">
-          <Button
-            size="sm"
-            className="gap-1.5 text-xs bg-nmh-teal hover:bg-nmh-teal/90 text-white"
-            onClick={() => onStartNextCycle(cycle.id)}
-            disabled={isCloning}
-          >
-            {isCloning ? (
-              <>
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                Creating...
-              </>
-            ) : (
-              <>
-                <CopyPlus className="h-3.5 w-3.5" />
-                Start Next Cycle
-              </>
-            )}
-          </Button>
+      {/* Action buttons */}
+      {(canStartNext || (editing && onDelete)) && (
+        <div className="pt-2 border-t mt-2 flex items-center gap-2">
+          {canStartNext && onStartNextCycle && (
+            <Button
+              size="sm"
+              className="gap-1.5 text-xs bg-nmh-teal hover:bg-nmh-teal/90 text-white"
+              onClick={() => onStartNextCycle(cycle.id)}
+              disabled={isCloning}
+            >
+              {isCloning ? (
+                <>
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  Creating...
+                </>
+              ) : (
+                <>
+                  <CopyPlus className="h-3.5 w-3.5" />
+                  Start Next Cycle
+                </>
+              )}
+            </Button>
+          )}
+          {editing && onDelete && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5 text-xs text-destructive hover:text-destructive hover:bg-destructive/10 border-destructive/30"
+              onClick={() => onDelete(cycle)}
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              Delete Cycle
+            </Button>
+          )}
         </div>
       )}
     </div>
@@ -469,6 +492,11 @@ export function ChangeIdeasClient({
   // Collapsible PDSA cycle state — all collapsed by default
   const [expandedCycleIds, setExpandedCycleIds] = useState<string[]>([]);
   const [cloningCycleId, setCloningCycleId] = useState<string | null>(null);
+
+  // Delete confirmation dialog state
+  const [deleteChangeIdeaTarget, setDeleteChangeIdeaTarget] = useState<ChangeIdeaData | null>(null);
+  const [deleteCycleTarget, setDeleteCycleTarget] = useState<PdsaCycleInfo | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // --- Filtering ---
   const filteredChangeIdeas = useMemo(() => {
@@ -553,6 +581,36 @@ export function ChangeIdeasClient({
     });
   }
 
+  function handleDeleteChangeIdea() {
+    if (!deleteChangeIdeaTarget) return;
+    setIsDeleting(true);
+    startTransition(async () => {
+      const res = await deleteDriverNode(deleteChangeIdeaTarget.id);
+      setIsDeleting(false);
+      if (!res.success) {
+        setError(res.error ?? "Failed to delete change idea");
+      } else {
+        flashSave("Change idea deleted");
+      }
+      setDeleteChangeIdeaTarget(null);
+    });
+  }
+
+  function handleDeletePdsaCycle() {
+    if (!deleteCycleTarget) return;
+    setIsDeleting(true);
+    startTransition(async () => {
+      const res = await deletePdsaCycle(deleteCycleTarget.id);
+      setIsDeleting(false);
+      if (!res.success) {
+        setError(res.error ?? "Failed to delete PDSA cycle");
+      } else {
+        flashSave("PDSA cycle deleted");
+      }
+      setDeleteCycleTarget(null);
+    });
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -593,7 +651,7 @@ export function ChangeIdeasClient({
           <Lightbulb className="h-4 w-4 shrink-0" />
           <span>
             <strong>Edit Mode is active.</strong> Expand a PDSA cycle to edit its fields inline.
-            Changes save automatically.
+            Changes save automatically. You can also delete change ideas or individual PDSA cycles.
           </span>
         </div>
       )}
@@ -612,6 +670,35 @@ export function ChangeIdeasClient({
           <div className="text-2xl font-bold text-nmh-gray">{ideasWithCycles}</div>
           <p className="text-xs text-muted-foreground mt-0.5">Ideas Being Tested</p>
         </div>
+      </div>
+
+      {/* Icon Legend */}
+      <div className="flex items-center gap-4 flex-wrap text-xs text-muted-foreground border rounded-lg px-3 py-2 bg-muted/20">
+        <span className="font-medium text-nmh-gray">Legend:</span>
+        <span className="flex items-center gap-1">
+          <GitBranchPlus className="h-3.5 w-3.5 text-nmh-teal" />
+          Driver Diagram
+        </span>
+        <span className="flex items-center gap-1">
+          <Lightbulb className="h-3.5 w-3.5 text-nmh-orange" />
+          Change Idea
+        </span>
+        <span className="flex items-center gap-1">
+          <RefreshCcw className="h-3.5 w-3.5 text-nmh-orange" />
+          PDSA Cycle
+        </span>
+        <span className="flex items-center gap-1">
+          <Target className="h-3.5 w-3.5 text-nmh-orange" />
+          Campaign
+        </span>
+        <span className="flex items-center gap-1">
+          <BarChart3 className="h-3.5 w-3.5 text-nmh-teal" />
+          Metric
+        </span>
+        <span className="flex items-center gap-1">
+          <Building2 className="h-3.5 w-3.5 text-purple-600" />
+          Division / Dept
+        </span>
       </div>
 
       {/* Filters */}
@@ -736,20 +823,31 @@ export function ChangeIdeasClient({
                         </div>
                       </div>
 
-                      {/* Add cycle button */}
+                      {/* Edit mode actions */}
                       {editMode && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="shrink-0 text-xs gap-1"
-                          onClick={() => {
-                            setFormError(null);
-                            setAddCycleTarget(ci);
-                          }}
-                        >
-                          <Plus className="h-3.5 w-3.5" />
-                          Add Cycle
-                        </Button>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-xs gap-1"
+                            onClick={() => {
+                              setFormError(null);
+                              setAddCycleTarget(ci);
+                            }}
+                          >
+                            <Plus className="h-3.5 w-3.5" />
+                            Add Cycle
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-xs gap-1 text-destructive hover:text-destructive hover:bg-destructive/10 border-destructive/30"
+                            onClick={() => setDeleteChangeIdeaTarget(ci)}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                            Delete
+                          </Button>
+                        </div>
                       )}
                     </div>
 
@@ -805,6 +903,7 @@ export function ChangeIdeasClient({
                                 onFieldSave={savePdsaField}
                                 onStartNextCycle={handleStartNextCycle}
                                 isCloning={cloningCycleId === cycle.id}
+                                onDelete={setDeleteCycleTarget}
                               />
                             </AccordionContent>
                           </AccordionItem>
@@ -823,6 +922,144 @@ export function ChangeIdeasClient({
           </section>
         ))
       )}
+
+      {/* Delete Change Idea Confirmation Dialog */}
+      <Dialog
+        open={deleteChangeIdeaTarget !== null}
+        onOpenChange={(open) => {
+          if (!open && !isDeleting) setDeleteChangeIdeaTarget(null);
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <AlertTriangle className="h-5 w-5" />
+              Delete Change Idea
+            </DialogTitle>
+            <DialogDescription>Are you sure you want to delete this change idea?</DialogDescription>
+          </DialogHeader>
+          {deleteChangeIdeaTarget && (
+            <div className="space-y-3 py-2">
+              <div className="rounded-md border p-3">
+                <p className="font-medium text-sm">{deleteChangeIdeaTarget.text}</p>
+                {deleteChangeIdeaTarget.description && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {deleteChangeIdeaTarget.description}
+                  </p>
+                )}
+                <p className="text-xs text-muted-foreground mt-1">
+                  Diagram: {deleteChangeIdeaTarget.driverDiagramName}
+                </p>
+              </div>
+              {deleteChangeIdeaTarget.pdsaCycles.length > 0 && (
+                <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm">
+                  <p className="font-medium text-amber-800">
+                    This change idea has {deleteChangeIdeaTarget.pdsaCycles.length} PDSA cycle
+                    {deleteChangeIdeaTarget.pdsaCycles.length !== 1 ? "s" : ""}.
+                  </p>
+                  <p className="text-xs text-amber-700 mt-1">
+                    The PDSA cycles will not be deleted, but they will be unlinked from this change
+                    idea.
+                  </p>
+                </div>
+              )}
+              <p className="text-xs text-muted-foreground">This action cannot be undone.</p>
+            </div>
+          )}
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setDeleteChangeIdeaTarget(null)}
+              disabled={isDeleting}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteChangeIdea}
+              disabled={isDeleting}
+              className="gap-1.5"
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="h-3.5 w-3.5" />
+                  Delete Change Idea
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete PDSA Cycle Confirmation Dialog */}
+      <Dialog
+        open={deleteCycleTarget !== null}
+        onOpenChange={(open) => {
+          if (!open && !isDeleting) setDeleteCycleTarget(null);
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <AlertTriangle className="h-5 w-5" />
+              Delete PDSA Cycle
+            </DialogTitle>
+            <DialogDescription>Are you sure you want to delete this PDSA cycle?</DialogDescription>
+          </DialogHeader>
+          {deleteCycleTarget && (
+            <div className="space-y-3 py-2">
+              <div className="rounded-md border p-3">
+                <p className="font-medium text-sm">{deleteCycleTarget.title}</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Cycle #{deleteCycleTarget.cycleNumber} &mdash;{" "}
+                  {PDSA_STATUS_LABELS[deleteCycleTarget.status] ?? deleteCycleTarget.status}
+                </p>
+                {deleteCycleTarget.planDescription && (
+                  <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                    {deleteCycleTarget.planDescription}
+                  </p>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                All cycle data (plan, observations, results, learnings) will be permanently deleted.
+                This action cannot be undone.
+              </p>
+            </div>
+          )}
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setDeleteCycleTarget(null)}
+              disabled={isDeleting}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeletePdsaCycle}
+              disabled={isDeleting}
+              className="gap-1.5"
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="h-3.5 w-3.5" />
+                  Delete Cycle
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Add PDSA Cycle Dialog */}
       <Dialog
