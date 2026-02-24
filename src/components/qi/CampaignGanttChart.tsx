@@ -336,7 +336,7 @@ export function CampaignGanttChart({ campaigns, linkPrefix }: Props) {
                 <div
                   key={i}
                   className={cn(
-                    "text-center text-xs py-2 border-r text-muted-foreground overflow-hidden",
+                    "text-center text-xs py-2 border-r border-border/70 text-muted-foreground overflow-hidden",
                     granularity === "day" && isToday(col.date) && "bg-primary/5 font-semibold"
                   )}
                   style={{ width: `${columnPcts[i]}%` }}
@@ -379,7 +379,7 @@ export function CampaignGanttChart({ campaigns, linkPrefix }: Props) {
                     {columns.map((_, i) => (
                       <div
                         key={i}
-                        className="border-r border-dashed border-muted h-full"
+                        className="border-r border-dashed border-muted-foreground/30 h-full"
                         style={{ width: `${columnPcts[i]}%` }}
                       />
                     ))}
