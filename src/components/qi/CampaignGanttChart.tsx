@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { CAMPAIGN_STATUS_COLORS, CAMPAIGN_STATUS_LABELS } from "@/lib/constants";
 import {
@@ -21,23 +22,49 @@ import {
 // Types
 // ---------------------------------------------------------------------------
 
-type ZoomLevel = "day" | "week" | "month" | "year" | "3year";
+type ZoomPreset = "fit" | "day" | "month" | "quarter" | "year" | "2year" | "3year" | "custom";
 
-const ZOOM_LEVELS: { value: ZoomLevel; label: string }[] = [
+const ZOOM_PRESETS: { value: ZoomPreset; label: string }[] = [
+  { value: "fit", label: "Fit All" },
   { value: "day", label: "Day" },
-  { value: "week", label: "Week" },
   { value: "month", label: "Month" },
+  { value: "quarter", label: "Quarter" },
   { value: "year", label: "Year" },
+  { value: "2year", label: "2 Year" },
   { value: "3year", label: "3 Year" },
+  { value: "custom", label: "Custom" },
 ];
 
-const COL_WIDTHS: Record<ZoomLevel, number> = {
-  day: 30,
-  week: 80,
-  month: 120,
-  year: 100,
-  "3year": 120,
+/** Forward days and leading padding for each named preset */
+const PRESET_CONFIG: Record<string, { forwardDays: number; paddingBefore: number }> = {
+  day: { forwardDays: 28, paddingBefore: 3 },
+  month: { forwardDays: 90, paddingBefore: 7 },
+  quarter: { forwardDays: 180, paddingBefore: 14 },
+  year: { forwardDays: 395, paddingBefore: 30 },
+  "2year": { forwardDays: 760, paddingBefore: 30 },
+  "3year": { forwardDays: 1125, paddingBefore: 60 },
 };
+
+/** Auto-select column granularity from the visible day range */
+function getGranularity(rangeDays: number): "day" | "week" | "month" | "quarter" | "year" {
+  if (rangeDays <= 45) return "day";
+  if (rangeDays <= 120) return "week";
+  if (rangeDays <= 730) return "month";
+  if (rangeDays <= 1500) return "quarter";
+  return "year";
+}
+
+/** Minimum pixel width per column for each granularity */
+const COL_MIN_WIDTHS: Record<string, number> = {
+  day: 40,
+  week: 70,
+  month: 90,
+  quarter: 110,
+  year: 130,
+};
+
+/** Width of the campaign name column (px) */
+const CAMPAIGN_COL_WIDTH = 300;
 
 export interface CampaignGanttItem {
   id: string;
@@ -61,68 +88,85 @@ interface Props {
 // ---------------------------------------------------------------------------
 
 export function CampaignGanttChart({ campaigns, linkPrefix }: Props) {
-  const [zoom, setZoom] = useState<ZoomLevel>("month");
+  const [zoom, setZoom] = useState<ZoomPreset>("fit");
+  const [customStart, setCustomStart] = useState("");
+  const [customEnd, setCustomEnd] = useState("");
 
-  // Calculate timeline bounds from all campaign dates + today
-  const { timelineStart, timelineEnd, columns } = useMemo(() => {
-    const dates: Date[] = [];
+  // Sort by soonest end date first; campaigns without end dates go last
+  const sortedCampaigns = useMemo(() => {
+    return [...campaigns].sort((a, b) => {
+      if (!a.endDate && !b.endDate) return 0;
+      if (!a.endDate) return 1;
+      if (!b.endDate) return -1;
+      return new Date(a.endDate).getTime() - new Date(b.endDate).getTime();
+    });
+  }, [campaigns]);
 
-    for (const c of campaigns) {
-      if (c.startDate) dates.push(new Date(c.startDate));
-      if (c.endDate) dates.push(new Date(c.endDate));
+  // Calculate timeline bounds based on the active zoom preset
+  const { timelineStart, timelineEnd, columns, granularity } = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    let start: Date;
+    let end: Date;
+
+    if (zoom === "custom" && customStart && customEnd) {
+      start = new Date(customStart + "T00:00:00");
+      end = new Date(customEnd + "T00:00:00");
+      if (end <= start) end = addDays(start, 30);
+    } else if (zoom === "fit") {
+      // Start slightly before today; extend to the latest campaign end date
+      const endDates = campaigns
+        .filter((c) => c.endDate)
+        .map((c) => new Date(c.endDate!).getTime());
+      const latestEnd =
+        endDates.length > 0 ? new Date(Math.max(...endDates)) : addDays(today, 90);
+      start = addDays(today, -14);
+      const minEnd = addDays(today, 60);
+      end = addDays(new Date(Math.max(latestEnd.getTime(), minEnd.getTime())), 14);
+    } else {
+      const config = PRESET_CONFIG[zoom] ?? { forwardDays: 90, paddingBefore: 14 };
+      start = addDays(today, -config.paddingBefore);
+      end = addDays(today, config.forwardDays);
     }
 
-    // Always include today
-    dates.push(new Date());
-
-    if (dates.length <= 1) {
-      const now = new Date();
-      dates.push(addDays(now, -14), addDays(now, 60));
-    }
-
-    const minDate = new Date(Math.min(...dates.map((d) => d.getTime())));
-    const maxDate = new Date(Math.max(...dates.map((d) => d.getTime())));
-
-    // Wider padding for broader zoom levels
-    const isWide = zoom === "year" || zoom === "3year";
-    const start = addDays(minDate, isWide ? -30 : -7);
-    const end = addDays(maxDate, isWide ? 60 : 14);
+    const rangeDays = differenceInDays(end, start) || 1;
+    const gran = getGranularity(rangeDays);
 
     let cols: { date: Date; label: string }[] = [];
 
-    if (zoom === "day") {
+    if (gran === "day") {
       cols = eachDayOfInterval({ start, end }).map((d) => ({
         date: d,
-        label: format(d, "d"),
+        label: format(d, "MMM d"),
       }));
-    } else if (zoom === "week") {
+    } else if (gran === "week") {
       cols = eachWeekOfInterval({ start, end }).map((d) => ({
         date: d,
         label: format(d, "MMM d"),
       }));
-    } else if (zoom === "month") {
+    } else if (gran === "month") {
       cols = eachMonthOfInterval({ start, end }).map((d) => ({
         date: d,
         label: format(d, "MMM yyyy"),
       }));
-    } else if (zoom === "year") {
+    } else if (gran === "quarter") {
       cols = eachQuarterOfInterval({ start, end }).map((d) => ({
         date: d,
         label: format(d, "QQQ yyyy"),
       }));
     } else {
-      // 3year
       cols = eachYearOfInterval({ start, end }).map((d) => ({
         date: d,
         label: format(d, "yyyy"),
       }));
     }
 
-    return { timelineStart: start, timelineEnd: end, columns: cols };
-  }, [campaigns, zoom]);
+    return { timelineStart: start, timelineEnd: end, columns: cols, granularity: gran };
+  }, [campaigns, zoom, customStart, customEnd]);
 
   const totalDays = differenceInDays(timelineEnd, timelineStart) || 1;
-  const colWidth = COL_WIDTHS[zoom];
+  const colWidth = COL_MIN_WIDTHS[granularity] ?? 80;
 
   // Compute each column's percentage width based on its actual duration
   const columnPcts = useMemo(() => {
@@ -134,24 +178,38 @@ export function CampaignGanttChart({ campaigns, linkPrefix }: Props) {
     });
   }, [columns, timelineEnd, totalDays]);
 
-  const getBarStyle = (start: string | null, end: string | null) => {
-    if (!start) return null;
-    const startDate = new Date(start);
-    // Wider fallback for broad zoom levels so bars remain visible
-    const fallbackDays = zoom === "year" || zoom === "3year" ? 30 : 14;
-    const endDate = end ? new Date(end) : addDays(startDate, fallbackDays);
+  const getBarStyle = (startStr: string | null, endStr: string | null) => {
+    if (!startStr) return null;
+    const startDate = new Date(startStr);
+    const fallbackDays = totalDays > 365 ? 30 : 14;
+    const endDate = endStr ? new Date(endStr) : addDays(startDate, fallbackDays);
 
     const leftPct = (differenceInDays(startDate, timelineStart) / totalDays) * 100;
     const widthPct = (differenceInDays(endDate, startDate) / totalDays) * 100;
 
     return {
       left: `${Math.max(0, leftPct)}%`,
-      width: `${Math.max(1, widthPct)}%`,
+      width: `${Math.max(0.5, widthPct)}%`,
     };
   };
 
-  // Today line position
+  // Today line position (percentage)
   const todayPct = (differenceInDays(new Date(), timelineStart) / totalDays) * 100;
+
+  /** When switching to Custom, pre-populate dates from current Fit bounds */
+  function handleZoomChange(preset: ZoomPreset) {
+    if (preset === "custom" && !customStart) {
+      const today = new Date();
+      setCustomStart(format(addDays(today, -14), "yyyy-MM-dd"));
+      const endDates = campaigns
+        .filter((c) => c.endDate)
+        .map((c) => new Date(c.endDate!).getTime());
+      const latestEnd =
+        endDates.length > 0 ? new Date(Math.max(...endDates)) : addDays(today, 90);
+      setCustomEnd(format(addDays(latestEnd, 14), "yyyy-MM-dd"));
+    }
+    setZoom(preset);
+  }
 
   if (campaigns.length === 0) {
     return (
@@ -164,14 +222,14 @@ export function CampaignGanttChart({ campaigns, linkPrefix }: Props) {
   return (
     <div className="space-y-3">
       {/* Zoom Controls */}
-      <div className="flex items-center gap-2">
-        <span className="text-sm text-muted-foreground">Zoom:</span>
-        {ZOOM_LEVELS.map(({ value, label }) => (
+      <div className="flex items-center gap-2 flex-wrap">
+        <span className="text-sm text-muted-foreground">View:</span>
+        {ZOOM_PRESETS.map(({ value, label }) => (
           <Button
             key={value}
             variant={zoom === value ? "default" : "outline"}
             size="sm"
-            onClick={() => setZoom(value)}
+            onClick={() => handleZoomChange(value)}
             className="text-xs h-7"
           >
             {label}
@@ -179,12 +237,39 @@ export function CampaignGanttChart({ campaigns, linkPrefix }: Props) {
         ))}
       </div>
 
+      {/* Custom date range inputs */}
+      {zoom === "custom" && (
+        <div className="flex items-center gap-3 flex-wrap">
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">From:</span>
+            <Input
+              type="date"
+              value={customStart}
+              onChange={(e) => setCustomStart(e.target.value)}
+              className="h-8 w-auto"
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">To:</span>
+            <Input
+              type="date"
+              value={customEnd}
+              onChange={(e) => setCustomEnd(e.target.value)}
+              className="h-8 w-auto"
+            />
+          </div>
+        </div>
+      )}
+
       {/* Gantt Grid */}
       <div className="border rounded-lg overflow-x-auto">
-        <div style={{ minWidth: columns.length * colWidth }}>
+        <div style={{ minWidth: CAMPAIGN_COL_WIDTH + columns.length * colWidth }}>
           {/* Timeline Header */}
           <div className="flex border-b bg-muted/30 sticky top-0 z-10">
-            <div className="w-[200px] shrink-0 px-3 py-2 text-xs font-semibold border-r bg-card">
+            <div
+              className="shrink-0 px-3 py-2 text-xs font-semibold border-r bg-card"
+              style={{ width: CAMPAIGN_COL_WIDTH }}
+            >
               Campaign
             </div>
             <div className="flex-1 flex">
@@ -193,7 +278,7 @@ export function CampaignGanttChart({ campaigns, linkPrefix }: Props) {
                   key={i}
                   className={cn(
                     "text-center text-xs py-2 border-r text-muted-foreground overflow-hidden",
-                    zoom === "day" && isToday(col.date) && "bg-primary/5 font-semibold"
+                    granularity === "day" && isToday(col.date) && "bg-primary/5 font-semibold"
                   )}
                   style={{ width: `${columnPcts[i]}%` }}
                 >
@@ -204,14 +289,17 @@ export function CampaignGanttChart({ campaigns, linkPrefix }: Props) {
           </div>
 
           {/* Campaign Rows */}
-          {campaigns.map((campaign) => {
+          {sortedCampaigns.map((campaign) => {
             const barStyle = getBarStyle(campaign.startDate, campaign.endDate);
             const statusColor = CAMPAIGN_STATUS_COLORS[campaign.status] ?? "#4b4f54";
 
             return (
-              <div key={campaign.id} className="flex border-b hover:bg-muted/20">
+              <div key={campaign.id} className="flex border-b hover:bg-muted/20 items-stretch">
                 {/* Label */}
-                <div className="w-[200px] shrink-0 px-3 py-2 text-sm border-r flex items-center gap-2">
+                <div
+                  className="shrink-0 px-3 py-2 text-sm border-r flex items-center gap-2"
+                  style={{ width: CAMPAIGN_COL_WIDTH }}
+                >
                   <div
                     className="w-2 h-2 rounded-full shrink-0"
                     style={{ backgroundColor: statusColor }}
@@ -219,14 +307,14 @@ export function CampaignGanttChart({ campaigns, linkPrefix }: Props) {
                   />
                   <Link
                     href={`${linkPrefix}/${campaign.linkId}`}
-                    className="truncate hover:text-nmh-teal font-medium"
+                    className="hover:text-nmh-teal font-medium break-words"
                   >
                     {campaign.name}
                   </Link>
                 </div>
 
                 {/* Timeline area */}
-                <div className="flex-1 relative h-10">
+                <div className="flex-1 relative min-h-[40px]">
                   {/* Grid lines — percentage-based to match header columns */}
                   <div className="absolute inset-0 flex">
                     {columns.map((_, i) => (
@@ -239,10 +327,12 @@ export function CampaignGanttChart({ campaigns, linkPrefix }: Props) {
                   </div>
 
                   {/* Today line */}
-                  <div
-                    className="absolute top-0 bottom-0 w-px bg-primary/50 z-10"
-                    style={{ left: `${todayPct}%` }}
-                  />
+                  {todayPct >= 0 && todayPct <= 100 && (
+                    <div
+                      className="absolute top-0 bottom-0 w-px bg-primary/50 z-10"
+                      style={{ left: `${todayPct}%` }}
+                    />
+                  )}
 
                   {/* Campaign bar */}
                   {barStyle ? (

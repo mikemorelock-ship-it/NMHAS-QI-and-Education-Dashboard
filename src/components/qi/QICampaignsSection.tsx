@@ -94,7 +94,7 @@ export function QICampaignsSection({ campaigns }: Props) {
   }));
 
   return (
-    <Tabs defaultValue="cards">
+    <Tabs defaultValue="gantt">
       <TabsList>
         <TabsTrigger value="cards" className="gap-1.5">
           <LayoutGrid className="h-4 w-4" /> Cards

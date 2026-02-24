@@ -47,6 +47,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Copy,
+  Lightbulb,
 } from "lucide-react";
 
 // ---------------------------------------------------------------------------
@@ -153,7 +154,7 @@ export function PdsaCyclesClient({
   metrics: LookupItem[];
   changeIdeas: ChangeIdeaItem[];
 }) {
-  const [view, setView] = useState<string>("table");
+  const [view, setView] = useState<string>("ideas");
   const [addOpen, setAddOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<CycleRow | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<CycleRow | null>(null);
@@ -206,6 +207,65 @@ export function PdsaCyclesClient({
     return changeIdeas.filter((ci) => ci.driverDiagramId === formDiagramId);
   }, [changeIdeas, formDiagramId]);
 
+  // Group cycles by diagram → change idea for the Ideas view
+  const groupedByDiagram = useMemo(() => {
+    const diagramMap = new Map<
+      string | null,
+      { name: string | null; cycles: CycleRow[] }
+    >();
+
+    for (const c of filteredCycles) {
+      const key = c.driverDiagramId;
+      if (!diagramMap.has(key)) {
+        diagramMap.set(key, { name: c.driverDiagramName, cycles: [] });
+      }
+      diagramMap.get(key)!.cycles.push(c);
+    }
+
+    const result: {
+      diagramId: string | null;
+      diagramName: string | null;
+      changeIdeaGroups: {
+        changeIdea: string;
+        nodeId: string;
+        cycles: CycleRow[];
+      }[];
+      ungrouped: CycleRow[];
+    }[] = [];
+
+    for (const [diagramId, { name, cycles: dCycles }] of diagramMap) {
+      const ideaMap = new Map<string, CycleRow[]>();
+      const ungrouped: CycleRow[] = [];
+
+      for (const cycle of dCycles) {
+        if (cycle.changeIdeaNodeId && cycle.changeIdeaText) {
+          const key = cycle.changeIdeaNodeId;
+          if (!ideaMap.has(key)) ideaMap.set(key, []);
+          ideaMap.get(key)!.push(cycle);
+        } else {
+          ungrouped.push(cycle);
+        }
+      }
+
+      const changeIdeaGroups = Array.from(ideaMap.entries()).map(
+        ([nodeId, gCycles]) => ({
+          changeIdea: gCycles[0].changeIdeaText!,
+          nodeId,
+          cycles: gCycles.sort((a, b) => a.cycleNumber - b.cycleNumber),
+        })
+      );
+
+      result.push({
+        diagramId,
+        diagramName: name,
+        changeIdeaGroups,
+        ungrouped,
+      });
+    }
+
+    return result;
+  }, [filteredCycles]);
+
   // --- Form open/close ---
   function openAdd() {
     setFormDiagramId("");
@@ -257,6 +317,9 @@ export function PdsaCyclesClient({
       <Tabs value={view} onValueChange={setView}>
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <TabsList>
+            <TabsTrigger value="ideas" className="gap-1.5">
+              <Lightbulb className="h-4 w-4" /> Ideas
+            </TabsTrigger>
             <TabsTrigger value="table">Table</TabsTrigger>
             <TabsTrigger value="board">Board</TabsTrigger>
           </TabsList>
@@ -305,6 +368,215 @@ export function PdsaCyclesClient({
             )}
           </div>
         </div>
+
+        {/* Ideas View — grouped by change idea */}
+        <TabsContent value="ideas" className="mt-4">
+          {filteredCycles.length === 0 ? (
+            <div className="bg-card rounded-lg border py-8 text-center text-muted-foreground text-sm">
+              No PDSA cycles found. Create one to get started.
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {groupedByDiagram.map((diagram) => (
+                <div key={diagram.diagramId ?? "__none__"} className="space-y-3">
+                  <h3 className="text-sm font-medium text-muted-foreground">
+                    {diagram.diagramName ?? "No Driver Diagram"}
+                  </h3>
+
+                  {/* Grouped by change idea */}
+                  {diagram.changeIdeaGroups.map((group) => (
+                    <div key={group.nodeId} className="border rounded-lg p-3 space-y-2">
+                      <div className="flex items-center gap-2 text-xs">
+                        <span className="font-medium text-nmh-gray">Change Idea:</span>
+                        <span className="text-muted-foreground">{group.changeIdea}</span>
+                        <span className="text-muted-foreground/50">
+                          ({group.cycles.length} cycle{group.cycles.length !== 1 ? "s" : ""})
+                        </span>
+                      </div>
+
+                      {/* Progression chain */}
+                      <div className="flex items-center gap-1 flex-wrap text-xs">
+                        {group.cycles.map((c, idx) => (
+                          <span key={c.id} className="flex items-center gap-1">
+                            {idx > 0 && (
+                              <span className="text-muted-foreground/40">&rarr;</span>
+                            )}
+                            <Badge
+                              variant="secondary"
+                              className={`text-[10px] ${
+                                c.outcome === "adopt"
+                                  ? "bg-green-100 text-green-700"
+                                  : c.outcome === "adapt"
+                                    ? "bg-yellow-100 text-yellow-700"
+                                    : c.outcome === "abandon"
+                                      ? "bg-red-100 text-red-700"
+                                      : "bg-muted"
+                              }`}
+                            >
+                              Cycle {c.cycleNumber}
+                              {c.outcome
+                                ? `: ${outcomeLabels[c.outcome] ?? c.outcome}`
+                                : ` (${statusLabels[c.status] ?? c.status})`}
+                            </Badge>
+                          </span>
+                        ))}
+                      </div>
+
+                      {/* Cycle cards */}
+                      <div className="space-y-1.5">
+                        {group.cycles.map((cycle) => (
+                          <div
+                            key={cycle.id}
+                            className="border rounded-md px-3 py-2 flex items-center justify-between gap-3 hover:bg-muted/30 transition-colors"
+                          >
+                            <div className="flex items-center gap-3 min-w-0 flex-wrap">
+                              <span className="text-xs text-muted-foreground font-medium shrink-0">
+                                #{cycle.cycleNumber}
+                              </span>
+                              <span className="text-sm font-medium truncate">
+                                {cycle.title}
+                              </span>
+                              <Badge
+                                className={
+                                  statusColors[cycle.status] ??
+                                  "bg-muted text-muted-foreground"
+                                }
+                              >
+                                {statusLabels[cycle.status] ?? cycle.status}
+                              </Badge>
+                              {cycle.outcome && (
+                                <Badge
+                                  className={
+                                    outcomeColors[cycle.outcome] ??
+                                    "bg-muted text-muted-foreground"
+                                  }
+                                >
+                                  {outcomeLabels[cycle.outcome] ?? cycle.outcome}
+                                </Badge>
+                              )}
+                              {cycle.campaignName && (
+                                <span className="text-xs text-muted-foreground">
+                                  {cycle.campaignName}
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-1 shrink-0">
+                              {cycle.status !== "completed" &&
+                                cycle.status !== "abandoned" && (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    title="Advance to next phase"
+                                    disabled={isPending}
+                                    onClick={() => handleAdvance(cycle)}
+                                  >
+                                    <FastForward className="h-3.5 w-3.5" />
+                                  </Button>
+                                )}
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => openEdit(cycle)}
+                              >
+                                <Pencil className="h-3.5 w-3.5" />
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="text-destructive hover:text-destructive"
+                                onClick={() => setDeleteTarget(cycle)}
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+
+                  {/* Ungrouped cycles (no change idea linked) */}
+                  {diagram.ungrouped.length > 0 && (
+                    <div className="border rounded-lg border-dashed p-3 space-y-2">
+                      <div className="text-xs font-medium text-muted-foreground">
+                        Other Cycles ({diagram.ungrouped.length})
+                      </div>
+                      <div className="space-y-1.5">
+                        {diagram.ungrouped.map((cycle) => (
+                          <div
+                            key={cycle.id}
+                            className="border rounded-md px-3 py-2 flex items-center justify-between gap-3 hover:bg-muted/30 transition-colors"
+                          >
+                            <div className="flex items-center gap-3 min-w-0 flex-wrap">
+                              <span className="text-xs text-muted-foreground font-medium shrink-0">
+                                #{cycle.cycleNumber}
+                              </span>
+                              <span className="text-sm font-medium truncate">
+                                {cycle.title}
+                              </span>
+                              <Badge
+                                className={
+                                  statusColors[cycle.status] ??
+                                  "bg-muted text-muted-foreground"
+                                }
+                              >
+                                {statusLabels[cycle.status] ?? cycle.status}
+                              </Badge>
+                              {cycle.outcome && (
+                                <Badge
+                                  className={
+                                    outcomeColors[cycle.outcome] ??
+                                    "bg-muted text-muted-foreground"
+                                  }
+                                >
+                                  {outcomeLabels[cycle.outcome] ?? cycle.outcome}
+                                </Badge>
+                              )}
+                              {cycle.campaignName && (
+                                <span className="text-xs text-muted-foreground">
+                                  {cycle.campaignName}
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-1 shrink-0">
+                              {cycle.status !== "completed" &&
+                                cycle.status !== "abandoned" && (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    title="Advance to next phase"
+                                    disabled={isPending}
+                                    onClick={() => handleAdvance(cycle)}
+                                  >
+                                    <FastForward className="h-3.5 w-3.5" />
+                                  </Button>
+                                )}
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => openEdit(cycle)}
+                              >
+                                <Pencil className="h-3.5 w-3.5" />
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="text-destructive hover:text-destructive"
+                                onClick={() => setDeleteTarget(cycle)}
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </TabsContent>
 
         {/* Table View */}
         <TabsContent value="table" className="mt-4">
