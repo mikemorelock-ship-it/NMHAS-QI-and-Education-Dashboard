@@ -45,6 +45,7 @@ const PdsaCycleSchema = z.object({
 
 function revalidateAll() {
   revalidatePath("/admin/pdsa-cycles");
+  revalidatePath("/admin/change-ideas");
   revalidatePath("/admin/driver-diagrams");
   revalidatePath("/admin/campaigns");
   revalidatePath("/admin/qi-workflow");

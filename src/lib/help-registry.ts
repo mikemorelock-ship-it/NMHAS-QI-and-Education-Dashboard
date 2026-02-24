@@ -249,17 +249,18 @@ export const HELP_FEATURES: HelpFeature[] = [
     ],
   },
   {
-    id: "admin-pdsa",
+    id: "admin-change-ideas",
     portals: ["admin"],
-    title: "PDSA Cycles",
+    title: "Change Ideas",
     icon: "RefreshCcw",
     description:
-      "Manage Plan-Do-Study-Act cycles. Create new cycles linked to Change Ideas, update phase details (Plan, Do, Study, Act), and record outcomes (Adopt, Adapt, Abandon).",
-    path: "/admin/pdsa-cycles",
+      "View all change ideas across driver diagrams with their PDSA cycle iterations. Create new cycles, update phase details (Plan, Do, Study, Act), and record outcomes (Adopt, Adapt, Abandon).",
+    path: "/admin/change-ideas",
     tips: [
-      "Each cycle is linked to a Change Idea node in a driver diagram.",
-      "Update the status as the cycle progresses through phases.",
-      "Record the outcome when the Study phase is complete.",
+      "Change ideas are grouped by their driver diagram.",
+      "Each change idea shows its associated metric and division/department tags.",
+      "Expand a PDSA cycle to view or edit its phase details.",
+      "Use Edit Mode to update cycle fields inline.",
     ],
   },
   {
