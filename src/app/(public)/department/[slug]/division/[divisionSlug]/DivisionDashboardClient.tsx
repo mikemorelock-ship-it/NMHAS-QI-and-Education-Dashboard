@@ -64,8 +64,16 @@ export function DivisionDashboardClient({
             </h2>
             <ViewToggle value={viewMode} onChange={setViewMode} />
           </div>
-          {viewMode === "cards" ? (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 auto-rows-[1fr] gap-4">
+          {viewMode === "list" ? (
+            <MetricsList kpis={displayKpis} divisionSlug={departmentSlug} />
+          ) : (
+            <div
+              className={
+                viewMode === "charts"
+                  ? "grid grid-cols-1 md:grid-cols-2 auto-rows-[1fr] gap-4"
+                  : "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 auto-rows-[1fr] gap-4"
+              }
+            >
               {displayKpis.map((kpi) => (
                 <KpiCard
                   key={kpi.metricId}
@@ -79,11 +87,11 @@ export function DivisionDashboardClient({
                   desiredDirection={kpi.desiredDirection}
                   rateMultiplier={kpi.rateMultiplier}
                   rateSuffix={kpi.rateSuffix}
+                  viewMode={viewMode === "charts" ? "charts" : "metrics"}
+                  spcData={kpi.spcData}
                 />
               ))}
             </div>
-          ) : (
-            <MetricsList kpis={displayKpis} divisionSlug={departmentSlug} />
           )}
         </section>
       )}

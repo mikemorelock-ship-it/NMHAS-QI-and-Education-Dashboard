@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db";
 import { notFound } from "next/navigation";
 import { formatPeriod } from "@/lib/utils";
+import { calculateSPC, type DataType, type SPCDataPoint } from "@/lib/spc";
 import {
   Breadcrumb,
   BreadcrumbList,
@@ -73,7 +74,8 @@ export default async function DepartmentDetailPage({ params }: PageProps) {
         trend = ((currentValue - previousValue) / Math.abs(previousValue)) * 100;
       }
 
-      const sparklineEntries = await prisma.metricEntry.findMany({
+      // Fetch all entries for sparkline and SPC
+      const allEntries = await prisma.metricEntry.findMany({
         where: {
           metricDefinitionId: metric.id,
           departmentId: department.id,
@@ -81,9 +83,40 @@ export default async function DepartmentDetailPage({ params }: PageProps) {
           regionId: null,
         },
         orderBy: { periodStart: "asc" },
-        take: 12,
-        select: { value: true },
+        select: {
+          periodStart: true,
+          value: true,
+          numerator: true,
+          denominator: true,
+        },
       });
+
+      // Compute SPC data
+      const dt = (metric.dataType ?? "continuous") as DataType;
+      let spcData = null;
+      if (allEntries.length >= 2 && ["proportion", "rate", "continuous"].includes(dt)) {
+        const spcPoints: SPCDataPoint[] = allEntries.map((e) => ({
+          period: formatPeriod(e.periodStart),
+          value: e.value,
+          numerator: e.numerator ?? undefined,
+          denominator: e.denominator ?? undefined,
+        }));
+        const sigmaLevel = metric.spcSigmaLevel;
+        const spcOptions: {
+          sigmaLevel: 1 | 2 | 3;
+          baselineStart?: string;
+          baselineEnd?: string;
+        } = {
+          sigmaLevel: sigmaLevel === 1 || sigmaLevel === 2 || sigmaLevel === 3 ? sigmaLevel : 3,
+        };
+        if (metric.baselineStart) {
+          spcOptions.baselineStart = formatPeriod(metric.baselineStart);
+        }
+        if (metric.baselineEnd) {
+          spcOptions.baselineEnd = formatPeriod(metric.baselineEnd);
+        }
+        spcData = calculateSPC(dt, spcPoints, spcOptions);
+      }
 
       return {
         metricId: metric.id,
@@ -95,9 +128,10 @@ export default async function DepartmentDetailPage({ params }: PageProps) {
         unit: metric.unit,
         target: metric.target,
         trend: Math.round(trend * 10) / 10,
-        sparkline: sparklineEntries.map((e) => e.value),
+        sparkline: allEntries.slice(-12).map((e) => e.value),
         chartType: metric.chartType,
         category: metric.categoryLegacy,
+        spcData,
       };
     })
   );

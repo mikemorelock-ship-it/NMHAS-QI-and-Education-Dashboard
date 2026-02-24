@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { Loader2 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { DivisionSelector } from "@/components/dashboard/DivisionSelector";
 import { KpiCard } from "@/components/dashboard/KpiCard";
 import { MetricsList } from "@/components/dashboard/MetricsList";
@@ -165,12 +166,21 @@ export default function PublicDashboardPage() {
         </div>
       )}
 
-      {/* KPI Grid / List */}
+      {/* KPI Grid / Charts / List */}
       {loading ? (
         <KpiGridSkeleton />
       ) : displayKpis.length > 0 ? (
-        viewMode === "cards" ? (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 auto-rows-[1fr] gap-4">
+        viewMode === "list" ? (
+          <MetricsList kpis={displayKpis} divisionSlug={activeSlug || "all"} />
+        ) : (
+          <div
+            className={cn(
+              "grid auto-rows-[1fr] gap-4",
+              viewMode === "charts"
+                ? "grid-cols-1 md:grid-cols-2"
+                : "grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
+            )}
+          >
             {displayKpis.map((kpi) => (
               <KpiCard
                 key={kpi.metricId}
@@ -183,6 +193,8 @@ export default function PublicDashboardPage() {
                 desiredDirection={kpi.desiredDirection}
                 rateMultiplier={kpi.rateMultiplier}
                 rateSuffix={kpi.rateSuffix}
+                viewMode={viewMode === "charts" ? "charts" : "metrics"}
+                spcData={kpi.spcData}
                 href={
                   kpi.metricSlug
                     ? kpi.divisionSlug
@@ -193,8 +205,6 @@ export default function PublicDashboardPage() {
               />
             ))}
           </div>
-        ) : (
-          <MetricsList kpis={displayKpis} divisionSlug={activeSlug || "all"} />
         )
       ) : (
         !loading && (

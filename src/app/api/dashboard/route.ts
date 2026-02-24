@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { parseDateRangeFilter } from "@/lib/utils";
+import { formatPeriod, parseDateRangeFilter } from "@/lib/utils";
 import {
   aggregateByPeriodWeighted,
   aggregateValues,
   type AggregationType,
   type MetricDataType,
 } from "@/lib/aggregation";
+import { calculateSPC, type DataType, type SPCDataPoint } from "@/lib/spc";
 
 export const dynamic = "force-dynamic";
 
@@ -93,6 +94,9 @@ export async function GET(request: NextRequest) {
               rateMultiplier: true,
               rateSuffix: true,
               desiredDirection: true,
+              spcSigmaLevel: true,
+              baselineStart: true,
+              baselineEnd: true,
             },
           })
         : [];
@@ -180,6 +184,59 @@ export async function GET(request: NextRequest) {
     // Build result per division — all in-memory now, no more per-metric queries
     // =========================================================================
 
+    /**
+     * Build SPC data points from raw entries. For proportion/rate metrics,
+     * aggregates numerator/denominator per period. For continuous, uses the
+     * already-aggregated series values.
+     */
+    function buildSPCDataPoints(
+      rawEntries: EntryRow[],
+      dt: DataType,
+      aggregatedSeries: { periodStart: Date; value: number }[]
+    ): SPCDataPoint[] {
+      if (dt === "proportion" || dt === "rate") {
+        // Group by period and sum numerators/denominators
+        const periodMap = new Map<
+          string,
+          { date: Date; totalNum: number; totalDen: number; hasND: boolean }
+        >();
+        for (const e of rawEntries) {
+          const key = e.periodStart.toISOString();
+          if (!periodMap.has(key)) {
+            periodMap.set(key, { date: e.periodStart, totalNum: 0, totalDen: 0, hasND: false });
+          }
+          const bucket = periodMap.get(key)!;
+          if (e.numerator != null && e.denominator != null) {
+            bucket.totalNum += e.numerator;
+            bucket.totalDen += e.denominator;
+            bucket.hasND = true;
+          }
+        }
+
+        return Array.from(periodMap.values())
+          .sort((a, b) => a.date.getTime() - b.date.getTime())
+          .filter((b) => b.hasND && b.totalDen > 0)
+          .map((bucket) => {
+            const value =
+              dt === "proportion"
+                ? (bucket.totalNum / bucket.totalDen) * 100
+                : bucket.totalNum / bucket.totalDen;
+            return {
+              period: formatPeriod(bucket.date),
+              value,
+              numerator: bucket.totalNum,
+              denominator: bucket.totalDen,
+            };
+          });
+      }
+
+      // Continuous: use already-aggregated series
+      return aggregatedSeries.map((s) => ({
+        period: formatPeriod(s.periodStart),
+        value: s.value,
+      }));
+    }
+
     function buildKpi(
       metric: (typeof kpiMetrics)[number],
       entries: EntryRow[],
@@ -220,6 +277,25 @@ export async function GET(request: NextRequest) {
         .slice(-12)
         .map((s) => s.value);
 
+      // Compute SPC data from aggregated per-period entries
+      const dt = dataType as string as DataType;
+      let spcData = null;
+      if (aggregatedSeries.length >= 2 && ["proportion", "rate", "continuous"].includes(dt)) {
+        const spcPoints: SPCDataPoint[] = buildSPCDataPoints(entries, dt, aggregatedSeries);
+        const sigmaLevel = metric.spcSigmaLevel;
+        const spcOptions: { sigmaLevel: 1 | 2 | 3; baselineStart?: string; baselineEnd?: string } =
+          {
+            sigmaLevel: sigmaLevel === 1 || sigmaLevel === 2 || sigmaLevel === 3 ? sigmaLevel : 3,
+          };
+        if (metric.baselineStart) {
+          spcOptions.baselineStart = formatPeriod(metric.baselineStart);
+        }
+        if (metric.baselineEnd) {
+          spcOptions.baselineEnd = formatPeriod(metric.baselineEnd);
+        }
+        spcData = calculateSPC(dt, spcPoints, spcOptions);
+      }
+
       return {
         metricId: metric.id,
         metricSlug: metric.slug,
@@ -237,6 +313,7 @@ export async function GET(request: NextRequest) {
         desiredDirection: (metric.desiredDirection ?? "up") as "up" | "down",
         rateMultiplier: metric.rateMultiplier ?? null,
         rateSuffix: metric.rateSuffix ?? null,
+        spcData,
       };
     }
 
@@ -277,6 +354,9 @@ export async function GET(request: NextRequest) {
         rateMultiplier: true,
         rateSuffix: true,
         desiredDirection: true,
+        spcSigmaLevel: true,
+        baselineStart: true,
+        baselineEnd: true,
       },
     });
 
@@ -290,7 +370,13 @@ export async function GET(request: NextRequest) {
           regionId: null,
         },
         orderBy: { periodStart: "asc" },
-        select: { metricDefinitionId: true, periodStart: true, value: true },
+        select: {
+          metricDefinitionId: true,
+          periodStart: true,
+          value: true,
+          numerator: true,
+          denominator: true,
+        },
       });
 
       const unassocByMetric = new Map<string, typeof unassocEntries>();
@@ -326,6 +412,33 @@ export async function GET(request: NextRequest) {
           }
         }
 
+        // Compute SPC for unassociated KPIs
+        const udt = (metric.dataType ?? "continuous") as DataType;
+        let spcData = null;
+        if (entries.length >= 2 && ["proportion", "rate", "continuous"].includes(udt)) {
+          const spcPoints: SPCDataPoint[] = entries.map((e) => ({
+            period: formatPeriod(e.periodStart),
+            value: e.value,
+            numerator: e.numerator ?? undefined,
+            denominator: e.denominator ?? undefined,
+          }));
+          const sigmaLevel = metric.spcSigmaLevel;
+          const spcOpts: {
+            sigmaLevel: 1 | 2 | 3;
+            baselineStart?: string;
+            baselineEnd?: string;
+          } = {
+            sigmaLevel: sigmaLevel === 1 || sigmaLevel === 2 || sigmaLevel === 3 ? sigmaLevel : 3,
+          };
+          if (metric.baselineStart) {
+            spcOpts.baselineStart = formatPeriod(metric.baselineStart);
+          }
+          if (metric.baselineEnd) {
+            spcOpts.baselineEnd = formatPeriod(metric.baselineEnd);
+          }
+          spcData = calculateSPC(udt, spcPoints, spcOpts);
+        }
+
         return {
           metricId: metric.id,
           metricSlug: metric.slug,
@@ -343,6 +456,7 @@ export async function GET(request: NextRequest) {
           desiredDirection: (metric.desiredDirection ?? "up") as "up" | "down",
           rateMultiplier: metric.rateMultiplier ?? null,
           rateSuffix: metric.rateSuffix ?? null,
+          spcData,
         };
       });
 
