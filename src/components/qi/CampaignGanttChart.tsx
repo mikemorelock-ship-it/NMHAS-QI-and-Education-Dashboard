@@ -119,15 +119,24 @@ export function CampaignGanttChart({ campaigns, linkPrefix }: Props) {
       end = new Date(customEnd + "T00:00:00");
       if (end <= start) end = addDays(start, 30);
     } else if (zoom === "fit") {
-      // Auto-select the smallest preset that covers all campaign end dates
-      const endDates = campaigns
-        .filter((c) => c.endDate)
-        .map((c) => new Date(c.endDate!).getTime());
+      // Compute effective end dates for all campaigns:
+      // - explicit endDate when available
+      // - startDate + 365 days for ongoing campaigns (no end date)
+      const effectiveEnds = campaigns
+        .map((c) => {
+          if (c.endDate) return new Date(c.endDate).getTime();
+          if (c.startDate) return addDays(new Date(c.startDate), 365).getTime();
+          return null;
+        })
+        .filter((t): t is number => t !== null && !isNaN(t));
 
-      const latestEnd = endDates.length > 0 ? new Date(Math.max(...endDates)) : addDays(today, 90);
-      const daysNeeded = Math.max(differenceInDays(latestEnd, today), 60);
+      const latestEffectiveEnd =
+        effectiveEnds.length > 0 ? new Date(Math.max(...effectiveEnds)) : addDays(today, 395);
 
-      // Pick the smallest preset whose forwardDays covers the latest end date
+      // Minimum of 395 days (year preset) so Fit All never picks a cramped view
+      const daysNeeded = Math.max(differenceInDays(latestEffectiveEnd, today), 395);
+
+      // Pick the smallest preset whose forwardDays covers the latest effective end
       const preset =
         PRESET_CONFIGS.find((p) => p.forwardDays >= daysNeeded) ??
         PRESET_CONFIGS[PRESET_CONFIGS.length - 1];
@@ -216,11 +225,16 @@ export function CampaignGanttChart({ campaigns, linkPrefix }: Props) {
   function handleZoomChange(preset: ZoomPreset) {
     if (preset === "custom" && !customStart) {
       const today = new Date();
-      const endDates = campaigns
-        .filter((c) => c.endDate)
-        .map((c) => new Date(c.endDate!).getTime());
-      const latestEnd = endDates.length > 0 ? new Date(Math.max(...endDates)) : addDays(today, 90);
-      const daysNeeded = Math.max(differenceInDays(latestEnd, today), 60);
+      const effectiveEnds = campaigns
+        .map((c) => {
+          if (c.endDate) return new Date(c.endDate).getTime();
+          if (c.startDate) return addDays(new Date(c.startDate), 365).getTime();
+          return null;
+        })
+        .filter((t): t is number => t !== null && !isNaN(t));
+      const latestEffectiveEnd =
+        effectiveEnds.length > 0 ? new Date(Math.max(...effectiveEnds)) : addDays(today, 395);
+      const daysNeeded = Math.max(differenceInDays(latestEffectiveEnd, today), 395);
       const fitPreset =
         PRESET_CONFIGS.find((p) => p.forwardDays >= daysNeeded) ??
         PRESET_CONFIGS[PRESET_CONFIGS.length - 1];
