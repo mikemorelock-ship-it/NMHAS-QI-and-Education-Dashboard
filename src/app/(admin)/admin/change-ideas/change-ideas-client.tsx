@@ -672,6 +672,35 @@ export function ChangeIdeasClient({
         </div>
       </div>
 
+      {/* Icon Legend */}
+      <div className="flex items-center gap-4 flex-wrap text-xs text-muted-foreground border rounded-lg px-3 py-2 bg-muted/20">
+        <span className="font-medium text-nmh-gray">Legend:</span>
+        <span className="flex items-center gap-1">
+          <GitBranchPlus className="h-3.5 w-3.5 text-nmh-teal" />
+          Driver Diagram
+        </span>
+        <span className="flex items-center gap-1">
+          <Lightbulb className="h-3.5 w-3.5 text-nmh-orange" />
+          Change Idea
+        </span>
+        <span className="flex items-center gap-1">
+          <RefreshCcw className="h-3.5 w-3.5 text-nmh-orange" />
+          PDSA Cycle
+        </span>
+        <span className="flex items-center gap-1">
+          <Target className="h-3.5 w-3.5 text-nmh-orange" />
+          Campaign
+        </span>
+        <span className="flex items-center gap-1">
+          <BarChart3 className="h-3.5 w-3.5 text-nmh-teal" />
+          Metric
+        </span>
+        <span className="flex items-center gap-1">
+          <Building2 className="h-3.5 w-3.5 text-purple-600" />
+          Division / Dept
+        </span>
+      </div>
+
       {/* Filters */}
       <div className="flex items-center gap-3 flex-wrap">
         <div className="relative flex-1 min-w-[200px] max-w-sm">

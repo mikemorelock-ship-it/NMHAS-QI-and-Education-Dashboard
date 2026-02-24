@@ -115,13 +115,20 @@ export function CampaignGanttChart({ campaigns, linkPrefix }: Props) {
       end = new Date(customEnd + "T00:00:00");
       if (end <= start) end = addDays(start, 30);
     } else if (zoom === "fit") {
-      // Start slightly before today; extend to the latest campaign end date
+      // Include all campaign start and end dates so everything is visible
+      const startDates = campaigns
+        .filter((c) => c.startDate)
+        .map((c) => new Date(c.startDate!).getTime());
       const endDates = campaigns
         .filter((c) => c.endDate)
         .map((c) => new Date(c.endDate!).getTime());
-      const latestEnd =
-        endDates.length > 0 ? new Date(Math.max(...endDates)) : addDays(today, 90);
-      start = addDays(today, -14);
+
+      const earliestStart =
+        startDates.length > 0 ? new Date(Math.min(...startDates)) : addDays(today, -14);
+      const latestEnd = endDates.length > 0 ? new Date(Math.max(...endDates)) : addDays(today, 90);
+
+      // Start before the earliest campaign or 14 days before today (whichever is earlier)
+      start = addDays(new Date(Math.min(earliestStart.getTime(), today.getTime())), -14);
       const minEnd = addDays(today, 60);
       end = addDays(new Date(Math.max(latestEnd.getTime(), minEnd.getTime())), 14);
     } else {
@@ -133,34 +140,40 @@ export function CampaignGanttChart({ campaigns, linkPrefix }: Props) {
     const rangeDays = differenceInDays(end, start) || 1;
     const gran = getGranularity(rangeDays);
 
-    let cols: { date: Date; label: string }[] = [];
+    let rawCols: { date: Date; label: string }[] = [];
 
     if (gran === "day") {
-      cols = eachDayOfInterval({ start, end }).map((d) => ({
+      rawCols = eachDayOfInterval({ start, end }).map((d) => ({
         date: d,
         label: format(d, "MMM d"),
       }));
     } else if (gran === "week") {
-      cols = eachWeekOfInterval({ start, end }).map((d) => ({
+      rawCols = eachWeekOfInterval({ start, end }).map((d) => ({
         date: d,
         label: format(d, "MMM d"),
       }));
     } else if (gran === "month") {
-      cols = eachMonthOfInterval({ start, end }).map((d) => ({
+      rawCols = eachMonthOfInterval({ start, end }).map((d) => ({
         date: d,
         label: format(d, "MMM yyyy"),
       }));
     } else if (gran === "quarter") {
-      cols = eachQuarterOfInterval({ start, end }).map((d) => ({
+      rawCols = eachQuarterOfInterval({ start, end }).map((d) => ({
         date: d,
         label: format(d, "QQQ yyyy"),
       }));
     } else {
-      cols = eachYearOfInterval({ start, end }).map((d) => ({
+      rawCols = eachYearOfInterval({ start, end }).map((d) => ({
         date: d,
         label: format(d, "yyyy"),
       }));
     }
+
+    // Clamp the first column to start no earlier than timelineStart so that
+    // percentage widths always sum to exactly 100%.
+    const cols = rawCols
+      .filter((c) => c.date < end)
+      .map((c, i) => (i === 0 && c.date < start ? { ...c, date: start } : c));
 
     return { timelineStart: start, timelineEnd: end, columns: cols, granularity: gran };
   }, [campaigns, zoom, customStart, customEnd]);
@@ -200,12 +213,21 @@ export function CampaignGanttChart({ campaigns, linkPrefix }: Props) {
   function handleZoomChange(preset: ZoomPreset) {
     if (preset === "custom" && !customStart) {
       const today = new Date();
-      setCustomStart(format(addDays(today, -14), "yyyy-MM-dd"));
+      const startDates = campaigns
+        .filter((c) => c.startDate)
+        .map((c) => new Date(c.startDate!).getTime());
+      const earliestStart =
+        startDates.length > 0 ? new Date(Math.min(...startDates)) : addDays(today, -14);
+      setCustomStart(
+        format(
+          addDays(new Date(Math.min(earliestStart.getTime(), today.getTime())), -14),
+          "yyyy-MM-dd"
+        )
+      );
       const endDates = campaigns
         .filter((c) => c.endDate)
         .map((c) => new Date(c.endDate!).getTime());
-      const latestEnd =
-        endDates.length > 0 ? new Date(Math.max(...endDates)) : addDays(today, 90);
+      const latestEnd = endDates.length > 0 ? new Date(Math.max(...endDates)) : addDays(today, 90);
       setCustomEnd(format(addDays(latestEnd, 14), "yyyy-MM-dd"));
     }
     setZoom(preset);
