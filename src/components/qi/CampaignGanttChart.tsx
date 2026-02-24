@@ -63,6 +63,15 @@ const COL_MIN_WIDTHS: Record<string, number> = {
   year: 130,
 };
 
+/** Trailing buffer (days) added after the latest end date, scaled to granularity */
+const GRANULARITY_BUFFER_DAYS: Record<string, number> = {
+  day: 7,
+  week: 14,
+  month: 45,
+  quarter: 100,
+  year: 180,
+};
+
 /** Width of the campaign name column (px) */
 const CAMPAIGN_COL_WIDTH = 300;
 
@@ -115,22 +124,22 @@ export function CampaignGanttChart({ campaigns, linkPrefix }: Props) {
       end = new Date(customEnd + "T00:00:00");
       if (end <= start) end = addDays(start, 30);
     } else if (zoom === "fit") {
-      // Include all campaign start and end dates so everything is visible
-      const startDates = campaigns
-        .filter((c) => c.startDate)
-        .map((c) => new Date(c.startDate!).getTime());
+      // Show all campaign end dates with a granularity-appropriate buffer
       const endDates = campaigns
         .filter((c) => c.endDate)
         .map((c) => new Date(c.endDate!).getTime());
 
-      const earliestStart =
-        startDates.length > 0 ? new Date(Math.min(...startDates)) : addDays(today, -14);
       const latestEnd = endDates.length > 0 ? new Date(Math.max(...endDates)) : addDays(today, 90);
 
-      // Start before the earliest campaign or 14 days before today (whichever is earlier)
-      start = addDays(new Date(Math.min(earliestStart.getTime(), today.getTime())), -14);
+      start = addDays(today, -14);
       const minEnd = addDays(today, 60);
-      end = addDays(new Date(Math.max(latestEnd.getTime(), minEnd.getTime())), 14);
+      const rawEnd = new Date(Math.max(latestEnd.getTime(), minEnd.getTime()));
+
+      // Determine granularity from the preliminary range, then add scaled buffer
+      const prelimDays = differenceInDays(rawEnd, start) || 1;
+      const prelimGran = getGranularity(prelimDays);
+      const buffer = GRANULARITY_BUFFER_DAYS[prelimGran] ?? 30;
+      end = addDays(rawEnd, buffer);
     } else {
       const config = PRESET_CONFIG[zoom] ?? { forwardDays: 90, paddingBefore: 14 };
       start = addDays(today, -config.paddingBefore);
@@ -213,22 +222,16 @@ export function CampaignGanttChart({ campaigns, linkPrefix }: Props) {
   function handleZoomChange(preset: ZoomPreset) {
     if (preset === "custom" && !customStart) {
       const today = new Date();
-      const startDates = campaigns
-        .filter((c) => c.startDate)
-        .map((c) => new Date(c.startDate!).getTime());
-      const earliestStart =
-        startDates.length > 0 ? new Date(Math.min(...startDates)) : addDays(today, -14);
-      setCustomStart(
-        format(
-          addDays(new Date(Math.min(earliestStart.getTime(), today.getTime())), -14),
-          "yyyy-MM-dd"
-        )
-      );
+      setCustomStart(format(addDays(today, -14), "yyyy-MM-dd"));
       const endDates = campaigns
         .filter((c) => c.endDate)
         .map((c) => new Date(c.endDate!).getTime());
       const latestEnd = endDates.length > 0 ? new Date(Math.max(...endDates)) : addDays(today, 90);
-      setCustomEnd(format(addDays(latestEnd, 14), "yyyy-MM-dd"));
+      const rawEnd = new Date(Math.max(latestEnd.getTime(), addDays(today, 60).getTime()));
+      const prelimDays = differenceInDays(rawEnd, addDays(today, -14)) || 1;
+      const prelimGran = getGranularity(prelimDays);
+      const buffer = GRANULARITY_BUFFER_DAYS[prelimGran] ?? 30;
+      setCustomEnd(format(addDays(rawEnd, buffer), "yyyy-MM-dd"));
     }
     setZoom(preset);
   }
