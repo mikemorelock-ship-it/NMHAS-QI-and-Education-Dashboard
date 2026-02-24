@@ -209,10 +209,7 @@ export function PdsaCyclesClient({
 
   // Group cycles by diagram → change idea for the Ideas view
   const groupedByDiagram = useMemo(() => {
-    const diagramMap = new Map<
-      string | null,
-      { name: string | null; cycles: CycleRow[] }
-    >();
+    const diagramMap = new Map<string | null, { name: string | null; cycles: CycleRow[] }>();
 
     for (const c of filteredCycles) {
       const key = c.driverDiagramId;
@@ -247,13 +244,11 @@ export function PdsaCyclesClient({
         }
       }
 
-      const changeIdeaGroups = Array.from(ideaMap.entries()).map(
-        ([nodeId, gCycles]) => ({
-          changeIdea: gCycles[0].changeIdeaText!,
-          nodeId,
-          cycles: gCycles.sort((a, b) => a.cycleNumber - b.cycleNumber),
-        })
-      );
+      const changeIdeaGroups = Array.from(ideaMap.entries()).map(([nodeId, gCycles]) => ({
+        changeIdea: gCycles[0].changeIdeaText!,
+        nodeId,
+        cycles: gCycles.sort((a, b) => a.cycleNumber - b.cycleNumber),
+      }));
 
       result.push({
         diagramId,
@@ -398,9 +393,7 @@ export function PdsaCyclesClient({
                       <div className="flex items-center gap-1 flex-wrap text-xs">
                         {group.cycles.map((c, idx) => (
                           <span key={c.id} className="flex items-center gap-1">
-                            {idx > 0 && (
-                              <span className="text-muted-foreground/40">&rarr;</span>
-                            )}
+                            {idx > 0 && <span className="text-muted-foreground/40">&rarr;</span>}
                             <Badge
                               variant="secondary"
                               className={`text-[10px] ${
@@ -433,13 +426,10 @@ export function PdsaCyclesClient({
                               <span className="text-xs text-muted-foreground font-medium shrink-0">
                                 #{cycle.cycleNumber}
                               </span>
-                              <span className="text-sm font-medium truncate">
-                                {cycle.title}
-                              </span>
+                              <span className="text-sm font-medium truncate">{cycle.title}</span>
                               <Badge
                                 className={
-                                  statusColors[cycle.status] ??
-                                  "bg-muted text-muted-foreground"
+                                  statusColors[cycle.status] ?? "bg-muted text-muted-foreground"
                                 }
                               >
                                 {statusLabels[cycle.status] ?? cycle.status}
@@ -447,8 +437,7 @@ export function PdsaCyclesClient({
                               {cycle.outcome && (
                                 <Badge
                                   className={
-                                    outcomeColors[cycle.outcome] ??
-                                    "bg-muted text-muted-foreground"
+                                    outcomeColors[cycle.outcome] ?? "bg-muted text-muted-foreground"
                                   }
                                 >
                                   {outcomeLabels[cycle.outcome] ?? cycle.outcome}
@@ -461,23 +450,18 @@ export function PdsaCyclesClient({
                               )}
                             </div>
                             <div className="flex items-center gap-1 shrink-0">
-                              {cycle.status !== "completed" &&
-                                cycle.status !== "abandoned" && (
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    title="Advance to next phase"
-                                    disabled={isPending}
-                                    onClick={() => handleAdvance(cycle)}
-                                  >
-                                    <FastForward className="h-3.5 w-3.5" />
-                                  </Button>
-                                )}
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => openEdit(cycle)}
-                              >
+                              {cycle.status !== "completed" && cycle.status !== "abandoned" && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  title="Advance to next phase"
+                                  disabled={isPending}
+                                  onClick={() => handleAdvance(cycle)}
+                                >
+                                  <FastForward className="h-3.5 w-3.5" />
+                                </Button>
+                              )}
+                              <Button variant="outline" size="sm" onClick={() => openEdit(cycle)}>
                                 <Pencil className="h-3.5 w-3.5" />
                               </Button>
                               <Button
@@ -511,13 +495,10 @@ export function PdsaCyclesClient({
                               <span className="text-xs text-muted-foreground font-medium shrink-0">
                                 #{cycle.cycleNumber}
                               </span>
-                              <span className="text-sm font-medium truncate">
-                                {cycle.title}
-                              </span>
+                              <span className="text-sm font-medium truncate">{cycle.title}</span>
                               <Badge
                                 className={
-                                  statusColors[cycle.status] ??
-                                  "bg-muted text-muted-foreground"
+                                  statusColors[cycle.status] ?? "bg-muted text-muted-foreground"
                                 }
                               >
                                 {statusLabels[cycle.status] ?? cycle.status}
@@ -525,8 +506,7 @@ export function PdsaCyclesClient({
                               {cycle.outcome && (
                                 <Badge
                                   className={
-                                    outcomeColors[cycle.outcome] ??
-                                    "bg-muted text-muted-foreground"
+                                    outcomeColors[cycle.outcome] ?? "bg-muted text-muted-foreground"
                                   }
                                 >
                                   {outcomeLabels[cycle.outcome] ?? cycle.outcome}
@@ -539,23 +519,18 @@ export function PdsaCyclesClient({
                               )}
                             </div>
                             <div className="flex items-center gap-1 shrink-0">
-                              {cycle.status !== "completed" &&
-                                cycle.status !== "abandoned" && (
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    title="Advance to next phase"
-                                    disabled={isPending}
-                                    onClick={() => handleAdvance(cycle)}
-                                  >
-                                    <FastForward className="h-3.5 w-3.5" />
-                                  </Button>
-                                )}
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => openEdit(cycle)}
-                              >
+                              {cycle.status !== "completed" && cycle.status !== "abandoned" && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  title="Advance to next phase"
+                                  disabled={isPending}
+                                  onClick={() => handleAdvance(cycle)}
+                                >
+                                  <FastForward className="h-3.5 w-3.5" />
+                                </Button>
+                              )}
+                              <Button variant="outline" size="sm" onClick={() => openEdit(cycle)}>
                                 <Pencil className="h-3.5 w-3.5" />
                               </Button>
                               <Button
