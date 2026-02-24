@@ -7,6 +7,7 @@ import {
   type AggregationType,
   type MetricDataType,
 } from "@/lib/aggregation";
+import { calculateSPC, type DataType, type SPCDataPoint } from "@/lib/spc";
 
 export const dynamic = "force-dynamic";
 
@@ -67,7 +68,13 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
                 regionId: null,
               },
               orderBy: { periodStart: "asc" },
-              select: { metricDefinitionId: true, periodStart: true, value: true },
+              select: {
+                metricDefinitionId: true,
+                periodStart: true,
+                value: true,
+                numerator: true,
+                denominator: true,
+              },
             })
           : [];
 
@@ -82,17 +89,30 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
                 ...periodStartFilter,
               },
               orderBy: { periodStart: "asc" },
-              select: { metricDefinitionId: true, periodStart: true, value: true },
+              select: {
+                metricDefinitionId: true,
+                periodStart: true,
+                value: true,
+                numerator: true,
+                denominator: true,
+              },
             })
           : allUnassocEntries;
 
+      type UnassocEntryRow = {
+        periodStart: Date;
+        value: number;
+        numerator: number | null;
+        denominator: number | null;
+      };
+
       // Index by metricId
-      const allByMetric = new Map<string, Array<{ periodStart: Date; value: number }>>();
+      const allByMetric = new Map<string, UnassocEntryRow[]>();
       for (const e of allUnassocEntries) {
         if (!allByMetric.has(e.metricDefinitionId)) allByMetric.set(e.metricDefinitionId, []);
         allByMetric.get(e.metricDefinitionId)!.push(e);
       }
-      const filteredByMetric = new Map<string, Array<{ periodStart: Date; value: number }>>();
+      const filteredByMetric = new Map<string, UnassocEntryRow[]>();
       for (const e of filteredUnassocEntries) {
         if (!filteredByMetric.has(e.metricDefinitionId))
           filteredByMetric.set(e.metricDefinitionId, []);
@@ -125,6 +145,33 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
           }
         }
 
+        // Compute SPC data
+        const dt = (metric.dataType ?? "continuous") as DataType;
+        let spcData = null;
+        if (filteredEntries.length >= 2 && ["proportion", "rate", "continuous"].includes(dt)) {
+          const spcPoints: SPCDataPoint[] = filteredEntries.map((e) => ({
+            period: formatPeriod(e.periodStart),
+            value: e.value,
+            numerator: e.numerator ?? undefined,
+            denominator: e.denominator ?? undefined,
+          }));
+          const sigmaLevel = metric.spcSigmaLevel;
+          const spcOpts: {
+            sigmaLevel: 1 | 2 | 3;
+            baselineStart?: string;
+            baselineEnd?: string;
+          } = {
+            sigmaLevel: sigmaLevel === 1 || sigmaLevel === 2 || sigmaLevel === 3 ? sigmaLevel : 3,
+          };
+          if (metric.baselineStart) {
+            spcOpts.baselineStart = formatPeriod(metric.baselineStart);
+          }
+          if (metric.baselineEnd) {
+            spcOpts.baselineEnd = formatPeriod(metric.baselineEnd);
+          }
+          spcData = calculateSPC(dt, spcPoints, spcOpts);
+        }
+
         return {
           metricId: metric.id,
           metricSlug: metric.slug,
@@ -143,6 +190,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
           desiredDirection: (metric.desiredDirection ?? "up") as "up" | "down",
           rateMultiplier: metric.rateMultiplier ?? null,
           rateSuffix: metric.rateSuffix ?? null,
+          spcData,
         };
       });
 
@@ -288,6 +336,57 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
     const kpiMetrics = metricDefinitions.filter((m) => m.isKpi);
 
+    /**
+     * Build SPC data points from raw entries. For proportion/rate metrics,
+     * aggregates numerator/denominator per period. For continuous, uses the
+     * already-aggregated series values.
+     */
+    function buildSPCDataPoints(
+      rawEntries: EntryRow[],
+      dt: DataType,
+      aggregatedSeries: { periodStart: Date; value: number }[]
+    ): SPCDataPoint[] {
+      if (dt === "proportion" || dt === "rate") {
+        const periodMap = new Map<
+          string,
+          { date: Date; totalNum: number; totalDen: number; hasND: boolean }
+        >();
+        for (const e of rawEntries) {
+          const key = e.periodStart.toISOString();
+          if (!periodMap.has(key)) {
+            periodMap.set(key, { date: e.periodStart, totalNum: 0, totalDen: 0, hasND: false });
+          }
+          const bucket = periodMap.get(key)!;
+          if (e.numerator != null && e.denominator != null) {
+            bucket.totalNum += e.numerator;
+            bucket.totalDen += e.denominator;
+            bucket.hasND = true;
+          }
+        }
+
+        return Array.from(periodMap.values())
+          .sort((a, b) => a.date.getTime() - b.date.getTime())
+          .filter((b) => b.hasND && b.totalDen > 0)
+          .map((bucket) => {
+            const value =
+              dt === "proportion"
+                ? (bucket.totalNum / bucket.totalDen) * 100
+                : bucket.totalNum / bucket.totalDen;
+            return {
+              period: formatPeriod(bucket.date),
+              value,
+              numerator: bucket.totalNum,
+              denominator: bucket.totalDen,
+            };
+          });
+      }
+
+      return aggregatedSeries.map((s) => ({
+        period: formatPeriod(s.periodStart),
+        value: s.value,
+      }));
+    }
+
     // Build KPI data — all in-memory, no per-metric queries
     const kpis = kpiMetrics.map((metric) => {
       const aggType = metric.aggregationType as AggregationType;
@@ -322,6 +421,25 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
       const sparklineSeries = aggregatedSeries.slice(-12).map((s) => s.value);
 
+      // Compute SPC data from aggregated per-period entries
+      const dt = dataType as string as DataType;
+      let spcData = null;
+      if (aggregatedSeries.length >= 2 && ["proportion", "rate", "continuous"].includes(dt)) {
+        const spcPoints: SPCDataPoint[] = buildSPCDataPoints(filteredEntries, dt, aggregatedSeries);
+        const sigmaLevel = metric.spcSigmaLevel;
+        const spcOptions: { sigmaLevel: 1 | 2 | 3; baselineStart?: string; baselineEnd?: string } =
+          {
+            sigmaLevel: sigmaLevel === 1 || sigmaLevel === 2 || sigmaLevel === 3 ? sigmaLevel : 3,
+          };
+        if (metric.baselineStart) {
+          spcOptions.baselineStart = formatPeriod(metric.baselineStart);
+        }
+        if (metric.baselineEnd) {
+          spcOptions.baselineEnd = formatPeriod(metric.baselineEnd);
+        }
+        spcData = calculateSPC(dt, spcPoints, spcOptions);
+      }
+
       return {
         metricId: metric.id,
         metricSlug: metric.slug,
@@ -340,6 +458,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         desiredDirection: (metric.desiredDirection ?? "up") as "up" | "down",
         rateMultiplier: metric.rateMultiplier ?? null,
         rateSuffix: metric.rateSuffix ?? null,
+        spcData,
       };
     });
 
