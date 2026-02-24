@@ -66,11 +66,13 @@ export async function createDriverDiagram(
   }
 
   const raw = formDataToRecord(formData);
+  const metricId =
+    raw.metricDefinitionId && raw.metricDefinitionId !== "__none__" ? raw.metricDefinitionId : null;
   const parsed = DiagramSchema.safeParse({
     name: raw.name,
     description: raw.description || null,
     status: raw.status || "draft",
-    metricDefinitionId: raw.metricDefinitionId || null,
+    metricDefinitionId: metricId,
     campaignId: raw.campaignId || null,
     sortOrder: raw.sortOrder ?? 0,
   });
@@ -129,11 +131,13 @@ export async function updateDriverDiagram(id: string, formData: FormData): Promi
   }
 
   const raw = formDataToRecord(formData);
+  const metricId =
+    raw.metricDefinitionId && raw.metricDefinitionId !== "__none__" ? raw.metricDefinitionId : null;
   const parsed = DiagramSchema.safeParse({
     name: raw.name,
     description: raw.description || null,
     status: raw.status || "draft",
-    metricDefinitionId: raw.metricDefinitionId || null,
+    metricDefinitionId: metricId,
     campaignId: raw.campaignId || null,
     sortOrder: raw.sortOrder ?? 0,
   });

@@ -415,12 +415,15 @@ function DiagramFormFields({
         <Label>
           Linked Metric <span className="text-muted-foreground font-normal">(optional)</span>
         </Label>
-        <Select name="metricDefinitionId" defaultValue={defaultValues?.metricDefinitionId ?? ""}>
+        <Select
+          name="metricDefinitionId"
+          defaultValue={defaultValues?.metricDefinitionId ?? "__none__"}
+        >
           <SelectTrigger className="w-full">
             <SelectValue placeholder="None" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">None</SelectItem>
+            <SelectItem value="__none__">None</SelectItem>
             {metrics.map((metric) => (
               <SelectItem key={metric.id} value={metric.id}>
                 {metric.name}
