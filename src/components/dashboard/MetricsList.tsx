@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { TrendingUp, TrendingDown, Minus } from "lucide-react";
-import { formatMetricValue, cn } from "@/lib/utils";
+import { formatMetricValue, targetToRaw, cn } from "@/lib/utils";
 import type { KpiData } from "@/types";
 
 interface MetricsListProps {
@@ -32,11 +32,15 @@ export function MetricsList({ kpis, divisionSlug }: MetricsListProps) {
             const direction = kpi.trend > 0.5 ? "up" : kpi.trend < -0.5 ? "down" : "flat";
             const desired = kpi.desiredDirection ?? "up";
             const isFavorable = direction === "flat" ? null : direction === desired;
+            const rawTarget =
+              kpi.target !== null
+                ? targetToRaw(kpi.target, kpi.unit, kpi.rateMultiplier)
+                : null;
             const meetsTarget =
-              kpi.target !== null &&
+              rawTarget !== null &&
               (desired === "down"
-                ? kpi.currentValue <= kpi.target
-                : kpi.currentValue >= kpi.target);
+                ? kpi.currentValue <= rawTarget
+                : kpi.currentValue >= rawTarget);
             const effectiveSlug = kpi.divisionSlug || divisionSlug || "";
             const metricHref = kpi.metricSlug
               ? effectiveSlug && effectiveSlug !== "all"
@@ -98,7 +102,7 @@ export function MetricsList({ kpis, divisionSlug }: MetricsListProps) {
                           : "bg-[#e04726]/10 text-[#e04726]"
                       )}
                     >
-                      {formatMetricValue(kpi.target, kpi.unit, kpi.rateMultiplier, kpi.rateSuffix)}
+                      {formatMetricValue(kpi.target, kpi.unit, null, kpi.rateSuffix)}
                     </span>
                   ) : (
                     <span className="text-muted-foreground text-xs">—</span>

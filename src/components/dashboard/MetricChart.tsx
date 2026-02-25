@@ -19,7 +19,7 @@ import {
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { formatMetricValue } from "@/lib/utils";
+import { formatMetricValue, targetToRaw } from "@/lib/utils";
 import { NMH_COLORS } from "@/lib/constants";
 import type { ChartDataPoint } from "@/types";
 
@@ -205,7 +205,7 @@ export function MetricChart({
 
     // Gather every value the axis must encompass
     const values = data.map((d) => d.value);
-    if (target !== undefined) values.push(target);
+    if (target !== undefined) values.push(targetToRaw(target, unit, rateMultiplier));
     if (data.length >= 2) values.push(runChartAnalysis.median);
 
     let lo = Math.min(...values);
@@ -244,7 +244,7 @@ export function MetricChart({
     }
 
     return [lo, hi];
-  }, [data, target, runChartAnalysis.median, chartType, unit]);
+  }, [data, target, runChartAnalysis.median, chartType, unit, rateMultiplier]);
 
   // Empty state
   if (data.length === 0) {
@@ -303,7 +303,7 @@ export function MetricChart({
       />
       {target !== undefined && (
         <ReferenceLine
-          y={target}
+          y={targetToRaw(target, unit, rateMultiplier)}
           stroke={NMH_COLORS.orange}
           strokeDasharray="6 4"
           strokeWidth={2}
@@ -448,7 +448,7 @@ export function MetricChart({
                 <span>
                   Target:{" "}
                   <strong style={{ color: NMH_COLORS.orange }}>
-                    {formatMetricValue(target, unit, rateMultiplier, rateSuffix)}
+                    {formatMetricValue(target, unit, null, rateSuffix)}
                   </strong>
                 </span>
               </span>

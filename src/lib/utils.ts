@@ -19,6 +19,25 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+/**
+ * Convert a target value to raw units for rate metrics.
+ *
+ * Targets are entered and stored in display units (post-multiplier),
+ * but data values are stored in raw units. This converts the target
+ * to raw units so it can be compared with data values or positioned
+ * correctly on charts whose axes use raw units.
+ */
+export function targetToRaw(
+  target: number,
+  unit: string,
+  rateMultiplier?: number | null
+): number {
+  if (unit === "rate" && rateMultiplier) {
+    return target / rateMultiplier;
+  }
+  return target;
+}
+
 export function formatMetricValue(
   value: number,
   unit: string,

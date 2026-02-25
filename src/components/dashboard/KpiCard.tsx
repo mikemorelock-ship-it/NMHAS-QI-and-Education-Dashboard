@@ -5,7 +5,7 @@ import { LineChart, Line, ResponsiveContainer } from "recharts";
 import { TrendingUp, TrendingDown, Minus, ArrowRight } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { MiniControlChart } from "@/components/dashboard/MiniControlChart";
-import { formatMetricValue, cn } from "@/lib/utils";
+import { formatMetricValue, targetToRaw, cn } from "@/lib/utils";
 import { NMH_COLORS } from "@/lib/constants";
 import type { SPCChartData } from "@/types";
 
@@ -48,8 +48,10 @@ export function KpiCard({
   const sparklineData = sparkline.map((v, i) => ({ index: i, value: v }));
 
   // Determine if being on-target is "good" based on desiredDirection
+  // Target is stored in display units; convert to raw for comparison with data values
+  const rawTarget = target !== null ? targetToRaw(target, unit, rateMultiplier) : null;
   const meetsTarget =
-    target !== null && (desiredDirection === "down" ? value <= target : value >= target);
+    rawTarget !== null && (desiredDirection === "down" ? value <= rawTarget : value >= rawTarget);
 
   const isChartMode = viewMode === "charts";
   const specialCauseCount = spcData?.points.filter((p) => p.specialCause).length ?? 0;
@@ -87,7 +89,7 @@ export function KpiCard({
           {/* Mini control chart — fills remaining card space */}
           <div className="flex-1 min-h-0">
             {spcData && spcData.points.length > 0 ? (
-              <MiniControlChart spcData={spcData} target={target} />
+              <MiniControlChart spcData={spcData} target={rawTarget} />
             ) : (
               <div className="flex items-center justify-center h-full text-xs text-muted-foreground">
                 Not enough data for SPC
@@ -116,7 +118,7 @@ export function KpiCard({
                   meetsTarget ? "bg-[#00b0ad]/10 text-[#00b0ad]" : "bg-[#e04726]/10 text-[#e04726]"
                 )}
               >
-                Target: {formatMetricValue(target, unit, rateMultiplier, rateSuffix)}
+                Target: {formatMetricValue(target, unit, null, rateSuffix)}
               </span>
             )}
           </div>
@@ -189,7 +191,7 @@ export function KpiCard({
                   meetsTarget ? "bg-[#00b0ad]/10 text-[#00b0ad]" : "bg-[#e04726]/10 text-[#e04726]"
                 )}
               >
-                Target: {formatMetricValue(target, unit, rateMultiplier, rateSuffix)}
+                Target: {formatMetricValue(target, unit, null, rateSuffix)}
                 <span className="sr-only">{meetsTarget ? " (on target)" : " (off target)"}</span>
               </span>
             )}

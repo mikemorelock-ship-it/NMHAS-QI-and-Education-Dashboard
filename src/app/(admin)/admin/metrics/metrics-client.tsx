@@ -1384,8 +1384,8 @@ function MetricFormFields({
           <Input
             id="target"
             name="target"
-            type="number"
-            step="any"
+            type="text"
+            inputMode="decimal"
             defaultValue={defaultValues?.target ?? ""}
             placeholder="Optional target"
           />

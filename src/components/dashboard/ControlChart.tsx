@@ -15,7 +15,7 @@ import {
 } from "recharts";
 import { NMH_COLORS } from "@/lib/constants";
 import type { SPCChartData, QIAnnotation } from "@/types";
-import { formatMetricValue } from "@/lib/utils";
+import { formatMetricValue, targetToRaw } from "@/lib/utils";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -199,7 +199,7 @@ export function ControlChart({
 
   // Determine Y-axis domain from data + limits
   const allValues = activePoints.flatMap((p) => [p.value, p.ucl, p.lcl]);
-  if (target != null) allValues.push(target);
+  if (target != null) allValues.push(targetToRaw(target, unit, rateMultiplier));
   const yMin = Math.min(...allValues);
   const yMax = Math.max(...allValues);
   const yPadding = (yMax - yMin) * 0.1 || 1;
@@ -336,7 +336,7 @@ export function ControlChart({
             {/* Target line (if set) — label rendered in legend below */}
             {target != null && (
               <ReferenceLine
-                y={target}
+                y={targetToRaw(target, unit, rateMultiplier)}
                 stroke={NMH_COLORS.yellow}
                 strokeDasharray="8 4"
                 strokeWidth={1}
@@ -409,7 +409,7 @@ export function ControlChart({
             <span>
               Target:{" "}
               <strong style={{ color: NMH_COLORS.yellow }}>
-                {formatMetricValue(target, unit, rateMultiplier, rateSuffix)}
+                {formatMetricValue(target, unit, null, rateSuffix)}
               </strong>
             </span>
           </span>
