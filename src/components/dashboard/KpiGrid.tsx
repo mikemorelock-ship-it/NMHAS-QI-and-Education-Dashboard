@@ -1,20 +1,29 @@
 "use client";
 
 import { KpiCard } from "@/components/dashboard/KpiCard";
+import { cn } from "@/lib/utils";
 import type { KpiData } from "@/types";
 
 interface KpiGridProps {
   kpis: KpiData[];
   divisionSlug?: string;
+  viewMode?: "metrics" | "charts";
 }
 
-export function KpiGrid({ kpis, divisionSlug }: KpiGridProps) {
+export function KpiGrid({ kpis, divisionSlug, viewMode = "metrics" }: KpiGridProps) {
   if (kpis.length === 0) {
     return <div className="text-center py-12 text-muted-foreground">No KPI data available.</div>;
   }
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 auto-rows-[1fr] gap-4">
+    <div
+      className={cn(
+        "grid auto-rows-[1fr] gap-4",
+        viewMode === "charts"
+          ? "grid-cols-1 md:grid-cols-2"
+          : "grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
+      )}
+    >
       {kpis.map((kpi) => {
         const effectiveSlug = kpi.divisionSlug || divisionSlug || "";
         const metricHref = kpi.metricSlug
@@ -36,6 +45,8 @@ export function KpiGrid({ kpis, divisionSlug }: KpiGridProps) {
             desiredDirection={kpi.desiredDirection}
             rateMultiplier={kpi.rateMultiplier}
             rateSuffix={kpi.rateSuffix}
+            viewMode={viewMode}
+            spcData={kpi.spcData}
           />
         );
       })}

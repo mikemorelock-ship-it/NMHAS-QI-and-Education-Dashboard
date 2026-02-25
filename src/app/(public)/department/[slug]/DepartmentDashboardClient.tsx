@@ -1,9 +1,12 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { KpiGrid } from "@/components/dashboard/KpiGrid";
 import { MetricChart } from "@/components/dashboard/MetricChart";
+import { ViewToggle, type ViewMode } from "@/components/dashboard/ViewToggle";
+import { MetricsList } from "@/components/dashboard/MetricsList";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CHART_COLORS } from "@/lib/constants";
@@ -22,12 +25,21 @@ export function DepartmentDashboardClient({
   metrics,
   divisions,
 }: DepartmentDashboardClientProps) {
+  const [viewMode, setViewMode] = useState<ViewMode>("cards");
+
   return (
     <div className="space-y-8">
       {/* KPI cards */}
       <section>
-        <h2 className="text-lg font-semibold mb-4">Key Performance Indicators</h2>
-        <KpiGrid kpis={kpis} />
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold">Key Performance Indicators</h2>
+          <ViewToggle value={viewMode} onChange={setViewMode} />
+        </div>
+        {viewMode === "list" ? (
+          <MetricsList kpis={kpis} divisionSlug="all" />
+        ) : (
+          <KpiGrid kpis={kpis} viewMode={viewMode === "charts" ? "charts" : "metrics"} />
+        )}
       </section>
 
       {/* Metric charts */}

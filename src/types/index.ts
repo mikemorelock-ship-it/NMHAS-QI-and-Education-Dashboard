@@ -15,6 +15,7 @@ export interface KpiData {
   desiredDirection?: "up" | "down";
   rateMultiplier?: number | null;
   rateSuffix?: string | null;
+  spcData?: SPCChartData | null;
 }
 
 export interface DivisionOverview {
