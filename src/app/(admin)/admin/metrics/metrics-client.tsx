@@ -288,23 +288,11 @@ export function MetricsClient({
         case "name":
           cmp = ma.name.localeCompare(mb.name);
           break;
-        case "associations": {
-          const aa = getAssociationSummary(ma.id) ?? "";
-          const ab = getAssociationSummary(mb.id) ?? "";
-          cmp = aa.localeCompare(ab);
-          break;
-        }
         case "unit":
           cmp = ma.unit.localeCompare(mb.unit);
           break;
         case "kpi":
           cmp = (ma.isKpi ? 1 : 0) - (mb.isKpi ? 1 : 0);
-          break;
-        case "target":
-          cmp = (ma.target ?? -Infinity) - (mb.target ?? -Infinity);
-          break;
-        case "entries":
-          cmp = ma.entriesCount - mb.entriesCount;
           break;
       }
 
@@ -397,21 +385,6 @@ export function MetricsClient({
   }
 
   // Helper to get association summary text for a metric
-  function getAssociationSummary(metricId: string): string | null {
-    const assoc = associationsMap[metricId];
-    if (!assoc) return null;
-    const parts: string[] = [];
-    for (const divId of assoc.divisionIds) {
-      const div = divisions.find((d) => d.id === divId);
-      if (div) parts.push(div.name);
-    }
-    for (const regId of assoc.regionIds) {
-      const reg = regions.find((r) => r.id === regId);
-      if (reg) parts.push(reg.name);
-    }
-    return parts.length > 0 ? parts.join(", ") : null;
-  }
-
   function handleSort(key: string) {
     if (sortKey === key) {
       if (sortDir === "asc") {
@@ -649,14 +622,6 @@ export function MetricsClient({
                     Name
                   </SortableTableHead>
                   <SortableTableHead
-                    sortKey="associations"
-                    activeSortKey={sortKey}
-                    sortDir={sortDir}
-                    onSort={handleSort}
-                  >
-                    Associations
-                  </SortableTableHead>
-                  <SortableTableHead
                     sortKey="unit"
                     activeSortKey={sortKey}
                     sortDir={sortDir}
@@ -672,24 +637,6 @@ export function MetricsClient({
                   >
                     KPI
                   </SortableTableHead>
-                  <SortableTableHead
-                    sortKey="target"
-                    activeSortKey={sortKey}
-                    sortDir={sortDir}
-                    onSort={handleSort}
-                    className="text-right"
-                  >
-                    Target
-                  </SortableTableHead>
-                  <SortableTableHead
-                    sortKey="entries"
-                    activeSortKey={sortKey}
-                    sortDir={sortDir}
-                    onSort={handleSort}
-                    className="text-center"
-                  >
-                    Entries
-                  </SortableTableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -703,7 +650,6 @@ export function MetricsClient({
                       childrenByParent={childrenByParent}
                       collapsedParents={collapsedParents}
                       toggleCollapsed={toggleCollapsed}
-                      getAssociationSummary={getAssociationSummary}
                       handleToggleActive={handleToggleActive}
                       openEditDialog={openEditDialog}
                       setDeleteTarget={setDeleteTarget}
@@ -889,7 +835,6 @@ function SortableMetricRow({
   childrenByParent,
   collapsedParents,
   toggleCollapsed,
-  getAssociationSummary,
   handleToggleActive,
   openEditDialog,
   setDeleteTarget,
@@ -901,7 +846,6 @@ function SortableMetricRow({
   childrenByParent: Map<string, MetricRow[]>;
   collapsedParents: Set<string>;
   toggleCollapsed: (id: string) => void;
-  getAssociationSummary: (id: string) => string | null;
   handleToggleActive: (m: MetricRow) => void;
   openEditDialog: (m: MetricRow) => void;
   setDeleteTarget: (m: MetricRow) => void;
@@ -921,8 +865,6 @@ function SortableMetricRow({
   const hasChildren = childrenByParent.has(metric.id);
   const isCollapsed = collapsedParents.has(metric.id);
   const childCount = childrenByParent.get(metric.id)?.length ?? 0;
-  const assocSummary = getAssociationSummary(metric.id);
-
   return (
     <TableRow
       ref={setNodeRef}
@@ -996,18 +938,6 @@ function SortableMetricRow({
         </div>
       </TableCell>
       <TableCell>
-        {assocSummary ? (
-          <span
-            className="text-xs text-muted-foreground line-clamp-1 max-w-[200px]"
-            title={assocSummary}
-          >
-            {assocSummary}
-          </span>
-        ) : (
-          <span className="text-xs text-muted-foreground/40">None</span>
-        )}
-      </TableCell>
-      <TableCell>
         <div className="flex items-center gap-1">
           <Badge variant="outline" className="capitalize">
             {metric.unit}
@@ -1022,10 +952,6 @@ function SortableMetricRow({
         </div>
       </TableCell>
       <TableCell>{metric.isKpi && <Badge className="bg-nmh-teal text-white">KPI</Badge>}</TableCell>
-      <TableCell className="text-right font-mono">
-        {metric.target !== null ? metric.target : <span className="text-muted-foreground">--</span>}
-      </TableCell>
-      <TableCell className="text-center">{metric.entriesCount}</TableCell>
       <TableCell className="text-right">
         <div className="flex items-center justify-end gap-1">
           <Button
