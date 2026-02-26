@@ -1,7 +1,7 @@
 "use client";
 
 import { Fragment, useMemo } from "react";
-import { formatMetricValue } from "@/lib/utils";
+import { formatMetricValue, targetToRaw } from "@/lib/utils";
 import type { ScorecardData, ScorecardMetricRow } from "@/types";
 
 interface ScorecardTableProps {
@@ -121,74 +121,86 @@ export function ScorecardTable({ scorecard }: ScorecardTableProps) {
                           ? formatMetricValue(
                               metric.target,
                               metric.unit,
-                              metric.rateMultiplier,
+                              null,
                               metric.rateSuffix
                             )
                           : "--"}
                       </td>
 
                       {/* YTD */}
-                      <td
-                        className={
-                          "px-3 py-2.5 text-right font-mono font-semibold whitespace-nowrap border-r border-border " +
-                          getTargetColorClass(metric.actualYtd, metric.target)
-                        }
-                      >
-                        {metric.actualYtd !== null ? (
-                          <>
-                            {formatMetricValue(
-                              metric.actualYtd,
-                              metric.unit,
-                              metric.rateMultiplier,
-                              metric.rateSuffix
-                            )}
-                            {metric.target !== null && (
-                              <span className="sr-only">
-                                {metric.actualYtd >= metric.target
-                                  ? "(on target)"
-                                  : "(below target)"}
-                              </span>
-                            )}
-                          </>
-                        ) : (
-                          "--"
-                        )}
-                      </td>
-
-                      {/* Monthly values */}
-                      {months.map((month) => {
-                        const idx = monthIndex(month);
-                        const mv = metric.monthlyValues[idx];
-                        const value = mv?.value ?? null;
-
+                      {(() => {
+                        const rawTarget =
+                          metric.target !== null
+                            ? targetToRaw(metric.target, metric.unit, metric.rateMultiplier)
+                            : null;
                         return (
-                          <td
-                            key={month}
-                            className={
-                              "px-3 py-2.5 text-right font-mono whitespace-nowrap " +
-                              getTargetColorClass(value, metric.target)
-                            }
-                          >
-                            {value !== null ? (
-                              <>
-                                {formatMetricValue(
-                                  value,
-                                  metric.unit,
-                                  metric.rateMultiplier,
-                                  metric.rateSuffix
-                                )}
-                                {metric.target !== null && (
-                                  <span className="sr-only">
-                                    {value >= metric.target ? "(on target)" : "(below target)"}
-                                  </span>
-                                )}
-                              </>
-                            ) : (
-                              <span className="text-muted-foreground/40">--</span>
-                            )}
-                          </td>
+                          <>
+                            <td
+                              className={
+                                "px-3 py-2.5 text-right font-mono font-semibold whitespace-nowrap border-r border-border " +
+                                getTargetColorClass(metric.actualYtd, rawTarget)
+                              }
+                            >
+                              {metric.actualYtd !== null ? (
+                                <>
+                                  {formatMetricValue(
+                                    metric.actualYtd,
+                                    metric.unit,
+                                    metric.rateMultiplier,
+                                    metric.rateSuffix
+                                  )}
+                                  {rawTarget !== null && (
+                                    <span className="sr-only">
+                                      {metric.actualYtd >= rawTarget
+                                        ? "(on target)"
+                                        : "(below target)"}
+                                    </span>
+                                  )}
+                                </>
+                              ) : (
+                                "--"
+                              )}
+                            </td>
+
+                            {/* Monthly values */}
+                            {months.map((month) => {
+                              const idx = monthIndex(month);
+                              const mv = metric.monthlyValues[idx];
+                              const value = mv?.value ?? null;
+
+                              return (
+                                <td
+                                  key={month}
+                                  className={
+                                    "px-3 py-2.5 text-right font-mono whitespace-nowrap " +
+                                    getTargetColorClass(value, rawTarget)
+                                  }
+                                >
+                                  {value !== null ? (
+                                    <>
+                                      {formatMetricValue(
+                                        value,
+                                        metric.unit,
+                                        metric.rateMultiplier,
+                                        metric.rateSuffix
+                                      )}
+                                      {rawTarget !== null && (
+                                        <span className="sr-only">
+                                          {value >= rawTarget
+                                            ? "(on target)"
+                                            : "(below target)"}
+                                        </span>
+                                      )}
+                                    </>
+                                  ) : (
+                                    <span className="text-muted-foreground/40">--</span>
+                                  )}
+                                </td>
+                              );
+                            })}
+                          </>
                         );
-                      })}
+                      })()}
                     </tr>
                   );
                 })}

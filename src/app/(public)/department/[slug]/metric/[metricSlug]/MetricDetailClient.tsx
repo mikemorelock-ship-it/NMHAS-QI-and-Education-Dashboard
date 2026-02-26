@@ -46,7 +46,7 @@ import { DateRangeFilter } from "@/components/dashboard/DateRangeFilter";
 import { MetricHierarchy } from "@/components/dashboard/MetricHierarchy";
 import { OrgHierarchy } from "@/components/dashboard/OrgHierarchy";
 import { ControlChart } from "@/components/dashboard/ControlChart";
-import { formatMetricValue, toUTCDate, cn } from "@/lib/utils";
+import { formatMetricValue, targetToRaw, toUTCDate, cn } from "@/lib/utils";
 import { NMH_COLORS, CHART_COLORS } from "@/lib/constants";
 import type { MetricDetailData, ChartDataPoint, QIAnnotation, ChildMetricSummary } from "@/types";
 import { QICoachPanel } from "@/components/qi-coach/QICoachPanel";
@@ -229,10 +229,13 @@ export function MetricDetailClient({
     return "flat";
   }, [data.stats.trend]);
 
-  const atOrAboveTarget = data.target !== null && data.stats.current >= data.target;
-
   const rateMultiplier = data.rateMultiplier;
   const rateSuffix = data.rateSuffix;
+
+  // Target is stored in display units; convert to raw for comparison with data values
+  const rawTarget =
+    data.target !== null ? targetToRaw(data.target, data.unit, rateMultiplier) : null;
+  const atOrAboveTarget = rawTarget !== null && data.stats.current >= rawTarget;
 
   // Unified QI annotations for chart overlays (includes manual annotations + PDSA cycles)
   const qiAnnotations: QIAnnotation[] = useMemo(() => {
@@ -281,12 +284,12 @@ export function MetricDetailClient({
       {/* Target reference line */}
       {data.target !== null && (
         <ReferenceLine
-          y={data.target}
+          y={targetToRaw(data.target, data.unit, rateMultiplier)}
           stroke={NMH_COLORS.orange}
           strokeDasharray="6 4"
           strokeWidth={2}
           label={{
-            value: `Target: ${formatMetricValue(data.target, data.unit, rateMultiplier, rateSuffix)}`,
+            value: `Target: ${formatMetricValue(data.target, data.unit, null, rateSuffix)}`,
             position: "insideTopRight",
             fill: NMH_COLORS.orange,
             fontSize: 11,
@@ -853,7 +856,7 @@ export function MetricDetailClient({
                 <span className="capitalize">Chart: {data.chartType}</span>
                 {data.target !== null && (
                   <span>
-                    Target: {formatMetricValue(data.target, data.unit, rateMultiplier, rateSuffix)}
+                    Target: {formatMetricValue(data.target, data.unit, null, rateSuffix)}
                   </span>
                 )}
               </div>

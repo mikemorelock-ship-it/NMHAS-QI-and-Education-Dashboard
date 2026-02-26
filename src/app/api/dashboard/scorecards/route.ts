@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { toUTCDate } from "@/lib/utils";
+import { toUTCDate, targetToRaw } from "@/lib/utils";
 import {
   aggregateValues,
   aggregateValuesWeighted,
@@ -330,8 +330,13 @@ export async function GET(request: NextRequest) {
       }
 
       const targetYtd = metric.target;
+      // Target is stored in display units; convert to raw for comparison with raw data values
+      const rawTarget =
+        metric.target !== null
+          ? targetToRaw(metric.target, metric.unit, metric.rateMultiplier)
+          : null;
       const meetsTarget =
-        metric.target !== null && actualYtd !== null ? actualYtd >= metric.target : null;
+        rawTarget !== null && actualYtd !== null ? actualYtd >= rawTarget : null;
 
       return {
         metricId: metric.id,
