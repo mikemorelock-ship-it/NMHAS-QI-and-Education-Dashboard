@@ -982,3 +982,67 @@ model CampaignShareLink {
   @@index([token])
   @@index([campaignId])
 }
+
+// ---------------------------------------------------------------------------
+// Ecosystem Map — interactive organizational relationship visualization
+// ---------------------------------------------------------------------------
+
+model EcosystemMap {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  description String?
+  createdById String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  nodes EcosystemNode[]
+  edges EcosystemEdge[]
+
+  @@index([createdById])
+}
+
+model EcosystemNode {
+  id               String   @id @default(cuid())
+  mapId            String
+  nodeType         String   // "org_unit" | "individual" | "external" | "process"
+  label            String
+  description      String?
+  positionX        Float    @default(0)
+  positionY        Float    @default(0)
+  linkedEntityType String?  // "division" | "region" | "user" | null
+  linkedEntityId   String?
+  color            String?
+  width            Float?
+  height           Float?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  map         EcosystemMap    @relation(fields: [mapId], references: [id], onDelete: Cascade)
+  sourceEdges EcosystemEdge[] @relation("EdgeSource")
+  targetEdges EcosystemEdge[] @relation("EdgeTarget")
+
+  @@index([mapId])
+  @@index([linkedEntityType, linkedEntityId])
+}
+
+model EcosystemEdge {
+  id               String   @id @default(cuid())
+  mapId            String
+  sourceNodeId     String
+  targetNodeId     String
+  relationshipType String   // "reporting" | "collaboration" | "process_flow" | "influence"
+  label            String?
+  description      String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  map        EcosystemMap  @relation(fields: [mapId], references: [id], onDelete: Cascade)
+  sourceNode EcosystemNode @relation("EdgeSource", fields: [sourceNodeId], references: [id], onDelete: Cascade)
+  targetNode EcosystemNode @relation("EdgeTarget", fields: [targetNodeId], references: [id], onDelete: Cascade)
+
+  @@index([mapId])
+  @@index([sourceNodeId])
+  @@index([targetNodeId])
+}

@@ -17,7 +17,6 @@ import {
   BarChart3,
   ClipboardList,
   PenLine,
-  Users,
   LogOut,
   Eye,
   ArrowLeft,
@@ -37,6 +36,7 @@ import {
   FileText,
   Sparkles,
   FolderOpen,
+  Network,
   type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -166,6 +166,12 @@ const navEntries: NavEntry[] = [
     label: "QI Resources",
     icon: FolderOpen,
     permission: "manage_departments",
+  },
+  {
+    href: "/admin/ecosystem-map",
+    label: "Ecosystem Map",
+    icon: Network,
+    permission: "manage_ecosystem_maps",
   },
   { href: "/admin/users", label: "Users", icon: Shield, permission: "manage_users" },
   {
