@@ -384,7 +384,6 @@ export function MetricsClient({
     setAddOpen(true);
   }
 
-  // Helper to get association summary text for a metric
   function handleSort(key: string) {
     if (sortKey === key) {
       if (sortDir === "asc") {
