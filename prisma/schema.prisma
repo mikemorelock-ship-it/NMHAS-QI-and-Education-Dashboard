@@ -318,6 +318,8 @@ model Campaign {
   campaignDivisions CampaignDivision[]
   campaignRegions   CampaignRegion[]
   shareLinks        CampaignShareLink[]
+  rootCauseAnalyses RootCauseAnalysis[]
+  justCultureAssessments JustCultureAssessment[]
 
   @@index([ownerId])
   @@index([status])
@@ -556,6 +558,10 @@ model User {
   // Division change requests
   divisionChangeRequests         DivisionChangeRequest[] @relation("DivisionChangeRequester")
   divisionChangeRequestsReviewed DivisionChangeRequest[] @relation("DivisionChangeReviewer")
+
+  // QI Analysis tools
+  rootCauseAnalyses              RootCauseAnalysis[]     @relation("RcaCreator")
+  justCultureAssessments         JustCultureAssessment[] @relation("JcaCreator")
 
   @@index([divisionId])
   @@index([status])
@@ -981,4 +987,94 @@ model CampaignShareLink {
 
   @@index([token])
   @@index([campaignId])
+}
+
+// ---------------------------------------------------------------------------
+// Root Cause Analysis — guided RCA investigations
+// ---------------------------------------------------------------------------
+
+model RootCauseAnalysis {
+  id             String   @id @default(cuid())
+  title          String
+  incidentDate   DateTime?
+  description    String?
+  method         String   @default("fishbone") // "fishbone" | "five_whys" | "combined"
+  status         String   @default("draft")    // "draft" | "in_progress" | "completed" | "archived"
+  severity       String?                        // "low" | "medium" | "high" | "critical"
+
+  // Fishbone categories (JSON arrays of contributing factors)
+  people         String?  // JSON: string[]
+  process        String?  // JSON: string[]
+  equipment      String?  // JSON: string[]
+  environment    String?  // JSON: string[]
+  management     String?  // JSON: string[]
+  materials      String?  // JSON: string[]
+
+  // 5 Whys chain (JSON array of {question, answer} pairs)
+  whyChain       String?  // JSON: {question: string, answer: string}[]
+
+  // Root cause findings
+  rootCauses     String?  // JSON: string[]
+  contributingFactors String? // JSON: string[]
+
+  // Action plan
+  correctiveActions String? // JSON: {action: string, owner: string, dueDate: string, status: string}[]
+  preventiveActions String? // JSON: {action: string, owner: string, dueDate: string, status: string}[]
+
+  // Summary & recommendations
+  summary        String?
+  recommendations String?
+  lessonsLearned String?
+
+  // Relationships
+  campaignId     String?
+  createdById    String?
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  campaign       Campaign? @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+  createdBy      User?     @relation("RcaCreator", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([status])
+  @@index([campaignId])
+  @@index([createdById])
+}
+
+// ---------------------------------------------------------------------------
+// Just Culture Assessment — guided algorithm evaluation
+// ---------------------------------------------------------------------------
+
+model JustCultureAssessment {
+  id              String   @id @default(cuid())
+  title           String
+  incidentDate    DateTime?
+  description     String?
+  status          String   @default("draft") // "draft" | "in_progress" | "completed"
+
+  // Algorithm answers (JSON of step responses)
+  responses       String?  // JSON: {stepId: string, question: string, answer: string}[]
+
+  // Classification result
+  behaviorType    String?  // "human_error" | "at_risk" | "reckless"
+  recommendation  String?  // "console" | "coach" | "discipline"
+
+  // Additional context
+  involvedPerson  String?
+  involvedRole    String?
+  supervisorNotes String?
+
+  // Relationships
+  campaignId      String?
+  createdById     String?
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  campaign        Campaign? @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+  createdBy       User?     @relation("JcaCreator", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([status])
+  @@index([campaignId])
+  @@index([createdById])
 }
