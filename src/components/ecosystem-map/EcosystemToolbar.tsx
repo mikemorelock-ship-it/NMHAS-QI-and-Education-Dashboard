@@ -2,12 +2,7 @@
 
 import { Building2, User, Globe, Workflow, Maximize, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { NODE_TYPES, type NodeType } from "./constants";
 
 const nodeButtons: { type: NodeType; icon: typeof Building2 }[] = [
@@ -23,11 +18,7 @@ interface EcosystemToolbarProps {
   onImport: () => void;
 }
 
-export function EcosystemToolbar({
-  onAddNode,
-  onFitView,
-  onImport,
-}: EcosystemToolbarProps) {
+export function EcosystemToolbar({ onAddNode, onFitView, onImport }: EcosystemToolbarProps) {
   return (
     <TooltipProvider delayDuration={300}>
       <div className="absolute top-3 left-3 z-10 flex items-center gap-1 rounded-lg border bg-white/95 backdrop-blur-sm p-1.5 shadow-md">
@@ -48,9 +39,7 @@ export function EcosystemToolbar({
               </TooltipTrigger>
               <TooltipContent side="bottom">
                 <p className="font-medium">{config.label}</p>
-                <p className="text-xs text-muted-foreground">
-                  {config.description}
-                </p>
+                <p className="text-xs text-muted-foreground">{config.description}</p>
               </TooltipContent>
             </Tooltip>
           );
@@ -60,12 +49,7 @@ export function EcosystemToolbar({
 
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-8 w-8 p-0"
-              onClick={onFitView}
-            >
+            <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={onFitView}>
               <Maximize className="h-4 w-4" />
               <span className="sr-only">Fit View</span>
             </Button>
@@ -75,12 +59,7 @@ export function EcosystemToolbar({
 
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-8 w-8 p-0"
-              onClick={onImport}
-            >
+            <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={onImport}>
               <Download className="h-4 w-4" />
               <span className="sr-only">Import Org Data</span>
             </Button>

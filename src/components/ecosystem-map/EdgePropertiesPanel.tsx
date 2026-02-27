@@ -33,7 +33,7 @@ interface EdgePropertiesPanelProps {
       relationshipType?: RelationshipType;
       label?: string;
       description?: string;
-    },
+    }
   ) => void;
   onDelete: (id: string) => void;
   onClose: () => void;
@@ -46,9 +46,7 @@ export function EdgePropertiesPanel({
   onDelete,
   onClose,
 }: EdgePropertiesPanelProps) {
-  const [relType, setRelType] = useState<RelationshipType>(
-    edge.relationshipType,
-  );
+  const [relType, setRelType] = useState<RelationshipType>(edge.relationshipType);
   const [label, setLabel] = useState(edge.label ?? "");
   const [description, setDescription] = useState(edge.description ?? "");
 
@@ -62,8 +60,7 @@ export function EdgePropertiesPanel({
     } = {};
     if (relType !== edge.relationshipType) updates.relationshipType = relType;
     if (label !== (edge.label ?? "")) updates.label = label || undefined;
-    if (description !== (edge.description ?? ""))
-      updates.description = description || undefined;
+    if (description !== (edge.description ?? "")) updates.description = description || undefined;
     if (Object.keys(updates).length > 0) {
       onUpdate(edge.id, updates);
     }
@@ -81,13 +78,9 @@ export function EdgePropertiesPanel({
       <div className="p-4 space-y-4">
         {edge.sourceName && edge.targetName && (
           <p className="text-xs text-muted-foreground">
-            <span className="font-medium text-foreground">
-              {edge.sourceName}
-            </span>
+            <span className="font-medium text-foreground">{edge.sourceName}</span>
             {" \u2192 "}
-            <span className="font-medium text-foreground">
-              {edge.targetName}
-            </span>
+            <span className="font-medium text-foreground">{edge.targetName}</span>
           </p>
         )}
 
@@ -115,21 +108,19 @@ export function EdgePropertiesPanel({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {(Object.keys(RELATIONSHIP_TYPES) as RelationshipType[]).map(
-                (t) => (
-                  <SelectItem key={t} value={t}>
-                    <div className="flex items-center gap-2">
-                      <div
-                        className="h-2.5 w-6 rounded-sm"
-                        style={{
-                          backgroundColor: RELATIONSHIP_TYPES[t].color,
-                        }}
-                      />
-                      {RELATIONSHIP_TYPES[t].label}
-                    </div>
-                  </SelectItem>
-                ),
-              )}
+              {(Object.keys(RELATIONSHIP_TYPES) as RelationshipType[]).map((t) => (
+                <SelectItem key={t} value={t}>
+                  <div className="flex items-center gap-2">
+                    <div
+                      className="h-2.5 w-6 rounded-sm"
+                      style={{
+                        backgroundColor: RELATIONSHIP_TYPES[t].color,
+                      }}
+                    />
+                    {RELATIONSHIP_TYPES[t].label}
+                  </div>
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
@@ -157,12 +148,7 @@ export function EdgePropertiesPanel({
           />
         </div>
 
-        <Button
-          variant="outline"
-          size="sm"
-          className="w-full"
-          onClick={handleSave}
-        >
+        <Button variant="outline" size="sm" className="w-full" onClick={handleSave}>
           Save Changes
         </Button>
 

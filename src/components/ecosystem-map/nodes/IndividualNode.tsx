@@ -14,16 +14,11 @@ function IndividualNodeComponent({ data, selected }: NodeProps) {
         style={{
           backgroundColor: config.bgColor,
           borderColor: selected ? config.color : config.borderColor,
-          boxShadow: selected
-            ? `0 0 0 2px ${config.color}40`
-            : "0 1px 3px rgba(0,0,0,0.1)",
+          boxShadow: selected ? `0 0 0 2px ${config.color}40` : "0 1px 3px rgba(0,0,0,0.1)",
         }}
       >
         <div className="flex items-center gap-2 justify-center">
-          <User
-            className="h-4 w-4 shrink-0"
-            style={{ color: config.color }}
-          />
+          <User className="h-4 w-4 shrink-0" style={{ color: config.color }} />
           <span
             className="text-sm font-semibold truncate max-w-[120px]"
             style={{ color: config.color }}

@@ -118,12 +118,7 @@ export function ScorecardTable({ scorecard }: ScorecardTableProps) {
                       {/* Target */}
                       <td className="px-3 py-2.5 text-right font-mono text-muted-foreground whitespace-nowrap">
                         {metric.target !== null
-                          ? formatMetricValue(
-                              metric.target,
-                              metric.unit,
-                              null,
-                              metric.rateSuffix
-                            )
+                          ? formatMetricValue(metric.target, metric.unit, null, metric.rateSuffix)
                           : "--"}
                       </td>
 
@@ -186,9 +181,7 @@ export function ScorecardTable({ scorecard }: ScorecardTableProps) {
                                       )}
                                       {rawTarget !== null && (
                                         <span className="sr-only">
-                                          {value >= rawTarget
-                                            ? "(on target)"
-                                            : "(below target)"}
+                                          {value >= rawTarget ? "(on target)" : "(below target)"}
                                         </span>
                                       )}
                                     </>

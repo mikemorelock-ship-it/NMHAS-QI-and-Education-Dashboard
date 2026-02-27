@@ -42,12 +42,7 @@ const EdgeSchema = z.object({
   mapId: z.string().min(1),
   sourceNodeId: z.string().min(1),
   targetNodeId: z.string().min(1),
-  relationshipType: z.enum([
-    "reporting",
-    "collaboration",
-    "process_flow",
-    "influence",
-  ]),
+  relationshipType: z.enum(["reporting", "collaboration", "process_flow", "influence"]),
   label: z.string().max(200).optional().nullable(),
   description: z.string().max(2000).optional().nullable(),
 });
@@ -89,7 +84,7 @@ export async function getEcosystemMap(id: string) {
 }
 
 export async function createEcosystemMap(
-  data: z.infer<typeof MapSchema>,
+  data: z.infer<typeof MapSchema>
 ): Promise<ActionResult<{ id: string }>> {
   let session;
   try {
@@ -113,9 +108,7 @@ export async function createEcosystemMap(
     const existing = await prisma.ecosystemMap.findUnique({
       where: { slug },
     });
-    const finalSlug = existing
-      ? `${slug}-${Date.now().toString(36)}`
-      : slug;
+    const finalSlug = existing ? `${slug}-${Date.now().toString(36)}` : slug;
 
     const map = await prisma.ecosystemMap.create({
       data: {
@@ -147,7 +140,7 @@ export async function createEcosystemMap(
 
 export async function updateEcosystemMap(
   id: string,
-  data: z.infer<typeof MapSchema>,
+  data: z.infer<typeof MapSchema>
 ): Promise<ActionResult> {
   let session;
   try {
@@ -227,7 +220,7 @@ export async function deleteEcosystemMap(id: string): Promise<ActionResult> {
 // ---------------------------------------------------------------------------
 
 export async function createEcosystemNode(
-  data: z.infer<typeof NodeSchema>,
+  data: z.infer<typeof NodeSchema>
 ): Promise<ActionResult<{ id: string }>> {
   try {
     await requireAdmin("manage_ecosystem_maps");
@@ -269,7 +262,7 @@ export async function createEcosystemNode(
 
 export async function updateEcosystemNode(
   id: string,
-  data: Partial<z.infer<typeof NodeSchema>>,
+  data: Partial<z.infer<typeof NodeSchema>>
 ): Promise<ActionResult> {
   try {
     await requireAdmin("manage_ecosystem_maps");
@@ -302,7 +295,7 @@ export async function updateEcosystemNode(
 }
 
 export async function updateNodePositions(
-  updates: { id: string; positionX: number; positionY: number }[],
+  updates: { id: string; positionX: number; positionY: number }[]
 ): Promise<ActionResult> {
   try {
     await requireAdmin("manage_ecosystem_maps");
@@ -316,16 +309,15 @@ export async function updateNodePositions(
         prisma.ecosystemNode.update({
           where: { id: u.id },
           data: { positionX: u.positionX, positionY: u.positionY },
-        }),
-      ),
+        })
+      )
     );
 
     return { success: true };
   } catch (err) {
     return {
       success: false,
-      error:
-        err instanceof Error ? err.message : "Failed to update positions",
+      error: err instanceof Error ? err.message : "Failed to update positions",
     };
   }
 }
@@ -353,7 +345,7 @@ export async function deleteEcosystemNode(id: string): Promise<ActionResult> {
 // ---------------------------------------------------------------------------
 
 export async function createEcosystemEdge(
-  data: z.infer<typeof EdgeSchema>,
+  data: z.infer<typeof EdgeSchema>
 ): Promise<ActionResult<{ id: string }>> {
   try {
     await requireAdmin("manage_ecosystem_maps");
@@ -392,7 +384,7 @@ export async function createEcosystemEdge(
 
 export async function updateEcosystemEdge(
   id: string,
-  data: Partial<z.infer<typeof EdgeSchema>>,
+  data: Partial<z.infer<typeof EdgeSchema>>
 ): Promise<ActionResult> {
   try {
     await requireAdmin("manage_ecosystem_maps");
@@ -451,7 +443,7 @@ export async function importOrgData(
     divisions?: boolean;
     departments?: boolean;
     users?: boolean;
-  },
+  }
 ): Promise<ActionResult<{ nodeCount: number }>> {
   try {
     await requireAdmin("manage_ecosystem_maps");
@@ -580,8 +572,7 @@ export async function importOrgData(
   } catch (err) {
     return {
       success: false,
-      error:
-        err instanceof Error ? err.message : "Failed to import org data",
+      error: err instanceof Error ? err.message : "Failed to import org data",
     };
   }
 }

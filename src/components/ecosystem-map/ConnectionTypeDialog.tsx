@@ -1,12 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { RELATIONSHIP_TYPES, type RelationshipType } from "./constants";
 
 interface ConnectionTypeDialogProps {
@@ -50,15 +45,10 @@ export function ConnectionTypeDialog({
                   onOpenChange(false);
                 }}
               >
-                <div
-                  className="h-1 w-8 rounded-full"
-                  style={{ backgroundColor: config.color }}
-                />
+                <div className="h-1 w-8 rounded-full" style={{ backgroundColor: config.color }} />
                 <div className="text-left">
                   <p className="font-medium text-sm">{config.label}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {config.description}
-                  </p>
+                  <p className="text-xs text-muted-foreground">{config.description}</p>
                 </div>
               </Button>
             );

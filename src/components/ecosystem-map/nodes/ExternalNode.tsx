@@ -14,19 +14,13 @@ function ExternalNodeComponent({ data, selected }: NodeProps) {
         style={{
           backgroundColor: config.bgColor,
           borderColor: selected ? config.color : config.borderColor,
-          boxShadow: selected
-            ? `0 0 0 2px ${config.color}40`
-            : "0 1px 3px rgba(0,0,0,0.1)",
-          clipPath:
-            "polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%)",
+          boxShadow: selected ? `0 0 0 2px ${config.color}40` : "0 1px 3px rgba(0,0,0,0.1)",
+          clipPath: "polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%)",
           padding: "16px 28px",
         }}
       >
         <div className="flex items-center gap-2 justify-center">
-          <Globe
-            className="h-4 w-4 shrink-0"
-            style={{ color: config.color }}
-          />
+          <Globe className="h-4 w-4 shrink-0" style={{ color: config.color }} />
           <span
             className="text-xs font-semibold truncate max-w-[100px]"
             style={{ color: config.color }}

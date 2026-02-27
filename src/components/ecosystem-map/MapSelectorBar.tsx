@@ -96,10 +96,7 @@ export function MapSelectorBar({
           <Map className="h-4 w-4" />
           Map:
         </div>
-        <Select
-          value={selectedMapId ?? ""}
-          onValueChange={onSelectMap}
-        >
+        <Select value={selectedMapId ?? ""} onValueChange={onSelectMap}>
           <SelectTrigger className="w-[260px]">
             <SelectValue placeholder="Select a map..." />
           </SelectTrigger>
@@ -107,9 +104,7 @@ export function MapSelectorBar({
             {maps.map((m) => (
               <SelectItem key={m.id} value={m.id}>
                 {m.name}
-                <span className="ml-2 text-xs text-muted-foreground">
-                  ({m._count.nodes} nodes)
-                </span>
+                <span className="ml-2 text-xs text-muted-foreground">({m._count.nodes} nodes)</span>
               </SelectItem>
             ))}
           </SelectContent>
@@ -146,8 +141,7 @@ export function MapSelectorBar({
 
         {selectedMap && (
           <span className="ml-auto text-xs text-muted-foreground">
-            {selectedMap._count.nodes} nodes, {selectedMap._count.edges}{" "}
-            connections
+            {selectedMap._count.nodes} nodes, {selectedMap._count.edges} connections
           </span>
         )}
       </div>
@@ -180,17 +174,10 @@ export function MapSelectorBar({
             </div>
           </div>
           <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setShowCreate(false)}
-              disabled={loading}
-            >
+            <Button variant="outline" onClick={() => setShowCreate(false)} disabled={loading}>
               Cancel
             </Button>
-            <Button
-              onClick={handleCreate}
-              disabled={!name.trim() || loading}
-            >
+            <Button onClick={handleCreate} disabled={!name.trim() || loading}>
               {loading ? "Creating..." : "Create Map"}
             </Button>
           </DialogFooter>
@@ -206,11 +193,7 @@ export function MapSelectorBar({
           <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="edit-name">Name</Label>
-              <Input
-                id="edit-name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-              />
+              <Input id="edit-name" value={name} onChange={(e) => setName(e.target.value)} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="edit-desc">Description</Label>
@@ -223,17 +206,10 @@ export function MapSelectorBar({
             </div>
           </div>
           <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setShowEdit(false)}
-              disabled={loading}
-            >
+            <Button variant="outline" onClick={() => setShowEdit(false)} disabled={loading}>
               Cancel
             </Button>
-            <Button
-              onClick={handleEdit}
-              disabled={!name.trim() || loading}
-            >
+            <Button onClick={handleEdit} disabled={!name.trim() || loading}>
               {loading ? "Saving..." : "Save"}
             </Button>
           </DialogFooter>
@@ -247,23 +223,14 @@ export function MapSelectorBar({
             <DialogTitle>Delete Map</DialogTitle>
           </DialogHeader>
           <p className="text-sm text-muted-foreground">
-            Are you sure you want to delete &quot;{selectedMap?.name}&quot;?
-            This will permanently remove all nodes and connections. This action
-            cannot be undone.
+            Are you sure you want to delete &quot;{selectedMap?.name}&quot;? This will permanently
+            remove all nodes and connections. This action cannot be undone.
           </p>
           <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setShowDelete(false)}
-              disabled={loading}
-            >
+            <Button variant="outline" onClick={() => setShowDelete(false)} disabled={loading}>
               Cancel
             </Button>
-            <Button
-              variant="destructive"
-              onClick={handleDelete}
-              disabled={loading}
-            >
+            <Button variant="destructive" onClick={handleDelete} disabled={loading}>
               {loading ? "Deleting..." : "Delete"}
             </Button>
           </DialogFooter>

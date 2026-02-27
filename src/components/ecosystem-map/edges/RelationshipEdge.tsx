@@ -1,10 +1,5 @@
 import { memo } from "react";
-import {
-  BaseEdge,
-  EdgeLabelRenderer,
-  getBezierPath,
-  type EdgeProps,
-} from "@xyflow/react";
+import { BaseEdge, EdgeLabelRenderer, getBezierPath, type EdgeProps } from "@xyflow/react";
 import { RELATIONSHIP_TYPES, type RelationshipType } from "../constants";
 
 function RelationshipEdgeComponent({

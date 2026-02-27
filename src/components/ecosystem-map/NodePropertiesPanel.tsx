@@ -29,7 +29,7 @@ interface NodePropertiesPanelProps {
   node: NodeData;
   onUpdate: (
     id: string,
-    data: { label?: string; description?: string; nodeType?: NodeType },
+    data: { label?: string; description?: string; nodeType?: NodeType }
   ) => void;
   onDelete: (id: string) => void;
   onClose: () => void;
@@ -50,11 +50,9 @@ export function NodePropertiesPanel({
   const isLinked = !!node.linkedEntityType;
 
   const handleSave = () => {
-    const updates: { label?: string; description?: string; nodeType?: NodeType } =
-      {};
+    const updates: { label?: string; description?: string; nodeType?: NodeType } = {};
     if (label !== node.label) updates.label = label;
-    if (description !== (node.description ?? ""))
-      updates.description = description || undefined;
+    if (description !== (node.description ?? "")) updates.description = description || undefined;
     if (nodeType !== node.nodeType) updates.nodeType = nodeType;
     if (Object.keys(updates).length > 0) {
       onUpdate(node.id, updates);
@@ -72,10 +70,7 @@ export function NodePropertiesPanel({
 
       <div className="p-4 space-y-4">
         <div className="flex items-center gap-2">
-          <div
-            className="h-3 w-3 rounded-full"
-            style={{ backgroundColor: config.color }}
-          />
+          <div className="h-3 w-3 rounded-full" style={{ backgroundColor: config.color }} />
           <Badge variant="outline" className="text-xs">
             {config.label}
           </Badge>
@@ -88,10 +83,7 @@ export function NodePropertiesPanel({
 
         <div className="space-y-2">
           <Label htmlFor="node-type">Type</Label>
-          <Select
-            value={nodeType}
-            onValueChange={(v) => setNodeType(v as NodeType)}
-          >
+          <Select value={nodeType} onValueChange={(v) => setNodeType(v as NodeType)}>
             <SelectTrigger id="node-type">
               <SelectValue />
             </SelectTrigger>
@@ -134,12 +126,7 @@ export function NodePropertiesPanel({
           />
         </div>
 
-        <Button
-          variant="outline"
-          size="sm"
-          className="w-full"
-          onClick={handleSave}
-        >
+        <Button variant="outline" size="sm" className="w-full" onClick={handleSave}>
           Save Changes
         </Button>
 

@@ -335,8 +335,7 @@ export async function GET(request: NextRequest) {
         metric.target !== null
           ? targetToRaw(metric.target, metric.unit, metric.rateMultiplier)
           : null;
-      const meetsTarget =
-        rawTarget !== null && actualYtd !== null ? actualYtd >= rawTarget : null;
+      const meetsTarget = rawTarget !== null && actualYtd !== null ? actualYtd >= rawTarget : null;
 
       return {
         metricId: metric.id,

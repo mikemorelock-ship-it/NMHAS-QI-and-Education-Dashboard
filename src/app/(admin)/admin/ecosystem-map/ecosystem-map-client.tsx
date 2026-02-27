@@ -23,10 +23,7 @@ import "@xyflow/react/dist/style.css";
 import { nodeTypes } from "@/components/ecosystem-map/nodes";
 import { edgeTypes } from "@/components/ecosystem-map/edges";
 import { EcosystemToolbar } from "@/components/ecosystem-map/EcosystemToolbar";
-import {
-  MapSelectorBar,
-  type MapSummary,
-} from "@/components/ecosystem-map/MapSelectorBar";
+import { MapSelectorBar, type MapSummary } from "@/components/ecosystem-map/MapSelectorBar";
 import { NodePropertiesPanel } from "@/components/ecosystem-map/NodePropertiesPanel";
 import { EdgePropertiesPanel } from "@/components/ecosystem-map/EdgePropertiesPanel";
 import { ImportOrgDataDialog } from "@/components/ecosystem-map/ImportOrgDataDialog";
@@ -131,30 +128,23 @@ function dbEdgeToFlowEdge(e: DbEdge): Edge {
 // Inner component (needs ReactFlow context)
 // ---------------------------------------------------------------------------
 
-function EcosystemMapInner({
-  initialMaps,
-  orgData,
-}: EcosystemMapClientProps) {
+function EcosystemMapInner({ initialMaps, orgData }: EcosystemMapClientProps) {
   const { fitView, screenToFlowPosition } = useReactFlow();
   const [maps, setMaps] = useState<MapSummary[]>(initialMaps);
-  const [selectedMapId, setSelectedMapId] = useState<string | null>(
-    initialMaps[0]?.id ?? null,
-  );
+  const [selectedMapId, setSelectedMapId] = useState<string | null>(initialMaps[0]?.id ?? null);
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null);
   const [showImport, setShowImport] = useState(false);
-  const [pendingConnection, setPendingConnection] = useState<Connection | null>(
-    null,
-  );
+  const [pendingConnection, setPendingConnection] = useState<Connection | null>(null);
   const [showConnectionType, setShowConnectionType] = useState(false);
   const [mapLoaded, setMapLoaded] = useState(false);
 
   // Track position changes for batch save
-  const positionUpdatesRef = useRef<
-    Map<string, { positionX: number; positionY: number }>
-  >(new Map());
+  const positionUpdatesRef = useRef<Map<string, { positionX: number; positionY: number }>>(
+    new Map()
+  );
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Computed selected objects
@@ -165,15 +155,10 @@ function EcosystemMapInner({
     return {
       id: n.id,
       label: (n.data as Record<string, unknown>).label as string,
-      description: (n.data as Record<string, unknown>).description as
-        | string
-        | undefined,
+      description: (n.data as Record<string, unknown>).description as string | undefined,
       nodeType: (n.data as Record<string, unknown>).nodeType as NodeType,
-      linkedEntityType: (n.data as Record<string, unknown>)
-        .linkedEntityType as string | null,
-      linkedEntityId: (n.data as Record<string, unknown>).linkedEntityId as
-        | string
-        | null,
+      linkedEntityType: (n.data as Record<string, unknown>).linkedEntityType as string | null,
+      linkedEntityId: (n.data as Record<string, unknown>).linkedEntityId as string | null,
     };
   }, [selectedNodeId, nodes]);
 
@@ -185,13 +170,9 @@ function EcosystemMapInner({
     const targetNode = nodes.find((n) => n.id === e.target);
     return {
       id: e.id,
-      relationshipType: (
-        e.data as Record<string, unknown>
-      ).relationshipType as RelationshipType,
+      relationshipType: (e.data as Record<string, unknown>).relationshipType as RelationshipType,
       label: (e.data as Record<string, unknown>).label as string | undefined,
-      description: (e.data as Record<string, unknown>).description as
-        | string
-        | undefined,
+      description: (e.data as Record<string, unknown>).description as string | undefined,
       sourceName: sourceNode
         ? ((sourceNode.data as Record<string, unknown>).label as string)
         : undefined,
@@ -207,12 +188,8 @@ function EcosystemMapInner({
     const src = nodes.find((n) => n.id === pendingConnection.source);
     const tgt = nodes.find((n) => n.id === pendingConnection.target);
     return {
-      source: src
-        ? ((src.data as Record<string, unknown>).label as string)
-        : "",
-      target: tgt
-        ? ((tgt.data as Record<string, unknown>).label as string)
-        : "",
+      source: src ? ((src.data as Record<string, unknown>).label as string) : "",
+      target: tgt ? ((tgt.data as Record<string, unknown>).label as string) : "",
     };
   }, [pendingConnection, nodes]);
 
@@ -237,7 +214,7 @@ function EcosystemMapInner({
       // Fit view after a brief delay to let React render
       setTimeout(() => fitView({ padding: 0.2 }), 100);
     },
-    [setNodes, setEdges, fitView],
+    [setNodes, setEdges, fitView]
   );
 
   // Load initial map on mount
@@ -258,7 +235,7 @@ function EcosystemMapInner({
       setSelectedMapId(mapId);
       loadMap(mapId);
     },
-    [loadMap],
+    [loadMap]
   );
 
   const handleCreateMap = useCallback(
@@ -282,25 +259,20 @@ function EcosystemMapInner({
         setMapLoaded(true);
       }
     },
-    [setNodes, setEdges],
+    [setNodes, setEdges]
   );
 
-  const handleUpdateMap = useCallback(
-    async (id: string, name: string, description: string) => {
-      const result = await updateEcosystemMap(id, {
-        name,
-        description: description || null,
-      });
-      if (result.success) {
-        setMaps((prev) =>
-          prev.map((m) =>
-            m.id === id ? { ...m, name, description: description || null } : m,
-          ),
-        );
-      }
-    },
-    [],
-  );
+  const handleUpdateMap = useCallback(async (id: string, name: string, description: string) => {
+    const result = await updateEcosystemMap(id, {
+      name,
+      description: description || null,
+    });
+    if (result.success) {
+      setMaps((prev) =>
+        prev.map((m) => (m.id === id ? { ...m, name, description: description || null } : m))
+      );
+    }
+  }, []);
 
   const handleDeleteMap = useCallback(
     async (id: string) => {
@@ -318,7 +290,7 @@ function EcosystemMapInner({
         }
       }
     },
-    [maps, handleSelectMap, setNodes, setEdges],
+    [maps, handleSelectMap, setNodes, setEdges]
   );
 
   // ---------------------------------------------------------------------------
@@ -363,19 +335,16 @@ function EcosystemMapInner({
           prev.map((m) =>
             m.id === selectedMapId
               ? { ...m, _count: { ...m._count, nodes: m._count.nodes + 1 } }
-              : m,
-          ),
+              : m
+          )
         );
       }
     },
-    [selectedMapId, setNodes, screenToFlowPosition],
+    [selectedMapId, setNodes, screenToFlowPosition]
   );
 
   const handleUpdateNode = useCallback(
-    async (
-      id: string,
-      data: { label?: string; description?: string; nodeType?: NodeType },
-    ) => {
+    async (id: string, data: { label?: string; description?: string; nodeType?: NodeType }) => {
       const result = await updateEcosystemNode(id, data);
       if (result.success) {
         setNodes((prev) =>
@@ -383,18 +352,17 @@ function EcosystemMapInner({
             if (n.id !== id) return n;
             const newData = { ...(n.data as Record<string, unknown>) };
             if (data.label !== undefined) newData.label = data.label;
-            if (data.description !== undefined)
-              newData.description = data.description;
+            if (data.description !== undefined) newData.description = data.description;
             if (data.nodeType !== undefined) {
               newData.nodeType = data.nodeType;
               return { ...n, type: data.nodeType, data: newData };
             }
             return { ...n, data: newData };
-          }),
+          })
         );
       }
     },
-    [setNodes],
+    [setNodes]
   );
 
   const handleDeleteNode = useCallback(
@@ -402,28 +370,27 @@ function EcosystemMapInner({
       const result = await deleteEcosystemNode(id);
       if (result.success) {
         setNodes((prev) => prev.filter((n) => n.id !== id));
-        setEdges((prev) =>
-          prev.filter((e) => e.source !== id && e.target !== id),
-        );
+        setEdges((prev) => prev.filter((e) => e.source !== id && e.target !== id));
         setSelectedNodeId(null);
 
         setMaps((prev) =>
           prev.map((m) =>
             m.id === selectedMapId
               ? { ...m, _count: { ...m._count, nodes: Math.max(0, m._count.nodes - 1) } }
-              : m,
-          ),
+              : m
+          )
         );
       }
     },
-    [setNodes, setEdges, selectedMapId],
+    [setNodes, setEdges, selectedMapId]
   );
 
   // Position save (debounced batch)
   const flushPositionUpdates = useCallback(async () => {
-    const updates = Array.from(
-      positionUpdatesRef.current.entries(),
-    ).map(([id, pos]) => ({ id, ...pos }));
+    const updates = Array.from(positionUpdatesRef.current.entries()).map(([id, pos]) => ({
+      id,
+      ...pos,
+    }));
     positionUpdatesRef.current.clear();
     if (updates.length > 0) {
       await updateNodePositions(updates);
@@ -440,21 +407,18 @@ function EcosystemMapInner({
       if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
       saveTimeoutRef.current = setTimeout(flushPositionUpdates, 500);
     },
-    [flushPositionUpdates],
+    [flushPositionUpdates]
   );
 
   // ---------------------------------------------------------------------------
   // Edge operations
   // ---------------------------------------------------------------------------
 
-  const onConnect: OnConnect = useCallback(
-    (connection) => {
-      // Store pending connection and show type picker
-      setPendingConnection(connection);
-      setShowConnectionType(true);
-    },
-    [],
-  );
+  const onConnect: OnConnect = useCallback((connection) => {
+    // Store pending connection and show type picker
+    setPendingConnection(connection);
+    setShowConnectionType(true);
+  }, []);
 
   const handleConnectionTypeSelect = useCallback(
     async (relType: RelationshipType) => {
@@ -486,14 +450,14 @@ function EcosystemMapInner({
           prev.map((m) =>
             m.id === selectedMapId
               ? { ...m, _count: { ...m._count, edges: m._count.edges + 1 } }
-              : m,
-          ),
+              : m
+          )
         );
       }
 
       setPendingConnection(null);
     },
-    [pendingConnection, selectedMapId, setEdges],
+    [pendingConnection, selectedMapId, setEdges]
   );
 
   const handleUpdateEdge = useCallback(
@@ -503,7 +467,7 @@ function EcosystemMapInner({
         relationshipType?: RelationshipType;
         label?: string;
         description?: string;
-      },
+      }
     ) => {
       const result = await updateEcosystemEdge(id, data);
       if (result.success) {
@@ -525,14 +489,13 @@ function EcosystemMapInner({
               };
             }
             if (data.label !== undefined) newData.label = data.label;
-            if (data.description !== undefined)
-              newData.description = data.description;
+            if (data.description !== undefined) newData.description = data.description;
             return { ...e, data: newData };
-          }),
+          })
         );
       }
     },
-    [setEdges],
+    [setEdges]
   );
 
   const handleDeleteEdge = useCallback(
@@ -546,12 +509,12 @@ function EcosystemMapInner({
           prev.map((m) =>
             m.id === selectedMapId
               ? { ...m, _count: { ...m._count, edges: Math.max(0, m._count.edges - 1) } }
-              : m,
-          ),
+              : m
+          )
         );
       }
     },
-    [setEdges, selectedMapId],
+    [setEdges, selectedMapId]
   );
 
   // ---------------------------------------------------------------------------
@@ -559,11 +522,7 @@ function EcosystemMapInner({
   // ---------------------------------------------------------------------------
 
   const handleImport = useCallback(
-    async (options: {
-      divisions: boolean;
-      departments: boolean;
-      users: boolean;
-    }) => {
+    async (options: { divisions: boolean; departments: boolean; users: boolean }) => {
       if (!selectedMapId) return;
       const result = await importOrgData(selectedMapId, options);
       if (result.success) {
@@ -571,28 +530,22 @@ function EcosystemMapInner({
         await loadMap(selectedMapId);
       }
     },
-    [selectedMapId, loadMap],
+    [selectedMapId, loadMap]
   );
 
   // ---------------------------------------------------------------------------
   // Selection
   // ---------------------------------------------------------------------------
 
-  const handleNodeClick = useCallback(
-    (_event: React.MouseEvent, node: Node) => {
-      setSelectedNodeId(node.id);
-      setSelectedEdgeId(null);
-    },
-    [],
-  );
+  const handleNodeClick = useCallback((_event: React.MouseEvent, node: Node) => {
+    setSelectedNodeId(node.id);
+    setSelectedEdgeId(null);
+  }, []);
 
-  const handleEdgeClick = useCallback(
-    (_event: React.MouseEvent, edge: Edge) => {
-      setSelectedEdgeId(edge.id);
-      setSelectedNodeId(null);
-    },
-    [],
-  );
+  const handleEdgeClick = useCallback((_event: React.MouseEvent, edge: Edge) => {
+    setSelectedEdgeId(edge.id);
+    setSelectedNodeId(null);
+  }, []);
 
   const handlePaneClick = useCallback(() => {
     setSelectedNodeId(null);
@@ -663,12 +616,7 @@ function EcosystemMapInner({
           className="ecosystem-flow"
         >
           <Background variant={BackgroundVariant.Dots} gap={20} size={1} />
-          <MiniMap
-            nodeStrokeWidth={3}
-            pannable
-            zoomable
-            className="!bottom-3 !right-3"
-          />
+          <MiniMap nodeStrokeWidth={3} pannable zoomable className="!bottom-3 !right-3" />
         </ReactFlow>
 
         <EcosystemToolbar
@@ -679,9 +627,7 @@ function EcosystemMapInner({
 
         {/* Legend */}
         <div className="absolute bottom-3 left-3 z-10 rounded-lg border bg-white/95 backdrop-blur-sm p-3 shadow-sm">
-          <p className="text-xs font-semibold mb-2 text-muted-foreground">
-            Relationships
-          </p>
+          <p className="text-xs font-semibold mb-2 text-muted-foreground">Relationships</p>
           <div className="space-y-1">
             {(
               Object.entries(RELATIONSHIP_TYPES) as [
@@ -701,15 +647,11 @@ function EcosystemMapInner({
                           ? "dashed"
                           : "solid",
                     borderWidth: config.strokeDasharray ? "1px 0 0 0" : undefined,
-                    borderColor: config.strokeDasharray
-                      ? config.color
-                      : undefined,
+                    borderColor: config.strokeDasharray ? config.color : undefined,
                     height: config.strokeDasharray ? 0 : 2,
                   }}
                 />
-                <span className="text-[10px] text-muted-foreground">
-                  {config.label}
-                </span>
+                <span className="text-[10px] text-muted-foreground">{config.label}</span>
               </div>
             ))}
           </div>

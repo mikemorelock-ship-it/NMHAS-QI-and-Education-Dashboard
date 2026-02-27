@@ -33,14 +33,10 @@ export function MetricsList({ kpis, divisionSlug }: MetricsListProps) {
             const desired = kpi.desiredDirection ?? "up";
             const isFavorable = direction === "flat" ? null : direction === desired;
             const rawTarget =
-              kpi.target !== null
-                ? targetToRaw(kpi.target, kpi.unit, kpi.rateMultiplier)
-                : null;
+              kpi.target !== null ? targetToRaw(kpi.target, kpi.unit, kpi.rateMultiplier) : null;
             const meetsTarget =
               rawTarget !== null &&
-              (desired === "down"
-                ? kpi.currentValue <= rawTarget
-                : kpi.currentValue >= rawTarget);
+              (desired === "down" ? kpi.currentValue <= rawTarget : kpi.currentValue >= rawTarget);
             const effectiveSlug = kpi.divisionSlug || divisionSlug || "";
             const metricHref = kpi.metricSlug
               ? effectiveSlug && effectiveSlug !== "all"

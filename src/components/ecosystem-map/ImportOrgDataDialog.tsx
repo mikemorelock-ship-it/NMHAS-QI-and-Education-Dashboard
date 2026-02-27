@@ -53,8 +53,8 @@ export function ImportOrgDataDialog({
         <DialogHeader>
           <DialogTitle>Import from Organization Data</DialogTitle>
           <DialogDescription>
-            Seed this map with nodes from your existing organizational data.
-            Already-imported entities will be skipped.
+            Seed this map with nodes from your existing organizational data. Already-imported
+            entities will be skipped.
           </DialogDescription>
         </DialogHeader>
 
@@ -110,11 +110,7 @@ export function ImportOrgDataDialog({
         </div>
 
         <DialogFooter>
-          <Button
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-            disabled={loading}
-          >
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
             Cancel
           </Button>
           <Button
