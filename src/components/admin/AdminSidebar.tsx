@@ -36,6 +36,7 @@ import {
   FileText,
   Sparkles,
   FolderOpen,
+  Network,
   SearchCheck,
   Scale,
   type LucideIcon,
@@ -179,6 +180,12 @@ const navEntries: NavEntry[] = [
     label: "QI Resources",
     icon: FolderOpen,
     permission: "manage_departments",
+  },
+  {
+    href: "/admin/ecosystem-map",
+    label: "Ecosystem Map",
+    icon: Network,
+    permission: "manage_ecosystem_maps",
   },
   { href: "/admin/users", label: "Users", icon: Shield, permission: "manage_users" },
   {

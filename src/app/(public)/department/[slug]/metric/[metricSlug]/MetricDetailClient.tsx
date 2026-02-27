@@ -855,9 +855,7 @@ export function MetricDetailClient({
                 <span className="capitalize">Unit: {data.unit}</span>
                 <span className="capitalize">Chart: {data.chartType}</span>
                 {data.target !== null && (
-                  <span>
-                    Target: {formatMetricValue(data.target, data.unit, null, rateSuffix)}
-                  </span>
+                  <span>Target: {formatMetricValue(data.target, data.unit, null, rateSuffix)}</span>
                 )}
               </div>
             </CardContent>

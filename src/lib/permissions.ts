@@ -19,6 +19,7 @@ export const PERMISSIONS = {
   manage_campaigns: ["admin"],
   manage_action_items: ["admin", "manager"],
   manage_scorecards: ["admin"],
+  manage_ecosystem_maps: ["admin"],
   enter_metric_data: ["admin", "data_entry"],
   upload_batch_data: ["admin", "data_entry"],
   manage_ftos_trainees: ["admin", "manager"],
