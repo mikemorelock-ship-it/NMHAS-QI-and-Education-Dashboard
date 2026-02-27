@@ -222,6 +222,7 @@ export interface ScorecardMetricRow {
   actualYtd: number | null;
   monthlyValues: ScorecardMonthlyValue[];
   meetsTarget: boolean | null; // null if no target defined
+  desiredDirection: "up" | "down";
   rateMultiplier?: number | null;
   rateSuffix?: string | null;
   groupName?: string | null; // admin-defined section header for visual grouping

@@ -110,6 +110,7 @@ export async function GET(request: NextRequest) {
         departmentId: true,
         aggregationType: true,
         dataType: true,
+        desiredDirection: true,
         rateMultiplier: true,
         rateSuffix: true,
       },
@@ -335,7 +336,13 @@ export async function GET(request: NextRequest) {
         metric.target !== null
           ? targetToRaw(metric.target, metric.unit, metric.rateMultiplier)
           : null;
-      const meetsTarget = rawTarget !== null && actualYtd !== null ? actualYtd >= rawTarget : null;
+      const desired = metric.desiredDirection ?? "up";
+      const meetsTarget =
+        rawTarget !== null && actualYtd !== null
+          ? desired === "down"
+            ? actualYtd <= rawTarget
+            : actualYtd >= rawTarget
+          : null;
 
       return {
         metricId: metric.id,
@@ -343,6 +350,7 @@ export async function GET(request: NextRequest) {
         unit: metric.unit,
         aggregationType: metric.aggregationType,
         target: metric.target,
+        desiredDirection: desired,
         rateMultiplier: metric.rateMultiplier ?? null,
         rateSuffix: metric.rateSuffix ?? null,
         targetYtd,

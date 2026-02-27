@@ -118,7 +118,7 @@ export function ScorecardTable({ scorecard }: ScorecardTableProps) {
                       {/* Target */}
                       <td className="px-3 py-2.5 text-right font-mono text-muted-foreground whitespace-nowrap">
                         {metric.target !== null
-                          ? formatMetricValue(metric.target, metric.unit, null, metric.rateSuffix)
+                          ? formatMetricValue(metric.target, metric.unit, null, null)
                           : "--"}
                       </td>
 
@@ -133,7 +133,7 @@ export function ScorecardTable({ scorecard }: ScorecardTableProps) {
                             <td
                               className={
                                 "px-3 py-2.5 text-right font-mono font-semibold whitespace-nowrap border-r border-border " +
-                                getTargetColorClass(metric.actualYtd, rawTarget)
+                                getTargetColorClass(metric.actualYtd, rawTarget, metric.desiredDirection)
                               }
                             >
                               {metric.actualYtd !== null ? (
@@ -142,11 +142,11 @@ export function ScorecardTable({ scorecard }: ScorecardTableProps) {
                                     metric.actualYtd,
                                     metric.unit,
                                     metric.rateMultiplier,
-                                    metric.rateSuffix
+                                    null
                                   )}
                                   {rawTarget !== null && (
                                     <span className="sr-only">
-                                      {metric.actualYtd >= rawTarget
+                                      {metric.meetsTarget
                                         ? "(on target)"
                                         : "(below target)"}
                                     </span>
@@ -168,7 +168,7 @@ export function ScorecardTable({ scorecard }: ScorecardTableProps) {
                                   key={month}
                                   className={
                                     "px-3 py-2.5 text-right font-mono whitespace-nowrap " +
-                                    getTargetColorClass(value, rawTarget)
+                                    getTargetColorClass(value, rawTarget, metric.desiredDirection)
                                   }
                                 >
                                   {value !== null ? (
@@ -177,11 +177,11 @@ export function ScorecardTable({ scorecard }: ScorecardTableProps) {
                                         value,
                                         metric.unit,
                                         metric.rateMultiplier,
-                                        metric.rateSuffix
+                                        null
                                       )}
                                       {rawTarget !== null && (
                                         <span className="sr-only">
-                                          {value >= rawTarget ? "(on target)" : "(below target)"}
+                                          {(metric.desiredDirection === "down" ? value <= rawTarget : value >= rawTarget) ? "(on target)" : "(below target)"}
                                         </span>
                                       )}
                                     </>
@@ -206,8 +206,13 @@ export function ScorecardTable({ scorecard }: ScorecardTableProps) {
   );
 }
 
-function getTargetColorClass(value: number | null, target: number | null): string {
+function getTargetColorClass(
+  value: number | null,
+  target: number | null,
+  desiredDirection: "up" | "down" = "up"
+): string {
   if (value === null || target === null) return "";
-  if (value >= target) return "text-green-700 bg-green-50";
-  return "text-red-700 bg-red-50";
+  const meetsTarget =
+    desiredDirection === "down" ? value <= target : value >= target;
+  return meetsTarget ? "text-green-700 bg-green-50" : "text-red-700 bg-red-50";
 }
