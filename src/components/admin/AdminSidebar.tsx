@@ -37,6 +37,8 @@ import {
   Sparkles,
   FolderOpen,
   Network,
+  SearchCheck,
+  Scale,
   type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -119,6 +121,18 @@ const navEntries: NavEntry[] = [
         label: "Actions",
         icon: ListChecks,
         permission: "manage_action_items",
+      },
+      {
+        href: "/admin/root-cause-analysis",
+        label: "Root Cause Analysis",
+        icon: SearchCheck,
+        permission: "manage_campaigns",
+      },
+      {
+        href: "/admin/just-culture",
+        label: "Just Culture",
+        icon: Scale,
+        permission: "manage_campaigns",
       },
     ],
   },
