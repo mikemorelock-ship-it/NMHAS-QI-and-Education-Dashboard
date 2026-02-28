@@ -25,8 +25,8 @@ const DATABASE_URL = process.env.DATABASE_URL;
 const TURSO_AUTH_TOKEN = process.env.TURSO_AUTH_TOKEN;
 
 if (!DATABASE_URL) {
-  console.error("❌ DATABASE_URL is not set.");
-  process.exit(1);
+  console.log("⏭️  DATABASE_URL is not set — skipping migration deploy.");
+  process.exit(0);
 }
 
 // Skip if this is a local file: URL (local dev uses prisma migrate dev)
