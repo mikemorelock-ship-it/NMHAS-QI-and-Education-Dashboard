@@ -21,6 +21,8 @@ export interface AlgorithmStep {
   guidance: string[];
   /** If present, these are the possible answers with their destinations */
   options: AlgorithmOption[];
+  /** Sample questions the investigator can ask the employee */
+  interviewQuestions?: string[];
   /** Educational tip shown to help the evaluator */
   educationalNote?: string;
 }
@@ -187,6 +189,13 @@ export const ALGORITHM_STEPS: AlgorithmStep[] = [
       "Reckless behavior is NOT intentional harm — the person did not want a bad outcome",
       "If there is any doubt, the answer is likely No — proceed to the next test",
     ],
+    interviewQuestions: [
+      "Can you walk me through exactly what happened, in your own words?",
+      "What were you trying to accomplish at the time?",
+      "What was going through your mind during the event?",
+      "What outcome did you expect from your actions?",
+      "Was there anything about the situation that frustrated or upset you beforehand?",
+    ],
     options: [
       {
         label: "Yes — the individual deliberately intended to cause harm",
@@ -228,6 +237,14 @@ export const ALGORITHM_STEPS: AlgorithmStep[] = [
       "Ask: Did they take proper safeguards to protect patients?",
       "If the individual knowingly concealed an impairing condition, consider re-entering the algorithm at the Foresight Test",
     ],
+    interviewQuestions: [
+      "How were you feeling — physically and mentally — leading up to the event?",
+      "How much sleep did you get in the 24 hours before the incident?",
+      "Were you taking any medications, prescribed or otherwise, that might have affected your performance?",
+      "Had you been dealing with any personal stressors, illness, or fatigue around this time?",
+      "Is there anything about your health or wellbeing that you think we should know about? This is a safe space — we want to support you.",
+      "Looking back, did you feel fully fit for duty that day?",
+    ],
     options: [
       {
         label: "Yes — ill health or substance impairment appears to have contributed",
@@ -266,6 +283,14 @@ export const ALGORITHM_STEPS: AlgorithmStep[] = [
       "Was the protocol routinely violated by many staff (normalization of deviance)?",
       "If the individual followed all applicable rules and the outcome was still bad, the system designed the outcome",
       "The absence of a protocol is itself a system issue — not an individual failure",
+    ],
+    interviewQuestions: [
+      "Was there a protocol, policy, or standard procedure that applied to what you were doing?",
+      "Can you describe what you understood the correct procedure to be?",
+      "Did you feel the protocol was clear and practical to follow in this situation?",
+      "Were there any conflicting instructions or guidelines you were trying to reconcile?",
+      "Had you received training on this specific protocol? When was the last time?",
+      "Is this how you normally handle this situation, or was this different from your usual approach?",
     ],
     options: [
       {
@@ -317,6 +342,13 @@ export const ALGORITHM_STEPS: AlgorithmStep[] = [
       "A conscious choice means the person deliberately chose to do something differently than expected",
       "Ask: 'Did the individual intend to deviate, or did they intend to follow the correct practice?'",
     ],
+    interviewQuestions: [
+      "When you did [the action], was that what you intended to do, or did something go differently than planned?",
+      "Were you aware at the time that you were doing something different from the expected procedure?",
+      "If you could rewind, would you do the same thing again, or was it an accident?",
+      "Was there a moment where you thought 'I know the protocol says X, but I'm going to do Y instead'?",
+      "Did you realize something had gone wrong at the time, or did you find out later?",
+    ],
     options: [
       {
         label:
@@ -359,6 +391,13 @@ export const ALGORITHM_STEPS: AlgorithmStep[] = [
       "If most peers would do the same, it's a system/culture problem, not an individual problem",
       "Consider: has the organization created incentives for the at-risk behavior?",
     ],
+    interviewQuestions: [
+      "Do you think most of your colleagues would have handled this the same way you did?",
+      "Is this something you've seen other people do, or is this approach common in your unit?",
+      "Has anyone ever told you to do it this way, or shown you this approach?",
+      "Have you seen others do it differently? What do you think the 'standard' approach is among your peers?",
+      "Is there anything about the work environment — time pressure, staffing, equipment — that makes this approach feel necessary?",
+    ],
     options: [
       {
         label: "Yes — most peers would make the same choice in this situation",
@@ -400,6 +439,14 @@ export const ALGORITHM_STEPS: AlgorithmStep[] = [
       "Were there deficiencies in equipment, technology, or the work environment?",
       "Consider staffing levels, fatigue factors, and communication systems",
     ],
+    interviewQuestions: [
+      "Did you feel you had adequate training to handle this situation?",
+      "Was there a supervisor or experienced colleague available if you needed guidance?",
+      "Were you under any time pressure, workload stress, or competing demands at the time?",
+      "Was the equipment or technology you needed available and working properly?",
+      "Is there anything the organization could have done differently that would have changed the outcome?",
+      "Did you feel supported in doing the right thing, or were there barriers?",
+    ],
     options: [
       {
         label: "Yes — system deficiencies contributed to the choice",
@@ -437,6 +484,14 @@ export const ALGORITHM_STEPS: AlgorithmStep[] = [
       "Reckless behavior is rare — most deviations fall into the at-risk category",
       "Important: policy violations are often at-risk rather than reckless choices — the question is about risk, not rule-breaking",
       "Consider whether a pattern of unsafe acts exists",
+    ],
+    interviewQuestions: [
+      "At the time, did you think there was a risk involved in what you were doing?",
+      "How significant did you consider that risk to be?",
+      "Did you weigh the risk against any potential benefit? What was your reasoning?",
+      "If you knew then what you know now, would you have done anything differently?",
+      "Has anyone ever raised concerns about this approach with you before?",
+      "Were you aware that this could lead to the kind of outcome that occurred?",
     ],
     options: [
       {

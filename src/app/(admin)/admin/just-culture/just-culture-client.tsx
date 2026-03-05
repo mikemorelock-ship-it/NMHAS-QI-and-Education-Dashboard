@@ -1063,6 +1063,24 @@ function AlgorithmStepCard({
           </ul>
         </div>
 
+        {/* Interview questions */}
+        {step.interviewQuestions && step.interviewQuestions.length > 0 && (
+          <div className="bg-teal-50/50 border border-teal-200/50 rounded-lg p-3">
+            <p className="text-xs font-medium text-teal-800 mb-2 flex items-center gap-1">
+              <MessageCircle className="h-3.5 w-3.5" />
+              Sample Interview Questions
+            </p>
+            <ul className="space-y-1">
+              {step.interviewQuestions.map((q, i) => (
+                <li key={i} className="text-xs text-teal-700 flex gap-2">
+                  <span className="shrink-0">&#8226;</span>
+                  {q}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
         {/* Educational note */}
         {step.educationalNote && (
           <div className="bg-blue-50/50 border border-blue-200/50 rounded-lg p-3">
