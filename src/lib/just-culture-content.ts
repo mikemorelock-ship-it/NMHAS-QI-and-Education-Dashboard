@@ -169,39 +169,11 @@ export const ALGORITHM_RESULTS: Record<string, AlgorithmResult> = {
 
 export const ALGORITHM_STEPS: AlgorithmStep[] = [
   // -----------------------------------------------------------------------
-  // Step 1: Event Description (intake / setup continuation)
+  // Step 1: TEST 1 — Deliberate Harm Test
   // -----------------------------------------------------------------------
   {
     id: "step_1",
     stepNumber: 1,
-    title: "Event Description",
-    description:
-      "Start by describing what happened objectively. Separate the outcome from the behavior — Just Culture evaluates behavior, not the luck of the outcome.",
-    question: "Describe the event. What happened?",
-    guidance: [
-      "Be objective and factual — avoid emotional language",
-      "Focus on what happened, not who is at fault",
-      "Include relevant context (time, location, conditions)",
-      "Two people can make the same choice — one causes harm, one doesn't. Evaluate the behavior, not the outcome.",
-    ],
-    options: [
-      {
-        label: "Continue",
-        value: "continue",
-        description: "Proceed to the Deliberate Harm Test",
-        nextStepId: "step_2",
-      },
-    ],
-    educationalNote:
-      "The Just Culture model evaluates the behavioral choice, not the outcome. A near-miss involving reckless behavior is treated the same as a serious harm event involving reckless behavior.",
-  },
-
-  // -----------------------------------------------------------------------
-  // Step 2: TEST 1 — Deliberate Harm Test
-  // -----------------------------------------------------------------------
-  {
-    id: "step_2",
-    stepNumber: 2,
     title: "Test 1: Deliberate Harm Test",
     description:
       "The Deliberate Harm Test identifies whether the individual intended to cause harm. In the overwhelming majority of incidents, the individual had the patient's wellbeing at heart. However, in exceedingly rare cases the intent was to cause harm. This test eliminates or confirms that possibility at the earliest stage.",
@@ -228,7 +200,7 @@ export const ALGORITHM_STEPS: AlgorithmStep[] = [
         label: "No — the individual did not intend to cause harm",
         value: "no",
         description: "Proceed to the Incapacity / Health Test.",
-        nextStepId: "step_3",
+        nextStepId: "step_2",
       },
     ],
     educationalNote:
@@ -236,11 +208,11 @@ export const ALGORITHM_STEPS: AlgorithmStep[] = [
   },
 
   // -----------------------------------------------------------------------
-  // Step 3: TEST 2 — Incapacity / Physical & Mental Health Test
+  // Step 2: TEST 2 — Incapacity / Physical & Mental Health Test
   // -----------------------------------------------------------------------
   {
-    id: "step_3",
-    stepNumber: 3,
+    id: "step_2",
+    stepNumber: 2,
     title: "Test 2: Incapacity / Health Test",
     description:
       "The Incapacity Test determines whether ill health, a physical or mental health condition, or substance use caused or contributed to the incident. The whole spectrum of impairment is considered — including prescription medications, fatigue-related conditions, mental health crises, and substance abuse.",
@@ -269,7 +241,7 @@ export const ALGORITHM_STEPS: AlgorithmStep[] = [
         label: "No — incapacity was not a contributing factor",
         value: "no",
         description: "Proceed to the Foresight / Protocol Test.",
-        nextStepId: "step_4",
+        nextStepId: "step_3",
       },
     ],
     educationalNote:
@@ -277,11 +249,11 @@ export const ALGORITHM_STEPS: AlgorithmStep[] = [
   },
 
   // -----------------------------------------------------------------------
-  // Step 4: TEST 3 — Foresight / Protocol Test
+  // Step 3: TEST 3 — Foresight / Protocol Test
   // -----------------------------------------------------------------------
   {
-    id: "step_4",
-    stepNumber: 4,
+    id: "step_3",
+    stepNumber: 3,
     title: "Test 3: Foresight / Protocol Test",
     description:
       "The Foresight Test examines whether protocols and safe working practices were in place and were followed. It determines whether the incident arose because no protocol existed, the protocol was poor or conflicting, good protocols were misapplied, or the individual chose to ignore protocols.",
@@ -319,7 +291,7 @@ export const ALGORITHM_STEPS: AlgorithmStep[] = [
         value: "departed",
         description:
           "The individual deviated from established practice. Proceed to determine if this was inadvertent or a conscious choice.",
-        nextStepId: "step_5",
+        nextStepId: "step_4",
       },
     ],
     educationalNote:
@@ -327,11 +299,11 @@ export const ALGORITHM_STEPS: AlgorithmStep[] = [
   },
 
   // -----------------------------------------------------------------------
-  // Step 5: Inadvertent vs. Conscious Deviation
+  // Step 4: Inadvertent vs. Conscious Deviation
   // -----------------------------------------------------------------------
   {
-    id: "step_5",
-    stepNumber: 5,
+    id: "step_4",
+    stepNumber: 4,
     title: "Inadvertent vs. Conscious Deviation",
     description:
       "This is the critical distinction between human error and a behavioral choice. Determine whether the individual's deviation was inadvertent (unintentional) or a conscious choice. Human errors are slips, lapses, and mistakes — not intentional deviations.",
@@ -361,7 +333,7 @@ export const ALGORITHM_STEPS: AlgorithmStep[] = [
         value: "conscious",
         description:
           "The individual made a behavioral choice. Proceed to evaluate why with the Substitution Test.",
-        nextStepId: "step_6",
+        nextStepId: "step_5",
       },
     ],
     educationalNote:
@@ -369,11 +341,11 @@ export const ALGORITHM_STEPS: AlgorithmStep[] = [
   },
 
   // -----------------------------------------------------------------------
-  // Step 6: TEST 4 — The Substitution Test
+  // Step 5: TEST 4 — The Substitution Test
   // -----------------------------------------------------------------------
   {
-    id: "step_6",
-    stepNumber: 6,
+    id: "step_5",
+    stepNumber: 5,
     title: "Test 4: The Substitution Test",
     description:
       'The Substitution Test asks: "Would another individual, coming from the same professional group, possessing comparable qualifications and experience, behave in the same way in similar circumstances?" If yes, this points to a system/culture problem — not individual culpability.',
@@ -401,7 +373,7 @@ export const ALGORITHM_STEPS: AlgorithmStep[] = [
         value: "no",
         description:
           "This appears to be an individual behavioral choice. Proceed to evaluate further.",
-        nextStepId: "step_7",
+        nextStepId: "step_6",
       },
     ],
     educationalNote:
@@ -409,11 +381,11 @@ export const ALGORITHM_STEPS: AlgorithmStep[] = [
   },
 
   // -----------------------------------------------------------------------
-  // Step 7: System Contributing Factors
+  // Step 6: System Contributing Factors
   // -----------------------------------------------------------------------
   {
-    id: "step_7",
-    stepNumber: 7,
+    id: "step_6",
+    stepNumber: 6,
     title: "System Contributing Factors",
     description:
       "Even when the substitution test indicates individual accountability, evaluate whether significant deficiencies in training, supervision, equipment, or system design contributed to the individual's behavioral choice. Consider work pressures, external pressures, environmental factors, and communication breakdowns.",
@@ -442,17 +414,17 @@ export const ALGORITHM_STEPS: AlgorithmStep[] = [
           "No — the system provided adequate support and the individual still chose to deviate",
         value: "no",
         description: "Proceed to evaluate the nature of the risk awareness.",
-        nextStepId: "step_8",
+        nextStepId: "step_7",
       },
     ],
   },
 
   // -----------------------------------------------------------------------
-  // Step 8: Conscious Disregard of Risk
+  // Step 7: Conscious Disregard of Risk
   // -----------------------------------------------------------------------
   {
-    id: "step_8",
-    stepNumber: 8,
+    id: "step_7",
+    stepNumber: 7,
     title: "Conscious Disregard of Risk",
     description:
       'This is the final determination: did the individual consciously disregard a substantial and unjustifiable risk? "Substantial" means the risk was significant. "Unjustifiable" means there was no reasonable benefit that outweighed the risk. Important: the question is about conscious disregard of a known RISK — not merely a policy violation.',
