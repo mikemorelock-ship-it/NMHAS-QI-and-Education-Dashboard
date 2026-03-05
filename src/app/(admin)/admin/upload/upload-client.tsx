@@ -600,9 +600,7 @@ export function UploadClient({ lookup }: { lookup: TemplateLookupData }) {
     // Fall back to the "department" CSV column for region resolution,
     // since the UI displays region as "Department".
     const indColIdx =
-      rawHeaders.indexOf(mapping.region) >= 0
-        ? rawHeaders.indexOf(mapping.region)
-        : deptColIdx;
+      rawHeaders.indexOf(mapping.region) >= 0 ? rawHeaders.indexOf(mapping.region) : deptColIdx;
     const notesColIdx = rawHeaders.indexOf(mapping.notes);
 
     for (let i = 0; i < rawRows.length; i++) {
