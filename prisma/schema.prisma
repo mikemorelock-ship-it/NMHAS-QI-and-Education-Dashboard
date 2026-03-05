@@ -563,6 +563,7 @@ model User {
   // QI Analysis tools
   rootCauseAnalyses              RootCauseAnalysis[]     @relation("RcaCreator")
   justCultureAssessments         JustCultureAssessment[] @relation("JcaCreator")
+  jcaShareLinks                  JcaShareLink[]          @relation("JcaShareLinkCreator")
 
   @@index([divisionId])
   @@index([status])
@@ -1121,13 +1122,18 @@ model JustCultureAssessment {
   responses       String?  // JSON: {stepId: string, question: string, answer: string}[]
 
   // Classification result
-  behaviorType    String?  // "human_error" | "at_risk" | "reckless"
-  recommendation  String?  // "console" | "coach" | "discipline"
+  behaviorType    String?  // "system_issue" | "human_error" | "at_risk" | "reckless" | "intentional_harm" | "incapacity"
+  recommendation  String?  // "system_fix" | "console" | "coach" | "discipline" | "referral" | "health_pathway"
 
   // Additional context
   involvedPerson  String?
   involvedRole    String?
   supervisorNotes String?
+
+  // Public submission fields (when submitted via share link)
+  submitterName   String?
+  submitterEmail  String?
+  shareToken      String?  // which JcaShareLink token was used
 
   // Relationships
   campaignId      String?
@@ -1156,4 +1162,22 @@ model MetricYearTarget {
 
   @@unique([metricDefinitionId, year])
   @@index([metricDefinitionId])
+}
+
+// ---------------------------------------------------------------------------
+// JCA Share Link — allows unauthenticated leaders to use the algorithm
+// ---------------------------------------------------------------------------
+
+model JcaShareLink {
+  id          String    @id @default(cuid())
+  token       String    @unique @default(cuid())
+  label       String?
+  createdById String?
+  expiresAt   DateTime?
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+
+  createdBy   User?     @relation("JcaShareLinkCreator", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([token])
 }

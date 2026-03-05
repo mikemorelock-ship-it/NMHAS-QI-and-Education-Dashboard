@@ -15,6 +15,7 @@ import {
   X,
   Shield,
   Heart,
+  HeartPulse,
   MessageCircle,
   Settings,
   Clock,
@@ -22,6 +23,11 @@ import {
   HelpCircle,
   RotateCcw,
   Scale,
+  Link,
+  Copy,
+  Check,
+  ExternalLink,
+  Globe,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -40,11 +46,19 @@ import {
 import {
   ALGORITHM_STEPS,
   JUST_CULTURE_PRINCIPLES,
+  THREE_DUTIES,
   type AlgorithmStep,
   type AlgorithmResult,
 } from "@/lib/just-culture-content";
-import { createJca, updateJca, deleteJca } from "@/actions/just-culture";
-import type { JcaSummary, CampaignOption } from "./page";
+import {
+  createJca,
+  updateJca,
+  deleteJca,
+  createJcaShareLink,
+  deleteJcaShareLink,
+  toggleJcaShareLink,
+} from "@/actions/just-culture";
+import type { JcaSummary, CampaignOption, ShareLinkSummary } from "./page";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -55,6 +69,8 @@ const RECOMMENDATION_STYLES: Record<string, string> = {
   console: "bg-green-100 text-green-700",
   coach: "bg-amber-100 text-amber-700",
   discipline: "bg-red-100 text-red-700",
+  referral: "bg-red-100 text-red-700",
+  health_pathway: "bg-purple-100 text-purple-700",
 };
 
 const RECOMMENDATION_LABELS: Record<string, string> = {
@@ -62,6 +78,8 @@ const RECOMMENDATION_LABELS: Record<string, string> = {
   console: "Console",
   coach: "Coach",
   discipline: "Discipline",
+  referral: "Referral",
+  health_pathway: "Health Pathway",
 };
 
 const BEHAVIOR_LABELS: Record<string, string> = {
@@ -69,6 +87,8 @@ const BEHAVIOR_LABELS: Record<string, string> = {
   human_error: "Human Error",
   at_risk: "At-Risk Behavior",
   reckless: "Reckless Behavior",
+  intentional_harm: "Intentional Harm",
+  incapacity: "Incapacity",
 };
 
 const STATUS_STYLES: Record<string, string> = {
@@ -80,6 +100,7 @@ const STATUS_STYLES: Record<string, string> = {
 const RESULT_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   Settings,
   Heart,
+  HeartPulse,
   MessageCircle,
   AlertTriangle,
   ShieldAlert: Shield,
@@ -168,9 +189,14 @@ function formToData(form: JcaFormState): Record<string, unknown> {
 interface JustCulturePageClientProps {
   assessments: JcaSummary[];
   campaigns: CampaignOption[];
+  shareLinks: ShareLinkSummary[];
 }
 
-export function JustCulturePageClient({ assessments, campaigns }: JustCulturePageClientProps) {
+export function JustCulturePageClient({
+  assessments,
+  campaigns,
+  shareLinks,
+}: JustCulturePageClientProps) {
   const [view, setView] = useState<"list" | "new" | "edit">("list");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<JcaFormState>(emptyForm());
@@ -180,6 +206,7 @@ export function JustCulturePageClient({ assessments, campaigns }: JustCulturePag
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [showShareLinks, setShowShareLinks] = useState(false);
 
   const handleNew = () => {
     setForm(emptyForm());
@@ -278,7 +305,8 @@ export function JustCulturePageClient({ assessments, campaigns }: JustCulturePag
   const filtered = assessments.filter(
     (a) =>
       a.title.toLowerCase().includes(search.toLowerCase()) ||
-      (a.involvedPerson ?? "").toLowerCase().includes(search.toLowerCase())
+      (a.involvedPerson ?? "").toLowerCase().includes(search.toLowerCase()) ||
+      (a.submitterName ?? "").toLowerCase().includes(search.toLowerCase())
   );
 
   // ---------------------------------------------------------------------------
@@ -295,10 +323,16 @@ export function JustCulturePageClient({ assessments, campaigns }: JustCulturePag
               Evaluate behavior fairly and consistently using the Just Culture framework
             </p>
           </div>
-          <Button onClick={handleNew} className="bg-nmh-teal hover:bg-nmh-teal/90">
-            <Plus className="h-4 w-4 mr-2" />
-            New Assessment
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={() => setShowShareLinks(!showShareLinks)}>
+              <Link className="h-4 w-4 mr-2" />
+              Share Links
+            </Button>
+            <Button onClick={handleNew} className="bg-nmh-teal hover:bg-nmh-teal/90">
+              <Plus className="h-4 w-4 mr-2" />
+              New Assessment
+            </Button>
+          </div>
         </div>
 
         {/* Principles overview */}
@@ -310,14 +344,18 @@ export function JustCulturePageClient({ assessments, campaigns }: JustCulturePag
                 <p className="font-medium text-nmh-teal">What is Just Culture?</p>
                 <p className="text-muted-foreground mt-1">
                   Just Culture provides a fair, consistent framework for evaluating individual
-                  behavior in the context of adverse events. It distinguishes between human error
-                  (console), at-risk behavior (coach), and reckless behavior (discipline) — ensuring
-                  proportional, system-aware responses.
+                  behavior in the context of adverse events. It uses four sequential tests —
+                  Deliberate Harm, Incapacity/Health, Foresight/Protocol, and Substitution — to
+                  classify behavior as human error (console), at-risk behavior (coach), or reckless
+                  behavior (discipline).
                 </p>
               </div>
             </div>
           </CardContent>
         </Card>
+
+        {/* Share Links panel */}
+        {showShareLinks && <ShareLinksPanel shareLinks={shareLinks} />}
 
         {/* Search */}
         <div className="relative max-w-sm">
@@ -378,8 +416,15 @@ export function JustCulturePageClient({ assessments, campaigns }: JustCulturePag
                               {BEHAVIOR_LABELS[jca.behaviorType] ?? jca.behaviorType}
                             </Badge>
                           )}
+                          {jca.shareToken && (
+                            <Badge variant="outline" className="text-xs bg-blue-50 text-blue-600">
+                              <Globe className="h-3 w-3 mr-1" />
+                              Public
+                            </Badge>
+                          )}
                         </div>
                         <div className="flex items-center gap-4 mt-1.5 text-xs text-muted-foreground">
+                          {jca.submitterName && <span>Submitted by {jca.submitterName}</span>}
                           {jca.involvedPerson && (
                             <span>
                               {jca.involvedPerson}
@@ -600,6 +645,227 @@ export function JustCulturePageClient({ assessments, campaigns }: JustCulturePag
 }
 
 // ---------------------------------------------------------------------------
+// Share Links Panel
+// ---------------------------------------------------------------------------
+
+function ShareLinksPanel({ shareLinks }: { shareLinks: ShareLinkSummary[] }) {
+  const [isPending, startTransition] = useTransition();
+  const [newLabel, setNewLabel] = useState("");
+  const [newExpiry, setNewExpiry] = useState("");
+  const [copiedToken, setCopiedToken] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+
+  const handleCreate = () => {
+    startTransition(async () => {
+      const res = await createJcaShareLink({
+        label: newLabel || null,
+        expiresAt: newExpiry || null,
+      });
+      if (!res.success) {
+        setError(res.error ?? "Failed to create link");
+      } else {
+        setNewLabel("");
+        setNewExpiry("");
+        setError(null);
+      }
+    });
+  };
+
+  const handleCopy = (token: string) => {
+    const url = `${window.location.origin}/just-culture/${token}`;
+    navigator.clipboard.writeText(url);
+    setCopiedToken(token);
+    setTimeout(() => setCopiedToken(null), 2000);
+  };
+
+  const handleToggle = (id: string) => {
+    startTransition(async () => {
+      const res = await toggleJcaShareLink(id);
+      if (!res.success) setError(res.error ?? "Failed to toggle link");
+    });
+  };
+
+  const handleDelete = (id: string) => {
+    startTransition(async () => {
+      const res = await deleteJcaShareLink(id);
+      if (!res.success) setError(res.error ?? "Failed to delete link");
+      setDeleteConfirm(null);
+    });
+  };
+
+  return (
+    <Card className="border-blue-200 bg-blue-50/30">
+      <CardHeader>
+        <div className="flex items-center gap-2">
+          <Link className="h-4 w-4 text-blue-600" />
+          <CardTitle className="text-base text-blue-900">Share Links</CardTitle>
+        </div>
+        <p className="text-sm text-muted-foreground">
+          Generate links that allow leaders to complete the Just Culture Algorithm without logging
+          in. Submissions will appear in your assessment list.
+        </p>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded text-sm flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4 shrink-0" />
+            {error}
+            <button onClick={() => setError(null)} className="ml-auto">
+              <X className="h-3 w-3" />
+            </button>
+          </div>
+        )}
+
+        {/* Create new link */}
+        <div className="flex items-end gap-3">
+          <div className="flex-1">
+            <Label htmlFor="link-label" className="text-xs">
+              Label (optional)
+            </Label>
+            <Input
+              id="link-label"
+              placeholder="e.g., Leadership Team Q1 2026"
+              value={newLabel}
+              onChange={(e) => setNewLabel(e.target.value)}
+              className="bg-white"
+            />
+          </div>
+          <div>
+            <Label htmlFor="link-expiry" className="text-xs">
+              Expires
+            </Label>
+            <Input
+              id="link-expiry"
+              type="date"
+              value={newExpiry}
+              onChange={(e) => setNewExpiry(e.target.value)}
+              className="bg-white"
+            />
+          </div>
+          <Button onClick={handleCreate} disabled={isPending} size="sm">
+            <Plus className="h-4 w-4 mr-1" />
+            Create Link
+          </Button>
+        </div>
+
+        {/* Existing links */}
+        {shareLinks.length > 0 && (
+          <div className="space-y-2">
+            {shareLinks.map((link) => {
+              const isExpired = link.expiresAt && new Date(link.expiresAt) < new Date();
+              return (
+                <div
+                  key={link.id}
+                  className={`flex items-center gap-3 bg-white rounded-lg border p-3 ${
+                    !link.isActive || isExpired ? "opacity-60" : ""
+                  }`}
+                >
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-medium truncate">{link.label || "Unnamed link"}</p>
+                      {!link.isActive && (
+                        <Badge variant="outline" className="text-xs">
+                          Inactive
+                        </Badge>
+                      )}
+                      {isExpired && (
+                        <Badge variant="outline" className="text-xs text-red-600">
+                          Expired
+                        </Badge>
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Created {new Date(link.createdAt).toLocaleDateString()}
+                      {link.createdByName && ` by ${link.createdByName}`}
+                      {link.expiresAt &&
+                        ` \u2022 Expires ${new Date(link.expiresAt).toLocaleDateString()}`}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={() => handleCopy(link.token)}
+                      title="Copy link"
+                    >
+                      {copiedToken === link.token ? (
+                        <Check className="h-4 w-4 text-green-600" />
+                      ) : (
+                        <Copy className="h-4 w-4" />
+                      )}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={() => window.open(`/just-culture/${link.token}`, "_blank")}
+                      title="Open link"
+                    >
+                      <ExternalLink className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={() => handleToggle(link.id)}
+                      disabled={isPending}
+                      title={link.isActive ? "Deactivate" : "Activate"}
+                    >
+                      {link.isActive ? (
+                        <X className="h-4 w-4 text-amber-500" />
+                      ) : (
+                        <Check className="h-4 w-4 text-green-500" />
+                      )}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-red-500 hover:text-red-700"
+                      onClick={() => setDeleteConfirm(link.id)}
+                      disabled={isPending}
+                      title="Delete"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </CardContent>
+
+      {/* Delete confirmation for share link */}
+      <Dialog open={!!deleteConfirm} onOpenChange={() => setDeleteConfirm(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Share Link</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Are you sure? Existing submissions from this link will be preserved, but the link will
+            stop working.
+          </p>
+          <div className="flex justify-end gap-2 mt-4">
+            <Button variant="outline" onClick={() => setDeleteConfirm(null)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => deleteConfirm && handleDelete(deleteConfirm)}
+              disabled={isPending}
+            >
+              {isPending ? "Deleting..." : "Delete"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </Card>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Progress step
 // ---------------------------------------------------------------------------
 
@@ -797,6 +1063,24 @@ function AlgorithmStepCard({
           </ul>
         </div>
 
+        {/* Interview questions */}
+        {step.interviewQuestions && step.interviewQuestions.length > 0 && (
+          <div className="bg-teal-50/50 border border-teal-200/50 rounded-lg p-3">
+            <p className="text-xs font-medium text-teal-800 mb-2 flex items-center gap-1">
+              <MessageCircle className="h-3.5 w-3.5" />
+              Sample Interview Questions
+            </p>
+            <ul className="space-y-1">
+              {step.interviewQuestions.map((q, i) => (
+                <li key={i} className="text-xs text-teal-700 flex gap-2">
+                  <span className="shrink-0">&#8226;</span>
+                  {q}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
         {/* Educational note */}
         {step.educationalNote && (
           <div className="bg-blue-50/50 border border-blue-200/50 rounded-lg p-3">
@@ -964,26 +1248,55 @@ function JustCultureCoachingPanel({
               </div>
             </div>
 
+            {/* Three Duties */}
+            <div className="border-t pt-3">
+              <p className="text-xs font-medium text-foreground/80 mb-2">
+                Three Duties (David Marx)
+              </p>
+              <div className="space-y-2">
+                {THREE_DUTIES.map((d, i) => (
+                  <details key={i} className="text-xs">
+                    <summary className="cursor-pointer font-medium text-muted-foreground hover:text-foreground">
+                      {d.title}
+                    </summary>
+                    <p className="mt-1 text-muted-foreground pl-4">{d.description}</p>
+                  </details>
+                ))}
+              </div>
+            </div>
+
             {/* Behavior types reference */}
             <div className="border-t pt-3">
               <p className="text-xs font-medium text-foreground/80 mb-2">Behavior Types</p>
               <div className="space-y-2">
                 <div className="bg-green-50/50 rounded p-2">
-                  <p className="text-xs font-medium text-green-800">Human Error → Console</p>
+                  <p className="text-xs font-medium text-green-800">Human Error &#8594; Console</p>
                   <p className="text-xs text-green-700">
                     Inadvertent action — the person intended to do the right thing
                   </p>
                 </div>
                 <div className="bg-amber-50/50 rounded p-2">
-                  <p className="text-xs font-medium text-amber-800">At-Risk Behavior → Coach</p>
+                  <p className="text-xs font-medium text-amber-800">
+                    At-Risk Behavior &#8594; Coach
+                  </p>
                   <p className="text-xs text-amber-700">
                     Conscious choice where the risk was not appreciated or believed justified
                   </p>
                 </div>
                 <div className="bg-red-50/50 rounded p-2">
-                  <p className="text-xs font-medium text-red-800">Reckless Behavior → Discipline</p>
+                  <p className="text-xs font-medium text-red-800">
+                    Reckless Behavior &#8594; Discipline
+                  </p>
                   <p className="text-xs text-red-700">
                     Conscious disregard of a substantial and unjustifiable risk
+                  </p>
+                </div>
+                <div className="bg-purple-50/50 rounded p-2">
+                  <p className="text-xs font-medium text-purple-800">
+                    Incapacity &#8594; Health Pathway
+                  </p>
+                  <p className="text-xs text-purple-700">
+                    Impairment by illness, substance use, or mental health condition
                   </p>
                 </div>
               </div>
