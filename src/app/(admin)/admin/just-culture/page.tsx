@@ -23,12 +23,25 @@ export interface JcaSummary {
   campaignId: string | null;
   campaignName: string | null;
   createdByName: string | null;
+  submitterName: string | null;
+  submitterEmail: string | null;
+  shareToken: string | null;
   createdAt: string;
 }
 
 export interface CampaignOption {
   id: string;
   name: string;
+}
+
+export interface ShareLinkSummary {
+  id: string;
+  token: string;
+  label: string | null;
+  isActive: boolean;
+  expiresAt: string | null;
+  createdByName: string | null;
+  createdAt: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -41,7 +54,7 @@ export default async function JustCulturePage() {
     notFound();
   }
 
-  const [assessments, campaigns] = await Promise.all([
+  const [assessments, campaigns, shareLinks] = await Promise.all([
     prisma.justCultureAssessment.findMany({
       orderBy: { createdAt: "desc" },
       include: {
@@ -53,6 +66,12 @@ export default async function JustCulturePage() {
       where: { isActive: true },
       orderBy: { name: "asc" },
       select: { id: true, name: true },
+    }),
+    prisma.jcaShareLink.findMany({
+      orderBy: { createdAt: "desc" },
+      include: {
+        createdBy: { select: { firstName: true, lastName: true } },
+      },
     }),
   ]);
 
@@ -69,8 +88,27 @@ export default async function JustCulturePage() {
     campaignId: a.campaign?.id ?? null,
     campaignName: a.campaign?.name ?? null,
     createdByName: a.createdBy ? `${a.createdBy.firstName} ${a.createdBy.lastName}` : null,
+    submitterName: a.submitterName,
+    submitterEmail: a.submitterEmail,
+    shareToken: a.shareToken,
     createdAt: a.createdAt.toISOString(),
   }));
 
-  return <JustCulturePageClient assessments={jcaSummaries} campaigns={campaigns} />;
+  const shareLinkSummaries: ShareLinkSummary[] = shareLinks.map((l) => ({
+    id: l.id,
+    token: l.token,
+    label: l.label,
+    isActive: l.isActive,
+    expiresAt: l.expiresAt?.toISOString() ?? null,
+    createdByName: l.createdBy ? `${l.createdBy.firstName} ${l.createdBy.lastName}` : null,
+    createdAt: l.createdAt.toISOString(),
+  }));
+
+  return (
+    <JustCulturePageClient
+      assessments={jcaSummaries}
+      campaigns={campaigns}
+      shareLinks={shareLinkSummaries}
+    />
+  );
 }

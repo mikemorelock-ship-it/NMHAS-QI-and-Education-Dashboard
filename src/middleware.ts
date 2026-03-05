@@ -174,9 +174,9 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  // Match everything EXCEPT: login, register, static assets, favicon
+  // Match everything EXCEPT: login, register, share, just-culture (public), static assets, favicon
   matcher: [
-    "/((?!login|register|share|_next/static|_next/image|favicon\\.ico|api/public).*)",
+    "/((?!login|register|share|just-culture|_next/static|_next/image|favicon\\.ico|api/public).*)",
     "/api/:path*",
   ],
 };

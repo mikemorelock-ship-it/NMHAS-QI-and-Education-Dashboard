@@ -133,7 +133,11 @@ export function ScorecardTable({ scorecard }: ScorecardTableProps) {
                             <td
                               className={
                                 "px-3 py-2.5 text-right font-mono font-semibold whitespace-nowrap border-r border-border " +
-                                getTargetColorClass(metric.actualYtd, rawTarget, metric.desiredDirection)
+                                getTargetColorClass(
+                                  metric.actualYtd,
+                                  rawTarget,
+                                  metric.desiredDirection
+                                )
                               }
                             >
                               {metric.actualYtd !== null ? (
@@ -146,9 +150,7 @@ export function ScorecardTable({ scorecard }: ScorecardTableProps) {
                                   )}
                                   {rawTarget !== null && (
                                     <span className="sr-only">
-                                      {metric.meetsTarget
-                                        ? "(on target)"
-                                        : "(below target)"}
+                                      {metric.meetsTarget ? "(on target)" : "(below target)"}
                                     </span>
                                   )}
                                 </>
@@ -181,7 +183,13 @@ export function ScorecardTable({ scorecard }: ScorecardTableProps) {
                                       )}
                                       {rawTarget !== null && (
                                         <span className="sr-only">
-                                          {(metric.desiredDirection === "down" ? value <= rawTarget : value >= rawTarget) ? "(on target)" : "(below target)"}
+                                          {(
+                                            metric.desiredDirection === "down"
+                                              ? value <= rawTarget
+                                              : value >= rawTarget
+                                          )
+                                            ? "(on target)"
+                                            : "(below target)"}
                                         </span>
                                       )}
                                     </>
@@ -212,7 +220,6 @@ function getTargetColorClass(
   desiredDirection: "up" | "down" = "up"
 ): string {
   if (value === null || target === null) return "";
-  const meetsTarget =
-    desiredDirection === "down" ? value <= target : value >= target;
+  const meetsTarget = desiredDirection === "down" ? value <= target : value >= target;
   return meetsTarget ? "text-green-700 bg-green-50" : "text-red-700 bg-red-50";
 }
