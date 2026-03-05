@@ -596,7 +596,13 @@ export function UploadClient({ lookup }: { lookup: TemplateLookupData }) {
     const numColIdx = rawHeaders.indexOf(mapping.numerator);
     const denColIdx = rawHeaders.indexOf(mapping.denominator);
     const divColIdx = rawHeaders.indexOf(mapping.division);
-    const indColIdx = rawHeaders.indexOf(mapping.region);
+    const deptColIdx = rawHeaders.indexOf(mapping.department);
+    // Fall back to the "department" CSV column for region resolution,
+    // since the UI displays region as "Department".
+    const indColIdx =
+      rawHeaders.indexOf(mapping.region) >= 0
+        ? rawHeaders.indexOf(mapping.region)
+        : deptColIdx;
     const notesColIdx = rawHeaders.indexOf(mapping.notes);
 
     for (let i = 0; i < rawRows.length; i++) {
@@ -662,8 +668,11 @@ export function UploadClient({ lookup }: { lookup: TemplateLookupData }) {
         // Calculate value from components
         if (metricDef?.dataType === "rate" && metricDef.rateMultiplier) {
           value = (numerator / denominator) * metricDef.rateMultiplier;
+        } else if (metricDef?.dataType === "proportion") {
+          // Proportion: convert to percentage (matching manual entry behavior)
+          value = (numerator / denominator) * 100;
         } else {
-          // Proportion or rate without multiplier: numerator / denominator
+          // Rate without multiplier: raw ratio
           value = numerator / denominator;
         }
       } else {
