@@ -54,55 +54,67 @@ export default async function JustCulturePage() {
     notFound();
   }
 
-  const [assessments, campaigns, shareLinks] = await Promise.all([
-    prisma.justCultureAssessment.findMany({
+  // Fetch assessments — use raw query fallback if new columns don't exist yet
+  let jcaSummaries: JcaSummary[] = [];
+  try {
+    const assessments = await prisma.justCultureAssessment.findMany({
       orderBy: { createdAt: "desc" },
       include: {
         campaign: { select: { id: true, name: true } },
         createdBy: { select: { firstName: true, lastName: true } },
       },
-    }),
-    prisma.campaign.findMany({
-      where: { isActive: true },
-      orderBy: { name: "asc" },
-      select: { id: true, name: true },
-    }),
-    prisma.jcaShareLink.findMany({
+    });
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    jcaSummaries = assessments.map((a: any) => ({
+      id: a.id,
+      title: a.title,
+      description: a.description,
+      status: a.status,
+      incidentDate: a.incidentDate?.toISOString().split("T")[0] ?? null,
+      behaviorType: a.behaviorType,
+      recommendation: a.recommendation,
+      involvedPerson: a.involvedPerson,
+      involvedRole: a.involvedRole,
+      campaignId: a.campaign?.id ?? null,
+      campaignName: a.campaign?.name ?? null,
+      createdByName: a.createdBy ? `${a.createdBy.firstName} ${a.createdBy.lastName}` : null,
+      submitterName: a.submitterName ?? null,
+      submitterEmail: a.submitterEmail ?? null,
+      shareToken: a.shareToken ?? null,
+      createdAt: a.createdAt.toISOString(),
+    }));
+  } catch (err) {
+    console.error("Failed to fetch JCA assessments:", err);
+  }
+
+  const campaigns = await prisma.campaign.findMany({
+    where: { isActive: true },
+    orderBy: { name: "asc" },
+    select: { id: true, name: true },
+  });
+
+  // JcaShareLink table may not exist yet if DB migration hasn't been applied
+  let shareLinkSummaries: ShareLinkSummary[] = [];
+  try {
+    const shareLinks = await prisma.jcaShareLink.findMany({
       orderBy: { createdAt: "desc" },
       include: {
         createdBy: { select: { firstName: true, lastName: true } },
       },
-    }),
-  ]);
-
-  const jcaSummaries: JcaSummary[] = assessments.map((a) => ({
-    id: a.id,
-    title: a.title,
-    description: a.description,
-    status: a.status,
-    incidentDate: a.incidentDate?.toISOString().split("T")[0] ?? null,
-    behaviorType: a.behaviorType,
-    recommendation: a.recommendation,
-    involvedPerson: a.involvedPerson,
-    involvedRole: a.involvedRole,
-    campaignId: a.campaign?.id ?? null,
-    campaignName: a.campaign?.name ?? null,
-    createdByName: a.createdBy ? `${a.createdBy.firstName} ${a.createdBy.lastName}` : null,
-    submitterName: a.submitterName,
-    submitterEmail: a.submitterEmail,
-    shareToken: a.shareToken,
-    createdAt: a.createdAt.toISOString(),
-  }));
-
-  const shareLinkSummaries: ShareLinkSummary[] = shareLinks.map((l) => ({
-    id: l.id,
-    token: l.token,
-    label: l.label,
-    isActive: l.isActive,
-    expiresAt: l.expiresAt?.toISOString() ?? null,
-    createdByName: l.createdBy ? `${l.createdBy.firstName} ${l.createdBy.lastName}` : null,
-    createdAt: l.createdAt.toISOString(),
-  }));
+    });
+    shareLinkSummaries = shareLinks.map((l) => ({
+      id: l.id,
+      token: l.token,
+      label: l.label,
+      isActive: l.isActive,
+      expiresAt: l.expiresAt?.toISOString() ?? null,
+      createdByName: l.createdBy ? `${l.createdBy.firstName} ${l.createdBy.lastName}` : null,
+      createdAt: l.createdAt.toISOString(),
+    }));
+  } catch {
+    // Table doesn't exist yet — show page without share links
+  }
 
   return (
     <JustCulturePageClient
