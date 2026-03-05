@@ -113,6 +113,7 @@ model MetricDefinition {
   responsibleParties MetricResponsibleParty[]
   scorecardMetrics   ScorecardMetric[]
   metricAssociations MetricAssociation[]
+  yearTargets        MetricYearTarget[]
   driverDiagrams     DriverDiagram[]
   pdsaCycles         PdsaCycle[]
   campaigns          Campaign[]
@@ -1141,4 +1142,18 @@ model JustCultureAssessment {
   @@index([status])
   @@index([campaignId])
   @@index([createdById])
+}
+
+model MetricYearTarget {
+  id                 String   @id @default(cuid())
+  metricDefinitionId String
+  year               Int
+  target             Float
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  metricDefinition MetricDefinition @relation(fields: [metricDefinitionId], references: [id], onDelete: Cascade)
+
+  @@unique([metricDefinitionId, year])
+  @@index([metricDefinitionId])
 }
