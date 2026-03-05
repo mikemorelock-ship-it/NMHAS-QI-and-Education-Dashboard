@@ -104,6 +104,28 @@ export async function GET(request: NextRequest) {
     const kpiMetricMap = new Map(kpiMetrics.map((m) => [m.id, m]));
     const kpiMetricIdSet = new Set(kpiMetrics.map((m) => m.id));
 
+    // Resolve year-specific targets: derive target year from date range
+    const targetYear = (() => {
+      if (range.startsWith("custom:")) {
+        const parts = range.split(":");
+        const endDate = parts[2] ? new Date(parts[2]) : new Date();
+        const y = endDate.getFullYear();
+        return Number.isFinite(y) && y >= 2020 ? y : new Date().getFullYear();
+      }
+      return new Date().getFullYear();
+    })();
+    const yearTargetRows =
+      kpiMetricIdSet.size > 0
+        ? await prisma.metricYearTarget.findMany({
+            where: {
+              metricDefinitionId: { in: Array.from(kpiMetricIdSet) },
+              year: targetYear,
+            },
+            select: { metricDefinitionId: true, target: true },
+          })
+        : [];
+    const yearTargetMap = new Map(yearTargetRows.map((yt) => [yt.metricDefinitionId, yt.target]));
+
     // =========================================================================
     // BULK FETCH: all region-level entries for all associated KPI metrics at once
     // This replaces ~200 individual queries with 1-2 bulk queries.
@@ -304,7 +326,7 @@ export async function GET(request: NextRequest) {
         currentValue,
         previousValue,
         unit: metric.unit,
-        target: metric.target,
+        target: yearTargetMap.get(metric.id) ?? metric.target,
         trend: Math.round(trend * 10) / 10,
         sparkline: sparklineSeries,
         chartType: metric.chartType,
@@ -447,7 +469,7 @@ export async function GET(request: NextRequest) {
           currentValue,
           previousValue,
           unit: metric.unit,
-          target: metric.target,
+          target: yearTargetMap.get(metric.id) ?? metric.target,
           trend: Math.round(trend * 10) / 10,
           sparkline: entries.slice(-12).map((e) => e.value),
           chartType: metric.chartType,

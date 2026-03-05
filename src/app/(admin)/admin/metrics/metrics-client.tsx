@@ -10,6 +10,7 @@ import {
   updateMetricSortOrders,
 } from "@/actions/metrics";
 import { setMetricAssociations } from "@/actions/metric-associations";
+import { setMetricYearTargets, getMetricYearTargets } from "@/actions/metric-year-targets";
 import {
   DndContext,
   closestCenter,
@@ -208,6 +209,9 @@ export function MetricsClient({
     regionIds: Set<string>;
   }>({ divisionIds: new Set(), regionIds: new Set() });
 
+  // Year-specific targets state for the currently open form
+  const [formYearTargets, setFormYearTargets] = useState<{ year: number; target: number }[]>([]);
+
   // Derive unique categories from metrics
   const categories = useMemo(() => {
     const cats = new Set<string>();
@@ -365,13 +369,16 @@ export function MetricsClient({
     });
   }
 
-  function openEditDialog(metric: MetricRow) {
+  async function openEditDialog(metric: MetricRow) {
     setFormError(null);
     const assoc = associationsMap[metric.id];
     setFormAssociations({
       divisionIds: new Set(assoc?.divisionIds ?? []),
       regionIds: new Set(assoc?.regionIds ?? []),
     });
+    // Load year-specific targets
+    const yearTargets = await getMetricYearTargets(metric.id);
+    setFormYearTargets(yearTargets);
     setEditTarget(metric);
   }
 
@@ -381,6 +388,7 @@ export function MetricsClient({
       divisionIds: new Set(),
       regionIds: new Set(),
     });
+    setFormYearTargets([]);
     setAddOpen(true);
   }
 
@@ -443,6 +451,10 @@ export function MetricsClient({
                     if (associations.length > 0) {
                       await setMetricAssociations(result.data.id, associations);
                     }
+                    // Save year-specific targets
+                    if (formYearTargets.length > 0) {
+                      await setMetricYearTargets(result.data.id, formYearTargets);
+                    }
                   }
                   setAddOpen(false);
                   router.refresh();
@@ -463,6 +475,8 @@ export function MetricsClient({
                 regions={regions}
                 formAssociations={formAssociations}
                 onAssociationsChange={setFormAssociations}
+                yearTargets={formYearTargets}
+                onYearTargetsChange={setFormYearTargets}
               />
               <DialogFooter className="mt-4">
                 <Button
@@ -699,6 +713,8 @@ export function MetricsClient({
                     associations.push({ divisionId: null, regionId: regId });
                   }
                   await setMetricAssociations(editTarget.id, associations);
+                  // Save year-specific targets
+                  await setMetricYearTargets(editTarget.id, formYearTargets);
                   setEditTarget(null);
                   router.refresh();
                 } else {
@@ -719,6 +735,8 @@ export function MetricsClient({
                 regions={regions}
                 formAssociations={formAssociations}
                 onAssociationsChange={setFormAssociations}
+                yearTargets={formYearTargets}
+                onYearTargetsChange={setFormYearTargets}
               />
               <DialogFooter className="mt-4">
                 <Button
@@ -1010,6 +1028,8 @@ function MetricFormFields({
   regions,
   formAssociations,
   onAssociationsChange,
+  yearTargets,
+  onYearTargetsChange,
 }: {
   departments: DepartmentOption[];
   allMetrics: MetricRow[];
@@ -1018,6 +1038,8 @@ function MetricFormFields({
   regions: RegionOption[];
   formAssociations: { divisionIds: Set<string>; regionIds: Set<string> };
   onAssociationsChange: (value: { divisionIds: Set<string>; regionIds: Set<string> }) => void;
+  yearTargets: { year: number; target: number }[];
+  onYearTargetsChange: (targets: { year: number; target: number }[]) => void;
 }) {
   const parentCandidates = allMetrics.filter(
     (m) => m.parentId === null && m.id !== defaultValues?.id
@@ -1379,17 +1401,90 @@ function MetricFormFields({
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="target">Target</Label>
+          <Label htmlFor="target">Default Target</Label>
           <Input
             id="target"
             name="target"
             type="text"
             inputMode="decimal"
             defaultValue={defaultValues?.target ?? ""}
-            placeholder="Optional target"
+            placeholder="Optional default target"
           />
+          <p className="text-xs text-muted-foreground">Used when no year-specific target is set</p>
         </div>
       </div>
+
+      {/* Year-Specific Targets */}
+      <div className="space-y-3 border rounded-lg p-4 bg-muted/30">
+        <div>
+          <Label className="text-sm font-semibold">Year-Specific Targets</Label>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Override the default target for specific years.
+          </p>
+        </div>
+        {yearTargets.length > 0 && (
+          <div className="space-y-2">
+            {yearTargets.map((yt, idx) => (
+              <div key={idx} className="flex items-center gap-2">
+                <Input
+                  type="number"
+                  min={2020}
+                  max={2100}
+                  value={yt.year}
+                  onChange={(e) => {
+                    const updated = [...yearTargets];
+                    updated[idx] = { ...updated[idx], year: parseInt(e.target.value) || 2020 };
+                    onYearTargetsChange(updated);
+                  }}
+                  className="w-28"
+                  placeholder="Year"
+                />
+                <Input
+                  type="text"
+                  inputMode="decimal"
+                  value={yt.target}
+                  onChange={(e) => {
+                    const updated = [...yearTargets];
+                    updated[idx] = { ...updated[idx], target: parseFloat(e.target.value) || 0 };
+                    onYearTargetsChange(updated);
+                  }}
+                  className="flex-1"
+                  placeholder="Target value"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    onYearTargetsChange(yearTargets.filter((_, i) => i !== idx));
+                  }}
+                >
+                  <Trash2 className="h-4 w-4 text-muted-foreground" />
+                </Button>
+              </div>
+            ))}
+          </div>
+        )}
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            const currentYear = new Date().getFullYear();
+            // Find a year that isn't already in the list
+            let newYear = currentYear;
+            const existingYears = new Set(yearTargets.map((t) => t.year));
+            while (existingYears.has(newYear)) {
+              newYear++;
+            }
+            onYearTargetsChange([...yearTargets, { year: newYear, target: 0 }]);
+          }}
+        >
+          <Plus className="h-4 w-4 mr-1" />
+          Add Year Target
+        </Button>
+      </div>
+
       <div className="flex items-center gap-2">
         <input
           type="checkbox"

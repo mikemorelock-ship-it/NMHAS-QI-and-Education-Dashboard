@@ -163,6 +163,13 @@ export async function GET(request: NextRequest) {
 
     const metricIds = filteredMetrics.map((m) => m.id);
 
+    // Fetch year-specific targets for the selected year
+    const yearTargetRows = await prisma.metricYearTarget.findMany({
+      where: { metricDefinitionId: { in: metricIds }, year },
+      select: { metricDefinitionId: true, target: true },
+    });
+    const yearTargetMap = new Map(yearTargetRows.map((yt) => [yt.metricDefinitionId, yt.target]));
+
     if (metricIds.length === 0) {
       return NextResponse.json({
         scorecard: {
@@ -330,11 +337,13 @@ export async function GET(request: NextRequest) {
         }
       }
 
-      const targetYtd = metric.target;
+      // Use year-specific target if available, otherwise fall back to default
+      const resolvedTarget = yearTargetMap.get(metric.id) ?? metric.target;
+      const targetYtd = resolvedTarget;
       // Target is stored in display units; convert to raw for comparison with raw data values
       const rawTarget =
-        metric.target !== null
-          ? targetToRaw(metric.target, metric.unit, metric.rateMultiplier)
+        resolvedTarget !== null
+          ? targetToRaw(resolvedTarget, metric.unit, metric.rateMultiplier)
           : null;
       const desired = metric.desiredDirection ?? "up";
       const meetsTarget =
@@ -349,7 +358,7 @@ export async function GET(request: NextRequest) {
         metricName: metric.name,
         unit: metric.unit,
         aggregationType: metric.aggregationType,
-        target: metric.target,
+        target: resolvedTarget,
         desiredDirection: desired,
         rateMultiplier: metric.rateMultiplier ?? null,
         rateSuffix: metric.rateSuffix ?? null,
