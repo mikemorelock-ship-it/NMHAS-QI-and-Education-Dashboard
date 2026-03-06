@@ -142,7 +142,7 @@ export function parseDateRangeFilter(range: string): {
     case "6mo":
       return { gte: startOfMonth(subMonths(now, 6)) };
     case "1yr":
-      return { gte: startOfMonth(subMonths(now, 12)) };
+      return { gte: new Date(now.getFullYear() - 1, 0, 1) };
     case "ytd":
       return { gte: new Date(now.getFullYear(), 0, 1) };
     case "prev-week": {
