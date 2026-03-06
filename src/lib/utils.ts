@@ -136,11 +136,11 @@ export function parseDateRangeFilter(range: string): {
   const now = new Date();
   switch (range) {
     case "1mo":
-      return { gte: startOfMonth(subMonths(now, 1)) };
+      return { gte: subMonths(startOfMonth(now), 1) };
     case "3mo":
-      return { gte: startOfMonth(subMonths(now, 3)) };
+      return { gte: subMonths(startOfMonth(now), 3) };
     case "6mo":
-      return { gte: startOfMonth(subMonths(now, 6)) };
+      return { gte: subMonths(startOfMonth(now), 6) };
     case "1yr":
       return { gte: new Date(now.getFullYear() - 1, 0, 1) };
     case "ytd":
