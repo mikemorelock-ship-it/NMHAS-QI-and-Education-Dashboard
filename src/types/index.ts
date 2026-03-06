@@ -139,8 +139,10 @@ export interface SPCChartData {
   movingRange?: SPCMovingRangeData[];
   /** Fixed-limit points using average denominator (P-chart and U-chart only) */
   fixedPoints?: SPCPointData[];
-  /** Whether variable control limits are appropriate for this metric */
+  /** Whether this chart type supports variable control limits (true for P/U-chart) */
   supportsVariableLimits: boolean;
+  /** Whether variable limits are the recommended default based on denominator variance */
+  recommendVariableLimits?: boolean;
 }
 
 // ---------------------------------------------------------------------------
