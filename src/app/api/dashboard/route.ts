@@ -25,7 +25,12 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const range = searchParams.get("range") ?? "all";
 
-    const dateFilter = parseDateRangeFilter(range);
+    // Find the latest data point to anchor relative date filters
+    const latestEntry = await prisma.metricEntry.findFirst({
+      orderBy: { periodStart: "desc" },
+      select: { periodStart: true },
+    });
+    const dateFilter = parseDateRangeFilter(range, latestEntry?.periodStart ?? undefined);
     const periodStartFilter = Object.keys(dateFilter).length > 0 ? { periodStart: dateFilter } : {};
 
     // Fetch all active divisions

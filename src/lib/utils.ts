@@ -111,10 +111,18 @@ export function slugify(text: string): string {
  *  - Presets: "1mo", "3mo", "6mo", "1yr", "ytd", "all"
  *  - Custom ranges: "custom:YYYY-MM-DD:YYYY-MM-DD"
  *
+ * @param range - The range string to parse
+ * @param anchor - Reference date for relative filters (1mo, 3mo, 6mo, 1yr).
+ *   Pass the latest data point date so filters are relative to the data,
+ *   not to today. Defaults to the current date.
+ *
  * Returns `{}` for "all" (no filter), or `{ gte: Date }` for presets,
  * or `{ gte: Date, lte: Date }` for custom ranges.
  */
-export function parseDateRangeFilter(range: string): {
+export function parseDateRangeFilter(
+  range: string,
+  anchor?: Date
+): {
   gte?: Date;
   lte?: Date;
 } {
@@ -132,17 +140,19 @@ export function parseDateRangeFilter(range: string): {
     return {};
   }
 
-  // Preset ranges
+  // Preset ranges — relative filters use the anchor (latest data point),
+  // calendar-based filters (ytd, prev-*) always use the current date.
   const now = new Date();
+  const ref = anchor ?? now;
   switch (range) {
     case "1mo":
-      return { gte: subMonths(startOfMonth(now), 1) };
+      return { gte: subMonths(startOfMonth(ref), 1) };
     case "3mo":
-      return { gte: subMonths(startOfMonth(now), 3) };
+      return { gte: subMonths(startOfMonth(ref), 3) };
     case "6mo":
-      return { gte: subMonths(startOfMonth(now), 6) };
+      return { gte: subMonths(startOfMonth(ref), 6) };
     case "1yr":
-      return { gte: new Date(now.getFullYear() - 1, 0, 1) };
+      return { gte: new Date(ref.getFullYear() - 1, ref.getMonth(), 1) };
     case "ytd":
       return { gte: new Date(now.getFullYear(), 0, 1) };
     case "prev-week": {

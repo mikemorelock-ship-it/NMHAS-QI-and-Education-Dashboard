@@ -33,8 +33,12 @@ export async function GET(
     const { searchParams } = new URL(request.url);
     const range = searchParams.get("range") ?? "ytd";
 
-    // Parse the range into a Prisma-compatible date filter
-    const dateFilter = parseDateRangeFilter(range);
+    // Find the latest data point to anchor relative date filters
+    const latestEntry = await prisma.metricEntry.findFirst({
+      orderBy: { periodStart: "desc" },
+      select: { periodStart: true },
+    });
+    const dateFilter = parseDateRangeFilter(range, latestEntry?.periodStart ?? undefined);
     const periodStartFilter = Object.keys(dateFilter).length > 0 ? { periodStart: dateFilter } : {};
 
     // Fetch department
