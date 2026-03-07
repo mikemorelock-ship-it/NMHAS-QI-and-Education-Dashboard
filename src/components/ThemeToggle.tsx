@@ -12,7 +12,7 @@ function useIsMounted() {
   return useSyncExternalStore(
     emptySubscribe,
     () => true,
-    () => false,
+    () => false
   );
 }
 
@@ -45,7 +45,7 @@ export function ThemeToggle({ variant = "default", className }: ThemeToggleProps
         "h-9 w-9",
         variant === "sidebar" &&
           "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground",
-        className,
+        className
       )}
     >
       {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
