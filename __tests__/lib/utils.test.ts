@@ -30,7 +30,7 @@ describe("formatMetricValue", () => {
   });
 
   it("formats score with one decimal and /10 suffix", () => {
-    expect(formatMetricValue(8.33, "score")).toBe("8.3/10");
+    expect(formatMetricValue(8.33, "score", null, null, 10)).toBe("8.3/10");
   });
 
   it("formats count with comma separators", () => {
