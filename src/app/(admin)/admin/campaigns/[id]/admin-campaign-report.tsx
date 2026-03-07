@@ -1432,14 +1432,8 @@ export function AdminCampaignReport({
   const setChartMode = (metricId: string, mode: ChartMode) =>
     setChartModes((prev) => ({ ...prev, [metricId]: mode }));
 
-  // Collapsible PDSA cycle state — active cycles expand by default
-  const [expandedCycleIds, setExpandedCycleIds] = useState<string[]>(() => {
-    const activeStatuses = new Set(["planning", "doing", "studying", "acting"]);
-    return diagrams
-      .flatMap((d) => d.cycles)
-      .filter((c) => activeStatuses.has(c.status))
-      .map((c) => c.id);
-  });
+  // Collapsible PDSA cycle state — default to all collapsed
+  const [expandedCycleIds, setExpandedCycleIds] = useState<string[]>([]);
   const [cloningCycleId, setCloningCycleId] = useState<string | null>(null);
 
   // Collapsed diagram state
