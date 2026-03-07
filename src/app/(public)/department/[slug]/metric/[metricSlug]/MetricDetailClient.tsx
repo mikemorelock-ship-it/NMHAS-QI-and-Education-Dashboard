@@ -236,13 +236,19 @@ export function MetricDetailClient({
     return "flat";
   }, [data.stats.trend]);
 
+  const desiredDirection = data.desiredDirection ?? "up";
+  const isFavorable =
+    trendDirection === "flat" ? null : trendDirection === desiredDirection;
+
   const rateMultiplier = data.rateMultiplier;
   const rateSuffix = data.rateSuffix;
 
   // Target is stored in display units; convert to raw for comparison with data values
   const rawTarget =
     data.target !== null ? targetToRaw(data.target, data.unit, rateMultiplier) : null;
-  const atOrAboveTarget = rawTarget !== null && data.stats.current >= rawTarget;
+  const atOrAboveTarget =
+    rawTarget !== null &&
+    (desiredDirection === "down" ? data.stats.current <= rawTarget : data.stats.current >= rawTarget);
 
   // Unified QI annotations for chart overlays (includes manual annotations + PDSA cycles)
   const qiAnnotations: QIAnnotation[] = useMemo(() => {
@@ -447,9 +453,9 @@ export function MetricDetailClient({
               <div
                 className={cn(
                   "inline-flex items-center gap-1 text-sm font-medium",
-                  trendDirection === "up" && "text-[#00b0ad]",
-                  trendDirection === "down" && "text-[#e04726]",
-                  trendDirection === "flat" && "text-muted-foreground"
+                  isFavorable === true && "text-[#00b0ad]",
+                  isFavorable === false && "text-[#e04726]",
+                  isFavorable === null && "text-muted-foreground"
                 )}
               >
                 {trendDirection === "up" && <TrendingUp className="size-4" />}
@@ -657,9 +663,9 @@ export function MetricDetailClient({
               )
             }
             valueColor={
-              trendDirection === "up"
+              isFavorable === true
                 ? "text-[#00b0ad]"
-                : trendDirection === "down"
+                : isFavorable === false
                   ? "text-[#e04726]"
                   : undefined
             }
@@ -794,9 +800,11 @@ export function MetricDetailClient({
                             <span
                               className={cn(
                                 "inline-flex items-center gap-1 text-xs font-medium",
-                                childTrend === "up" && "text-[#00b0ad]",
-                                childTrend === "down" && "text-[#e04726]",
-                                childTrend === "flat" && "text-muted-foreground"
+                                childTrend === "flat"
+                                  ? "text-muted-foreground"
+                                  : childTrend === desiredDirection
+                                    ? "text-[#00b0ad]"
+                                    : "text-[#e04726]"
                               )}
                             >
                               {childTrend === "up" && <TrendingUp className="size-3" />}
@@ -1032,9 +1040,11 @@ export function MetricDetailClient({
                             <span
                               className={cn(
                                 "inline-flex items-center gap-1 text-xs font-medium",
-                                divTrend === "up" && "text-[#00b0ad]",
-                                divTrend === "down" && "text-[#e04726]",
-                                divTrend === "flat" && "text-muted-foreground"
+                                divTrend === "flat"
+                                  ? "text-muted-foreground"
+                                  : divTrend === desiredDirection
+                                    ? "text-[#00b0ad]"
+                                    : "text-[#e04726]"
                               )}
                             >
                               {divTrend === "up" && <TrendingUp className="size-3" />}

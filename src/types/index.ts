@@ -165,6 +165,7 @@ export interface MetricDetailData {
   chartType: string;
   category: string | null;
   target: number | null;
+  desiredDirection: "up" | "down";
   division: {
     id: string;
     name: string;

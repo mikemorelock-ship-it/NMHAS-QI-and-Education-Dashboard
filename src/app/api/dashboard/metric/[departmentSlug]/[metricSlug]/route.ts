@@ -376,6 +376,7 @@ export async function GET(
       chartType: metric.chartType,
       category: metric.categoryLegacy,
       target: metric.target,
+      desiredDirection: (metric.desiredDirection as "up" | "down") ?? "up",
       rateMultiplier: metric.rateMultiplier ?? null,
       rateSuffix: metric.rateSuffix ?? null,
       dataType: metric.dataType,
