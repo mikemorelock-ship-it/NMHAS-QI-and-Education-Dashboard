@@ -334,6 +334,7 @@ export function HelpPageContent({ portal }: { portal: PortalId }) {
   const [featureSearch, setFeatureSearch] = useState("");
   const [glossarySearch, setGlossarySearch] = useState("");
   const [lastSeenDate] = useState<string | null>(() => localStorage.getItem(CHANGELOG_STORAGE_KEY));
+  const [updatesExpanded, setUpdatesExpanded] = useState(false);
   const [openReleases, setOpenReleases] = useState<Set<string>>(new Set());
 
   const meta = PORTAL_META[portal];
@@ -379,58 +380,77 @@ export function HelpPageContent({ portal }: { portal: PortalId }) {
         <p className="text-muted-foreground mt-1">{meta.description}</p>
       </div>
 
-      {/* Updates section — collapsible by release */}
+      {/* Updates section — entire section collapses to a single bar */}
       {releaseGroups.length > 0 && (
-        <section className="space-y-4">
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-2">
-              <Sparkles className="size-5 text-nmh-teal" />
-              <h2 className="text-lg font-semibold">Updates</h2>
-              <span className="text-xs text-muted-foreground">
-                {CHANGELOG.length} total across {releaseGroups.length} release
-                {releaseGroups.length !== 1 ? "s" : ""}
-              </span>
+        <section>
+          <button
+            type="button"
+            onClick={() => setUpdatesExpanded(!updatesExpanded)}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-lg border hover:bg-muted/50 transition-colors text-left"
+          >
+            <ChevronDown
+              className={`size-4 shrink-0 text-muted-foreground transition-transform duration-200 ${
+                updatesExpanded ? "rotate-0" : "-rotate-90"
+              }`}
+            />
+            <Sparkles className="size-5 text-nmh-teal shrink-0" />
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h2 className="text-lg font-semibold">Updates</h2>
+                <span className="text-xs text-muted-foreground">
+                  {CHANGELOG.length} total across {releaseGroups.length} release
+                  {releaseGroups.length !== 1 ? "s" : ""}
+                </span>
+              </div>
             </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-xs text-muted-foreground gap-1.5"
-              onClick={() => {
-                const allVersions = releaseGroups.map((g) => g.release.version);
-                const allOpen = allVersions.every((v) => openReleases.has(v));
-                setOpenReleases(allOpen ? new Set() : new Set(allVersions));
-              }}
-            >
-              <ChevronsUpDown className="size-3.5" />
-              {releaseGroups.every((g) => openReleases.has(g.release.version))
-                ? "Collapse All"
-                : "Expand All"}
-            </Button>
-          </div>
+            {!updatesExpanded && (
+              <span className="text-xs text-muted-foreground shrink-0">Click to expand</span>
+            )}
+          </button>
 
-          <div className="space-y-3">
-            {releaseGroups.map((group, idx) => (
-              <ReleaseGroup
-                key={group.release.version}
-                release={group.release}
-                entries={group.entries}
-                isLatest={idx === 0}
-                open={openReleases.has(group.release.version)}
-                onToggle={() =>
-                  setOpenReleases((prev) => {
-                    const next = new Set(prev);
-                    if (next.has(group.release.version)) {
-                      next.delete(group.release.version);
-                    } else {
-                      next.add(group.release.version);
-                    }
-                    return next;
-                  })
-                }
-                lastSeenDate={lastSeenDate}
-              />
-            ))}
-          </div>
+          {updatesExpanded && (
+            <div className="mt-3 space-y-3">
+              <div className="flex justify-end px-1">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-xs text-muted-foreground gap-1.5"
+                  onClick={() => {
+                    const allVersions = releaseGroups.map((g) => g.release.version);
+                    const allOpen = allVersions.every((v) => openReleases.has(v));
+                    setOpenReleases(allOpen ? new Set() : new Set(allVersions));
+                  }}
+                >
+                  <ChevronsUpDown className="size-3.5" />
+                  {releaseGroups.every((g) => openReleases.has(g.release.version))
+                    ? "Collapse All"
+                    : "Expand All"}
+                </Button>
+              </div>
+
+              {releaseGroups.map((group, idx) => (
+                <ReleaseGroup
+                  key={group.release.version}
+                  release={group.release}
+                  entries={group.entries}
+                  isLatest={idx === 0}
+                  open={openReleases.has(group.release.version)}
+                  onToggle={() =>
+                    setOpenReleases((prev) => {
+                      const next = new Set(prev);
+                      if (next.has(group.release.version)) {
+                        next.delete(group.release.version);
+                      } else {
+                        next.add(group.release.version);
+                      }
+                      return next;
+                    })
+                  }
+                  lastSeenDate={lastSeenDate}
+                />
+              ))}
+            </div>
+          )}
         </section>
       )}
 
