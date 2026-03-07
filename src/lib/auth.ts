@@ -2,7 +2,7 @@ import { cookies } from "next/headers";
 import { SignJWT, jwtVerify } from "jose";
 import bcrypt from "bcryptjs";
 import type { UserRole } from "./permissions";
-import { JWT_SECRET } from "./env";
+import { getJwtSecret } from "./env";
 import { prisma } from "./db";
 
 // ---------------------------------------------------------------------------
@@ -49,7 +49,7 @@ export async function createSession(user: Session): Promise<string> {
     .setProtectedHeader({ alg: "HS256" })
     .setExpirationTime("24h")
     .setIssuedAt()
-    .sign(JWT_SECRET);
+    .sign(getJwtSecret());
 }
 
 export async function setSessionCookie(token: string) {
@@ -79,7 +79,7 @@ export async function verifySession(): Promise<Session | null> {
   const token = cookieStore.get("session")?.value;
   if (!token) return null;
   try {
-    const { payload } = await jwtVerify(token, JWT_SECRET);
+    const { payload } = await jwtVerify(token, getJwtSecret());
     if (
       typeof payload.userId !== "string" ||
       typeof payload.email !== "string" ||
