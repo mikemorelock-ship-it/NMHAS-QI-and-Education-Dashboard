@@ -488,6 +488,49 @@ export const HELP_FEATURES: HelpFeature[] = [
     ],
   },
   {
+    id: "admin-just-culture",
+    portals: ["admin"],
+    title: "Just Culture Algorithm",
+    icon: "Shield",
+    description:
+      "Interactive decision-support tool based on the official Just Culture framework. Walk through structured steps to classify events as human error, at-risk behavior, or reckless behavior. Each step includes sample interview questions to guide the investigation. Completed assessments can be shared via public links.",
+    path: "/admin/just-culture",
+    tips: [
+      "Work through the algorithm step by step — each decision point builds on the previous one.",
+      "Use the sample interview questions to guide conversations with involved personnel.",
+      "Generate a shareable link to share the completed assessment with leadership or HR.",
+      "The algorithm follows the Just Culture model developed by David Marx.",
+    ],
+  },
+  {
+    id: "admin-ecosystem-map",
+    portals: ["admin"],
+    title: "Ecosystem Map",
+    icon: "GitBranchPlus",
+    description:
+      "Interactive network visualization showing the relationships between divisions, departments, metrics, campaigns, and other organizational entities. Explore how the system components connect to each other in a graphical layout.",
+    path: "/admin/ecosystem-map",
+    tips: [
+      "Zoom and pan to explore different areas of the organizational network.",
+      "Click on nodes to highlight their connections.",
+      "The map automatically reflects changes to divisions, departments, metrics, and campaigns.",
+    ],
+  },
+  {
+    id: "admin-root-cause-analysis",
+    portals: ["admin"],
+    title: "Root Cause Analysis",
+    icon: "Target",
+    description:
+      "Structured root cause analysis tool for investigating quality events. Document contributing factors, identify root causes, and plan corrective actions using a guided workflow.",
+    path: "/admin/root-cause-analysis",
+    tips: [
+      "Start with the event description and work through contributing factors systematically.",
+      "Link RCA findings to QI campaigns or action items for follow-up.",
+      "Use the 5 Whys technique to drill down to underlying causes.",
+    ],
+  },
+  {
     id: "admin-ft-coaching",
     portals: ["admin"],
     title: "Coaching Management",
@@ -773,6 +816,48 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
       "A chronological record of every action performed in the system — creating, updating, or deleting records, user logins, and security events. Each entry captures who performed the action, what entity was affected, and (for updates) the before/after values of changed fields. Used for accountability, troubleshooting, and compliance.",
     portals: ["admin"],
     relatedTerms: ["KPI", "Metric", "Campaign"],
+  },
+  {
+    term: "Dark Mode",
+    definition:
+      "An alternate color scheme that uses a dark background with light text, reducing eye strain in low-light environments. Toggle between light and dark themes using the theme switcher in the navigation bar. Your preference is saved in the browser.",
+    portals: ["public", "admin", "fieldtraining"],
+    relatedTerms: [],
+  },
+  {
+    term: "Just Culture",
+    definition:
+      "A framework for analyzing events and behaviors that distinguishes between human error (console), at-risk behavior (coach), and reckless behavior (punish). The Just Culture Algorithm guides investigators through structured decision points with interview questions to reach a fair, consistent classification.",
+    portals: ["admin"],
+    relatedTerms: ["Root Cause Analysis", "QI"],
+  },
+  {
+    term: "Root Cause Analysis",
+    definition:
+      "A systematic process for identifying the underlying causes of quality events or adverse outcomes. Uses structured techniques like the 5 Whys and fishbone diagrams to move beyond surface-level symptoms and address fundamental issues.",
+    portals: ["admin"],
+    relatedTerms: ["Just Culture", "QI", "Action Item"],
+  },
+  {
+    term: "Ecosystem Map",
+    definition:
+      "An interactive network visualization that displays the relationships between organizational entities — divisions, departments, metrics, campaigns, driver diagrams, and more. Helps administrators understand how the system components are interconnected.",
+    portals: ["admin"],
+    relatedTerms: ["Campaign", "Metric", "Driver Diagram"],
+  },
+  {
+    term: "Year-Specific Target",
+    definition:
+      "A performance target set for a specific calendar year on a metric definition. Allows organizations to set progressively more ambitious goals each year. Used in scorecard calculations and trend comparisons to evaluate performance against the correct year's expectations.",
+    portals: ["admin"],
+    relatedTerms: ["Metric", "KPI", "Scorecard"],
+  },
+  {
+    term: "Variable Control Limits",
+    definition:
+      "Control limits on P-charts and U-charts that vary based on the sample size (denominator) of each data point, rather than using a single fixed limit. Variable limits provide more accurate SPC analysis when sample sizes differ between periods. Toggle between fixed and variable limits on applicable chart views.",
+    portals: ["public", "admin"],
+    relatedTerms: ["SPC", "Control Chart", "Special Cause Variation"],
   },
   {
     term: "DOR",

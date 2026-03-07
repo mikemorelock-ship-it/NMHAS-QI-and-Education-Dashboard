@@ -23,6 +23,11 @@ export interface ReleaseInfo {
 /** All known releases, newest first. */
 export const RELEASES: ReleaseInfo[] = [
   {
+    version: "v2.5",
+    label: "March 2026 — Dark Mode, Just Culture, Ecosystem Map & Data Fixes",
+    date: "2026-03-07",
+  },
+  {
     version: "v2.4",
     label: "February 2026 Update 5 — Campaign Enhancements & Help Refresh",
     date: "2026-02-23",
@@ -68,6 +73,127 @@ export { CATEGORY_LABELS, CATEGORY_COLORS };
 // ---------------------------------------------------------------------------
 
 export const CHANGELOG: ChangelogEntry[] = [
+  // --- v2.5 — Dark Mode, Just Culture, Ecosystem Map & Data Fixes -----------
+  {
+    date: "2026-03-07",
+    title: "Collapsible Updates Section",
+    description:
+      "The Updates section on help pages now collapses into a single compact bar by default, keeping Features & Navigation and Glossary visible without scrolling. Expand to browse individual release groups, with an Expand All / Collapse All toggle inside.",
+    category: "improvement",
+    release: "v2.5",
+  },
+  {
+    date: "2026-03-07",
+    title: "Dark Mode",
+    description:
+      "Toggle between light and dark themes using the theme switcher in the navigation bar. Your preference is saved and persists across sessions.",
+    category: "feature",
+    release: "v2.5",
+  },
+  {
+    date: "2026-03-07",
+    title: "Just Culture Algorithm",
+    description:
+      "Interactive decision-support tool based on the official Just Culture framework. Walk through structured steps to classify events as human error, at-risk behavior, or reckless behavior. Includes sample interview questions at each step and shareable public links for completed assessments.",
+    category: "feature",
+    release: "v2.5",
+  },
+  {
+    date: "2026-03-07",
+    title: "Organizational Ecosystem Map",
+    description:
+      "Interactive visualization showing the relationships between divisions, departments, metrics, campaigns, and other entities in the system. Explore the organizational structure as a connected network.",
+    category: "feature",
+    release: "v2.5",
+  },
+  {
+    date: "2026-03-07",
+    title: "Root Cause Analysis Tool",
+    description:
+      "Structured RCA tool for investigating quality events. Document contributing factors, root causes, and corrective actions using a guided workflow.",
+    category: "feature",
+    release: "v2.5",
+  },
+  {
+    date: "2026-03-07",
+    title: "Year-Specific Metric Targets",
+    description:
+      "Metric definitions now support year-specific targets so you can set different performance goals for each calendar year. Targets are used in scorecard calculations and trend comparisons.",
+    category: "feature",
+    release: "v2.5",
+  },
+  {
+    date: "2026-03-07",
+    title: "Configurable Score Range for Score-Unit Metrics",
+    description:
+      "Score-unit metrics now support a configurable score range (e.g., 0–100 or 1–5) so charts and scorecards display values on the correct scale.",
+    category: "feature",
+    release: "v2.5",
+  },
+  {
+    date: "2026-03-07",
+    title: "Chart Missing Months Filled",
+    description:
+      "Metric trend charts now fill in gaps for months with no data, ensuring continuous timelines. Added a Cases column to breakdown tables and region-level drill-down on metric detail pages.",
+    category: "improvement",
+    release: "v2.5",
+  },
+  {
+    date: "2026-03-07",
+    title: "Fixed/Variable Control Limits Toggle",
+    description:
+      "P-chart and U-chart views now show a toggle between fixed and variable control limits on all applicable metric pages, giving more accurate SPC analysis for metrics with varying sample sizes.",
+    category: "improvement",
+    release: "v2.5",
+  },
+  {
+    date: "2026-03-07",
+    title: "Date Filter Anchoring",
+    description:
+      "Relative date filters (1 year, 6 months, etc.) now anchor to the latest data point rather than today's date, ensuring filters always show relevant data even when recent entries are missing.",
+    category: "improvement",
+    release: "v2.5",
+  },
+  {
+    date: "2026-03-07",
+    title: "Scorecard Metric Fallback Logic",
+    description:
+      "Scorecards now correctly display metrics for divisions without departments and fall back to department-level or division-level data entries when region-specific data is unavailable.",
+    category: "fix",
+    release: "v2.5",
+  },
+  {
+    date: "2026-03-07",
+    title: "Desired Direction Trend Colors",
+    description:
+      "Metric trend indicators now correctly respect the desired direction setting — a downward trend in a 'lower is better' metric is shown in green instead of red.",
+    category: "fix",
+    release: "v2.5",
+  },
+  {
+    date: "2026-03-07",
+    title: "CSV Upload Department Mapping",
+    description:
+      "Fixed CSV upload department mapping and proportion value calculation so bulk-imported data correctly associates with the right divisions and departments.",
+    category: "fix",
+    release: "v2.5",
+  },
+  {
+    date: "2026-03-07",
+    title: "Scorecard Scroll Fix",
+    description:
+      "Scorecards now use the browser's native scrollbar and the public layout correctly supports full-height scrolling without content being cut off.",
+    category: "fix",
+    release: "v2.5",
+  },
+  {
+    date: "2026-03-07",
+    title: "Divisions Without Departments",
+    description:
+      "Metrics assigned to divisions that have no departments now correctly appear on the dashboard and in metric lists.",
+    category: "fix",
+    release: "v2.5",
+  },
   // --- v2.4 — Campaign Enhancements & Help Refresh -------------------------
   {
     date: "2026-02-23",
