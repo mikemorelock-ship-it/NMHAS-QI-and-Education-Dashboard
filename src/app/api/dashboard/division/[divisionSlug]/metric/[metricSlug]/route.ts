@@ -8,6 +8,7 @@ import {
 } from "@/lib/aggregation";
 import { computeSPCData } from "@/lib/spc-server";
 import { buildEntryWhereForSingleDivision } from "@/lib/division-query-utils";
+import { fillMissingPeriods } from "@/lib/fill-missing-periods";
 
 export const dynamic = "force-dynamic";
 
@@ -127,10 +128,12 @@ export async function GET(
         orderBy: { periodStart: "asc" },
         select: { periodStart: true, value: true },
       });
-      chartData = entries.map((e) => ({
-        period: formatPeriod(e.periodStart),
-        value: e.value,
-      }));
+      chartData = fillMissingPeriods(
+        entries.map((e) => ({
+          period: formatPeriod(e.periodStart),
+          value: e.value,
+        }))
+      );
       values = entries.map((e) => e.value);
     } else {
       const regionEntries = await prisma.metricEntry.findMany({
@@ -144,10 +147,12 @@ export async function GET(
       });
 
       const aggregatedSeries = aggregateByPeriodWeighted(regionEntries, dataType, aggType);
-      chartData = aggregatedSeries.map((s) => ({
-        period: formatPeriod(s.periodStart),
-        value: s.value,
-      }));
+      chartData = fillMissingPeriods(
+        aggregatedSeries.map((s) => ({
+          period: formatPeriod(s.periodStart),
+          value: s.value,
+        }))
+      );
       values = aggregatedSeries.map((s) => s.value);
     }
 
@@ -213,12 +218,15 @@ export async function GET(
                 ...periodStartFilter,
               },
               orderBy: { periodStart: "asc" },
-              select: { regionId: true, periodStart: true, value: true },
+              select: { regionId: true, periodStart: true, value: true, denominator: true },
             })
           : [];
 
       // Index by regionId
-      const entriesByRegion = new Map<string, Array<{ periodStart: Date; value: number }>>();
+      const entriesByRegion = new Map<
+        string,
+        Array<{ periodStart: Date; value: number; denominator: number | null }>
+      >();
       for (const e of allRegEntries) {
         const regId = e.regionId;
         if (!regId) continue;
@@ -240,16 +248,21 @@ export async function GET(
             regTrend = ((regCurrent - regPrevious) / Math.abs(regPrevious)) * 100;
           }
 
+          const totalCases = regEntries.reduce((sum, e) => sum + (e.denominator ?? 0), 0);
+
           return {
             divisionId: region.id,
             divisionName: region.name,
             divisionSlug: region.id,
             currentValue: regCurrent,
             trend: Math.round(regTrend * 10) / 10,
-            data: regEntries.map((e) => ({
-              period: formatPeriod(e.periodStart),
-              value: e.value,
-            })),
+            data: fillMissingPeriods(
+              regEntries.map((e) => ({
+                period: formatPeriod(e.periodStart),
+                value: e.value,
+              }))
+            ),
+            totalCases: totalCases > 0 ? totalCases : undefined,
           };
         })
         .filter((d): d is NonNullable<typeof d> => d !== null);
@@ -356,7 +369,7 @@ export async function GET(
     // Org hierarchy for this division
     // -----------------------------------------------------------------
 
-    const hierarchyRegions =
+    const hierarchyRegionsRaw =
       !isUnassigned && division
         ? await prisma.region.findMany({
             where: { divisionId: division.id, isActive: true },
@@ -364,6 +377,11 @@ export async function GET(
             select: { id: true, name: true },
           })
         : [];
+    const hierarchyRegions = hierarchyRegionsRaw.map((r) => ({
+      id: r.id,
+      name: r.name,
+      slug: r.id,
+    }));
 
     const hierarchy =
       !isUnassigned && division

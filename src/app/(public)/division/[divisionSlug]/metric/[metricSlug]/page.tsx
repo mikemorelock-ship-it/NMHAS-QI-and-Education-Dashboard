@@ -10,6 +10,7 @@ import {
 } from "@/lib/aggregation";
 import { computeSPCData } from "@/lib/spc-server";
 import { buildEntryWhereForSingleDivision } from "@/lib/division-query-utils";
+import { fillMissingPeriods } from "@/lib/fill-missing-periods";
 import {
   Breadcrumb,
   BreadcrumbList,
@@ -126,10 +127,12 @@ export default async function DivisionMetricDetailPage({ params }: PageProps) {
       orderBy: { periodStart: "asc" },
       select: { periodStart: true, value: true },
     });
-    chartData = entries.map((e) => ({
-      period: formatPeriod(e.periodStart),
-      value: e.value,
-    }));
+    chartData = fillMissingPeriods(
+      entries.map((e) => ({
+        period: formatPeriod(e.periodStart),
+        value: e.value,
+      }))
+    );
     values = entries.map((e) => e.value);
   } else {
     // Check if this division has regions; if not, use division-level entries
@@ -150,10 +153,12 @@ export default async function DivisionMetricDetailPage({ params }: PageProps) {
     });
 
     const aggregatedSeries = aggregateByPeriodWeighted(regionEntries, dataType, aggType);
-    chartData = aggregatedSeries.map((s) => ({
-      period: formatPeriod(s.periodStart),
-      value: s.value,
-    }));
+    chartData = fillMissingPeriods(
+      aggregatedSeries.map((s) => ({
+        period: formatPeriod(s.periodStart),
+        value: s.value,
+      }))
+    );
     values = aggregatedSeries.map((s) => s.value);
   }
 
@@ -211,10 +216,12 @@ export default async function DivisionMetricDetailPage({ params }: PageProps) {
           divisionSlug: region.id,
           currentValue: regCurrent,
           trend: Math.round(regTrend * 10) / 10,
-          data: regEntries.map((e) => ({
-            period: formatPeriod(e.periodStart),
-            value: e.value,
-          })),
+          data: fillMissingPeriods(
+            regEntries.map((e) => ({
+              period: formatPeriod(e.periodStart),
+              value: e.value,
+            }))
+          ),
         };
       })
     );
@@ -230,7 +237,7 @@ export default async function DivisionMetricDetailPage({ params }: PageProps) {
 
   // regionsInDiv is fetched inside the `if (!isUnassigned)` block above.
   // We need to re-fetch or capture it outside. Since it's scoped, just re-query.
-  const hierarchyRegions =
+  const hierarchyRegionsRaw =
     !isUnassigned && division
       ? await prisma.region.findMany({
           where: { divisionId: division.id, isActive: true },
@@ -246,7 +253,7 @@ export default async function DivisionMetricDetailPage({ params }: PageProps) {
             id: division.id,
             name: division.name,
             slug: division.slug,
-            departments: hierarchyRegions,
+            departments: hierarchyRegionsRaw.map((r) => ({ id: r.id, name: r.name, slug: r.id })),
           },
         ]
       : [];

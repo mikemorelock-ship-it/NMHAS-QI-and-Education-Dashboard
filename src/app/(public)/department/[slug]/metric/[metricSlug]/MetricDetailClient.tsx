@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useMemo } from "react";
+import { useTheme } from "next-themes";
 import Link from "next/link";
 import { format, parseISO } from "date-fns";
 import {
@@ -64,11 +65,13 @@ interface MetricDetailClientProps {
    *  Used by the division-scoped and global metric detail pages. */
   apiBasePath?: string;
   /** The viewing context — determines breadcrumb display and breakdown labels */
-  viewContext?: "global" | "division" | "department";
+  viewContext?: "global" | "division" | "department" | "region";
   /** Display name for the context (e.g., "Air Care Clinical" or "All Divisions") */
   contextLabel?: string;
   /** Optional second-level label (e.g., department name within a division) */
   contextSublabel?: string;
+  /** Region ID when viewing a region-level metric (for OrgHierarchy highlighting) */
+  regionId?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -187,12 +190,16 @@ export function MetricDetailClient({
   viewContext = "department",
   contextLabel,
   contextSublabel,
+  regionId,
 }: MetricDetailClientProps) {
   const [data, setData] = useState<MetricDetailData>(initialData);
   const [range, setRange] = useState("ytd");
   const [loading, setLoading] = useState(false);
   const [chartMode, setChartMode] = useState<"trend" | "control">("trend");
   const [showAnnotations, setShowAnnotations] = useState(true);
+
+  const { resolvedTheme } = useTheme();
+  const tickColor = resolvedTheme === "dark" ? "#d4d4d4" : "#374151";
 
   const resolvedApiPath = apiBasePath ?? `/api/dashboard/metric/${departmentSlug}/${metricSlug}`;
 
@@ -266,10 +273,15 @@ export function MetricDetailClient({
 
   const commonAxisElements = (
     <>
-      <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-      <XAxis dataKey="period" tick={{ fontSize: 12 }} tickLine={false} axisLine={false} />
+      <CartesianGrid strokeDasharray="3 3" className="opacity-30" stroke="currentColor" />
+      <XAxis
+        dataKey="period"
+        tick={{ fontSize: 12, fill: tickColor }}
+        tickLine={false}
+        axisLine={false}
+      />
       <YAxis
-        tick={{ fontSize: 12 }}
+        tick={{ fontSize: 12, fill: tickColor }}
         tickLine={false}
         axisLine={false}
         tickFormatter={formatYAxis}
@@ -519,6 +531,7 @@ export function MetricDetailClient({
                 divisions={data.hierarchy}
                 activeContext={viewContext ?? "department"}
                 activeDivisionSlug={data.division?.slug}
+                activeRegionId={regionId}
               />
             </CardContent>
           </Card>
@@ -689,15 +702,19 @@ export function MetricDetailClient({
                     data={buildStackedData(data.childMetrics)}
                     margin={{ top: 10, right: 15, left: 15, bottom: 5 }}
                   >
-                    <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      className="opacity-30"
+                      stroke="currentColor"
+                    />
                     <XAxis
                       dataKey="period"
-                      tick={{ fontSize: 12 }}
+                      tick={{ fontSize: 12, fill: tickColor }}
                       tickLine={false}
                       axisLine={false}
                     />
                     <YAxis
-                      tick={{ fontSize: 12 }}
+                      tick={{ fontSize: 12, fill: tickColor }}
                       tickLine={false}
                       axisLine={false}
                       tickFormatter={formatYAxis}
@@ -967,21 +984,24 @@ export function MetricDetailClient({
                         {viewContext === "division" ? "Department" : "Division"}
                       </th>
                       <th className="pb-2 font-semibold text-right">Current Value</th>
+                      <th className="pb-2 font-semibold text-right">Cases (n)</th>
                       <th className="pb-2 font-semibold text-right">Trend</th>
                       <th className="pb-2 font-semibold text-right hidden sm:table-cell">
                         Sparkline
                       </th>
-                      {viewContext !== "division" && <th className="pb-2 w-8" />}
+                      <th className="pb-2 w-8" />
                     </tr>
                   </thead>
                   <tbody>
                     {data.divisionBreakdown.map((div, idx) => {
                       const divTrend = div.trend > 0.5 ? "up" : div.trend < -0.5 ? "down" : "flat";
 
-                      // Links depend on context
+                      // Links depend on context:
+                      // - division view → drill into region (department) metric page
+                      // - global/department view → drill into division metric page
                       const breakdownHref =
                         viewContext === "division"
-                          ? undefined // No department-level metric page yet
+                          ? `/region/${div.divisionId}/metric/${data.slug}`
                           : `/division/${div.divisionSlug}/metric/${data.slug}`;
 
                       return (
@@ -990,16 +1010,12 @@ export function MetricDetailClient({
                           className="border-b last:border-0 hover:bg-muted/50 transition-colors"
                         >
                           <td className="py-3 font-medium">
-                            {breakdownHref ? (
-                              <Link
-                                href={breakdownHref}
-                                className="hover:text-[#00b0ad] transition-colors"
-                              >
-                                {div.divisionName}
-                              </Link>
-                            ) : (
-                              div.divisionName
-                            )}
+                            <Link
+                              href={breakdownHref}
+                              className="hover:text-[#00b0ad] transition-colors"
+                            >
+                              {div.divisionName}
+                            </Link>
                           </td>
                           <td className="py-3 text-right font-mono">
                             {formatMetricValue(
@@ -1008,6 +1024,9 @@ export function MetricDetailClient({
                               rateMultiplier,
                               rateSuffix
                             )}
+                          </td>
+                          <td className="py-3 text-right font-mono text-muted-foreground">
+                            {div.totalCases != null ? div.totalCases.toLocaleString() : "—"}
                           </td>
                           <td className="py-3 text-right">
                             <span
@@ -1034,15 +1053,11 @@ export function MetricDetailClient({
                               />
                             </div>
                           </td>
-                          {viewContext !== "division" && (
-                            <td className="py-3">
-                              {breakdownHref && (
-                                <Link href={breakdownHref}>
-                                  <ArrowRight className="size-4 text-muted-foreground hover:text-[#00b0ad] transition-colors" />
-                                </Link>
-                              )}
-                            </td>
-                          )}
+                          <td className="py-3">
+                            <Link href={breakdownHref}>
+                              <ArrowRight className="size-4 text-muted-foreground hover:text-[#00b0ad] transition-colors" />
+                            </Link>
+                          </td>
                         </tr>
                       );
                     })}

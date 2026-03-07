@@ -11,6 +11,7 @@ import {
   getDivisionsWithoutRegions,
   buildEntryWhereForDivisions,
 } from "@/lib/division-query-utils";
+import { fillMissingPeriods } from "@/lib/fill-missing-periods";
 
 export const dynamic = "force-dynamic";
 
@@ -121,10 +122,12 @@ export async function GET(
 
     const globalSeries = aggregateByPeriodWeighted(allRegionEntries, dataType, aggType);
 
-    const chartData = globalSeries.map((s) => ({
-      period: formatPeriod(s.periodStart),
-      value: s.value,
-    }));
+    const chartData = fillMissingPeriods(
+      globalSeries.map((s) => ({
+        period: formatPeriod(s.periodStart),
+        value: s.value,
+      }))
+    );
 
     const values = globalSeries.map((s) => s.value);
 
@@ -185,16 +188,23 @@ export async function GET(
           divTrend = ((divCurrent - divPrevious) / Math.abs(divPrevious)) * 100;
         }
 
+        // Sum denominators for total cases
+        const divEntries = entriesByDivision.get(div.id) ?? [];
+        const totalCases = divEntries.reduce((sum, e) => sum + (e.denominator ?? 0), 0);
+
         return {
           divisionId: div.id,
           divisionName: div.name,
           divisionSlug: div.slug,
           currentValue: divCurrent,
           trend: Math.round(divTrend * 10) / 10,
-          data: series.map((s) => ({
-            period: formatPeriod(s.periodStart),
-            value: s.value,
-          })),
+          data: fillMissingPeriods(
+            series.map((s) => ({
+              period: formatPeriod(s.periodStart),
+              value: s.value,
+            }))
+          ),
+          totalCases: totalCases > 0 ? totalCases : undefined,
         };
       })
       .filter((d): d is NonNullable<typeof d> => d !== null);
@@ -213,10 +223,10 @@ export async function GET(
           })
         : [];
 
-    const regionsByDivision = new Map<string, Array<{ id: string; name: string }>>();
+    const regionsByDivision = new Map<string, Array<{ id: string; name: string; slug: string }>>();
     for (const r of allRegions) {
       if (!regionsByDivision.has(r.divisionId)) regionsByDivision.set(r.divisionId, []);
-      regionsByDivision.get(r.divisionId)!.push({ id: r.id, name: r.name });
+      regionsByDivision.get(r.divisionId)!.push({ id: r.id, name: r.name, slug: r.id });
     }
 
     const hierarchy = divisions.map((div) => ({

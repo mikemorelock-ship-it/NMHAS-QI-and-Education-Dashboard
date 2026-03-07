@@ -30,6 +30,8 @@ export interface ChartDataPoint {
   value: number;
   numerator?: number;
   denominator?: number;
+  /** True when this point was synthesized via LOCF (last observation carried forward) */
+  isFilled?: boolean;
 }
 
 export interface MetricChartData {
@@ -99,6 +101,8 @@ export interface DivisionMetricBreakdown {
   currentValue: number;
   trend: number;
   data: ChartDataPoint[];
+  /** Total cases (sum of denominators) in the selected date range */
+  totalCases?: number;
 }
 
 export interface ChildMetricSummary {
@@ -189,7 +193,7 @@ export interface MetricDetailData {
     id: string;
     name: string;
     slug: string;
-    departments: Array<{ id: string; name: string }>;
+    departments: Array<{ id: string; name: string; slug?: string }>;
   }>;
   /** The old Department (Organization) entity — kept for backward compat */
   department?: { id: string; name: string; slug: string };
