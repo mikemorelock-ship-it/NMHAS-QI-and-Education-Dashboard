@@ -811,7 +811,7 @@ export function CampaignReportView({
             href="/quality-improvement"
             className="text-sm text-muted-foreground hover:text-nmh-teal flex items-center gap-1"
           >
-            <ArrowLeft className="h-3.5 w-3.5" /> Back to QI Tools
+            <ArrowLeft className="h-3.5 w-3.5" /> Back to QI Campaigns
           </Link>
           <div className="flex items-center gap-2">
             {campaignId && <ShareButton campaignId={campaignId} />}
