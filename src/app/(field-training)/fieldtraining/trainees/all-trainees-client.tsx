@@ -327,7 +327,7 @@ export function AllTraineesClient({
               {pendingRequests.map((req) => (
                 <div
                   key={req.id}
-                  className="flex items-start justify-between gap-4 rounded-lg border border-amber-200 bg-white p-3"
+                  className="flex items-start justify-between gap-4 rounded-lg border border-amber-200 bg-card p-3"
                 >
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium">

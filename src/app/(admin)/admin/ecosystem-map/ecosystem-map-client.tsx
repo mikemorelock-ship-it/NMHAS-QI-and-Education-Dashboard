@@ -592,7 +592,7 @@ function EcosystemMapInner({ initialMaps, orgData }: EcosystemMapClientProps) {
       />
 
       <div
-        className="relative border rounded-lg bg-white overflow-hidden"
+        className="relative border rounded-lg bg-card overflow-hidden"
         style={{ height: "calc(100vh - 220px)" }}
       >
         <ReactFlow
@@ -626,7 +626,7 @@ function EcosystemMapInner({ initialMaps, orgData }: EcosystemMapClientProps) {
         />
 
         {/* Legend */}
-        <div className="absolute bottom-3 left-3 z-10 rounded-lg border bg-white/95 backdrop-blur-sm p-3 shadow-sm">
+        <div className="absolute bottom-3 left-3 z-10 rounded-lg border bg-card/95 backdrop-blur-sm p-3 shadow-sm">
           <p className="text-xs font-semibold mb-2 text-muted-foreground">Relationships</p>
           <div className="space-y-1">
             {(

@@ -728,7 +728,7 @@ function ShareLinksPanel({ shareLinks }: { shareLinks: ShareLinkSummary[] }) {
               placeholder="e.g., Leadership Team Q1 2026"
               value={newLabel}
               onChange={(e) => setNewLabel(e.target.value)}
-              className="bg-white"
+              className="bg-card"
             />
           </div>
           <div>
@@ -740,7 +740,7 @@ function ShareLinksPanel({ shareLinks }: { shareLinks: ShareLinkSummary[] }) {
               type="date"
               value={newExpiry}
               onChange={(e) => setNewExpiry(e.target.value)}
-              className="bg-white"
+              className="bg-card"
             />
           </div>
           <Button onClick={handleCreate} disabled={isPending} size="sm">
@@ -757,7 +757,7 @@ function ShareLinksPanel({ shareLinks }: { shareLinks: ShareLinkSummary[] }) {
               return (
                 <div
                   key={link.id}
-                  className={`flex items-center gap-3 bg-white rounded-lg border p-3 ${
+                  className={`flex items-center gap-3 bg-card rounded-lg border p-3 ${
                     !link.isActive || isExpired ? "opacity-60" : ""
                   }`}
                 >
