@@ -618,7 +618,7 @@ function CascadingDiagramBuilder({
                     {/* Node row */}
                     <div
                       className="flex items-center gap-2 py-1.5"
-                      style={{ paddingLeft: `${node.depth * 24 + 8}px` }}
+                      style={{ paddingLeft: `${node.depth * 32 + 8}px` }}
                     >
                       <Badge
                         variant="outline"
@@ -653,7 +653,7 @@ function CascadingDiagramBuilder({
                     {/* PDSA cycles nested under change ideas */}
                     {node.type === "changeIdea" && nodeCycles.length > 0 && (
                       <div
-                        style={{ paddingLeft: `${(node.depth + 1) * 24 + 8}px` }}
+                        style={{ paddingLeft: `${(node.depth + 1) * 32 + 8}px` }}
                         className="py-1"
                       >
                         <Accordion
@@ -668,7 +668,7 @@ function CascadingDiagramBuilder({
                             <AccordionItem
                               key={cycle.id}
                               value={cycle.id}
-                              className="border rounded-md px-3 bg-white"
+                              className="border rounded-md px-3 bg-card"
                             >
                               <AccordionTrigger className="py-2 hover:no-underline">
                                 <PdsaCycleCompactHeader cycle={cycle} />
@@ -693,7 +693,7 @@ function CascadingDiagramBuilder({
                     {/* Create PDSA button for change ideas */}
                     {editMode && node.type === "changeIdea" && (
                       <div
-                        style={{ paddingLeft: `${(node.depth + 1) * 24 + 8}px` }}
+                        style={{ paddingLeft: `${(node.depth + 1) * 32 + 8}px` }}
                         className="py-0.5"
                       >
                         <Button
@@ -717,7 +717,7 @@ function CascadingDiagramBuilder({
                     {/* "Add child" button below the node */}
                     {editMode && childType && (
                       <div
-                        style={{ paddingLeft: `${(node.depth + 1) * 24 + 8}px` }}
+                        style={{ paddingLeft: `${(node.depth + 1) * 32 + 8}px` }}
                         className="py-0.5"
                       >
                         <Button
