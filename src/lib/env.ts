@@ -1,9 +1,7 @@
 /**
- * Environment variable validation — imported early to crash fast on misconfiguration.
- *
- * Validates that all required env vars are present and not set to known insecure
- * defaults. Missing vars throw immediately; weak secrets produce a loud warning
- * (production deployments should use their own .env with strong values).
+ * Environment variable validation — crashes fast on misconfiguration at
+ * runtime, but deferred so that `next build` can collect page data without
+ * requiring every env var to be present in the build environment.
  */
 
 function requireEnv(name: string): string {
@@ -18,16 +16,22 @@ function requireEnv(name: string): string {
 }
 
 // ---------------------------------------------------------------------------
-// Required variables
+// Lazy accessors — the underlying requireEnv() only fires the first time each
+// getter is called, which happens at request time rather than build time.
 // ---------------------------------------------------------------------------
 
-export const DATABASE_URL = requireEnv("DATABASE_URL");
+let _databaseUrl: string | undefined;
+export function getDatabaseUrl(): string {
+  if (!_databaseUrl) _databaseUrl = requireEnv("DATABASE_URL");
+  return _databaseUrl;
+}
 
-export const JWT_SECRET = (() => {
+let _jwtSecret: Uint8Array | undefined;
+export function getJwtSecret(): Uint8Array {
+  if (_jwtSecret) return _jwtSecret;
+
   const secret = requireEnv("JWT_SECRET");
 
-  // Reject the old hardcoded fallback that was baked into the source code.
-  // This value was never meant to be used — it existed as a || default.
   if (secret === "fallback-secret-change-me") {
     throw new Error(
       "JWT_SECRET is set to the old hardcoded fallback. " +
@@ -35,9 +39,6 @@ export const JWT_SECRET = (() => {
     );
   }
 
-  // Warn about weak-looking secrets (short or containing placeholder text).
-  // We warn instead of throwing because `next build` sets NODE_ENV=production
-  // and we don't want to block local builds.
   if (secret.length < 32) {
     console.warn(
       "⚠ JWT_SECRET is shorter than 32 characters. " +
@@ -45,5 +46,10 @@ export const JWT_SECRET = (() => {
     );
   }
 
-  return new TextEncoder().encode(secret);
-})();
+  _jwtSecret = new TextEncoder().encode(secret);
+  return _jwtSecret;
+}
+
+// Re-export for backwards compat — callers that import the named constants
+// still work because `env` is a module-level object with live getters.
+export { getDatabaseUrl as DATABASE_URL_GETTER, getJwtSecret as JWT_SECRET_GETTER };

@@ -33,26 +33,32 @@ export async function getDivisionsWithoutRegions(divisionIds: string[]): Promise
  * Builds a Prisma where-clause fragment for fetching metric entries across
  * a set of divisions, correctly handling divisions with and without regions.
  *
- * For divisions WITH regions: fetches region-level entries (regionId != null)
- * For divisions WITHOUT regions: fetches division-level entries (regionId = null)
+ * Some metrics only have data at the division level even when the division
+ * has sub-departments (regions). To handle this, we always include both:
+ *   - region-level entries (regionId != null)
+ *   - division-level entries (divisionId set, regionId = null)
  *
  * Returns an OR clause that can be spread into a Prisma where object.
- * If all divisions have regions, returns the original `regionId: { not: null }` filter.
  */
 export function buildEntryWhereForDivisions(
-  divisionsWithoutRegions: Set<string>
+  _divisionsWithoutRegions: Set<string>,
+  allDivisionIds?: string[]
 ): Record<string, unknown> {
-  if (divisionsWithoutRegions.size === 0) {
-    // All divisions have regions — original behavior
-    return { regionId: { not: null } };
+  // Always include both region-level and division-level entries so that
+  // metrics with data only at the division level are not silently excluded.
+  const orClauses: Record<string, unknown>[] = [{ regionId: { not: null } }];
+
+  if (allDivisionIds && allDivisionIds.length > 0) {
+    orClauses.push({ divisionId: { in: allDivisionIds }, regionId: null });
+  } else if (_divisionsWithoutRegions.size > 0) {
+    // Fallback: at minimum include region-less divisions
+    orClauses.push({
+      divisionId: { in: Array.from(_divisionsWithoutRegions) },
+      regionId: null,
+    });
   }
 
-  const noRegionIds = Array.from(divisionsWithoutRegions);
-
-  // Include both: region-level entries + division-level entries for region-less divisions
-  return {
-    OR: [{ regionId: { not: null } }, { divisionId: { in: noRegionIds }, regionId: null }],
-  };
+  return { OR: orClauses };
 }
 
 /**

@@ -15,6 +15,7 @@ export interface KpiData {
   desiredDirection?: "up" | "down";
   rateMultiplier?: number | null;
   rateSuffix?: string | null;
+  scoreMax?: number | null;
   spcData?: SPCChartData | null;
 }
 
@@ -45,6 +46,7 @@ export interface MetricChartData {
   data: ChartDataPoint[];
   rateMultiplier?: number | null;
   rateSuffix?: string | null;
+  scoreMax?: number | null;
 }
 
 export interface DivisionSummary {
@@ -165,6 +167,7 @@ export interface MetricDetailData {
   chartType: string;
   category: string | null;
   target: number | null;
+  desiredDirection: "up" | "down";
   division: {
     id: string;
     name: string;
@@ -200,6 +203,7 @@ export interface MetricDetailData {
   /** Rate display fields */
   rateMultiplier?: number | null;
   rateSuffix?: string | null;
+  scoreMax?: number | null;
   /** SPC fields */
   dataType?: "proportion" | "rate" | "continuous";
   spcSigmaLevel?: number;
@@ -231,6 +235,7 @@ export interface ScorecardMetricRow {
   desiredDirection: "up" | "down";
   rateMultiplier?: number | null;
   rateSuffix?: string | null;
+  scoreMax?: number | null;
   groupName?: string | null; // admin-defined section header for visual grouping
 }
 

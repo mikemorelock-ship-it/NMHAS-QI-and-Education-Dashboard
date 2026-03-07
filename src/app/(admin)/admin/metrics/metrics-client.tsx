@@ -120,6 +120,7 @@ interface MetricRow {
   denominatorLabel: string | null;
   rateMultiplier: number | null;
   rateSuffix: string | null;
+  scoreMax: number | null;
   desiredDirection: string;
   sortOrder: number;
   description: string | null;
@@ -1443,6 +1444,27 @@ function MetricFormFields({
               />
             </div>
           </div>
+        </div>
+      )}
+      {/* Score Range — shown only when unit is "score" */}
+      {formUnit === "score" && (
+        <div className="space-y-2">
+          <Label htmlFor="scoreMax" className="text-sm font-medium">
+            Score Range (e.g. 0–100)
+          </Label>
+          <p className="text-xs text-muted-foreground">
+            The maximum value on this score&apos;s scale. Values display as &quot;X / max&quot;. Leave
+            blank to show the raw number without a denominator.
+          </p>
+          <Input
+            id="scoreMax"
+            name="scoreMax"
+            type="number"
+            defaultValue={defaultValues?.scoreMax ?? ""}
+            placeholder="e.g. 10 or 100"
+            min={1}
+            step="any"
+          />
         </div>
       )}
       <div className="grid grid-cols-2 gap-4">

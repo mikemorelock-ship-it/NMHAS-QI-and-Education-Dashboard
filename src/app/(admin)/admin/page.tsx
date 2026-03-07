@@ -68,7 +68,7 @@ export default async function AdminOverviewPage() {
       orderBy: { createdAt: "desc" },
       include: {
         metricDefinition: {
-          select: { name: true, unit: true, rateMultiplier: true, rateSuffix: true },
+          select: { name: true, unit: true, rateMultiplier: true, rateSuffix: true, scoreMax: true },
         },
         department: { select: { name: true } },
         division: { select: { name: true } },
@@ -304,7 +304,8 @@ export default async function AdminOverviewPage() {
                           entry.value,
                           entry.metricDefinition.unit,
                           entry.metricDefinition.rateMultiplier,
-                          entry.metricDefinition.rateSuffix
+                          entry.metricDefinition.rateSuffix,
+                          entry.metricDefinition.scoreMax
                         )}
                       </TableCell>
                     </TableRow>

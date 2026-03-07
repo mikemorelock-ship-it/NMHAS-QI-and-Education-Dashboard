@@ -36,6 +36,7 @@ const MetricDefinitionSchema = z.object({
   denominatorLabel: z.string().max(50).optional().nullable(),
   rateMultiplier: z.coerce.number().int().positive().optional().nullable(),
   rateSuffix: z.string().max(100).optional().nullable(),
+  scoreMax: z.coerce.number().positive().optional().nullable(),
   desiredDirection: z.enum(["up", "down"]).default("up"),
 });
 
@@ -78,6 +79,7 @@ function parseMetricFormData(formData: FormData) {
     denominatorLabel: raw.denominatorLabel || null,
     rateMultiplier: raw.rateMultiplier ? parseInt(raw.rateMultiplier, 10) : null,
     rateSuffix: raw.rateSuffix || null,
+    scoreMax: raw.scoreMax ? parseFloat(raw.scoreMax) : null,
     desiredDirection: raw.desiredDirection || "up",
   });
 }
@@ -162,6 +164,7 @@ export async function createMetricDefinition(
         denominatorLabel: data.denominatorLabel ?? null,
         rateMultiplier: data.rateMultiplier ?? null,
         rateSuffix: data.rateSuffix ?? null,
+        scoreMax: data.scoreMax ?? null,
         desiredDirection: data.desiredDirection,
       },
     });
@@ -286,6 +289,7 @@ export async function updateMetricDefinition(
         denominatorLabel: data.denominatorLabel ?? null,
         rateMultiplier: data.rateMultiplier ?? null,
         rateSuffix: data.rateSuffix ?? null,
+        scoreMax: data.scoreMax ?? null,
         desiredDirection: data.desiredDirection,
       },
     });
