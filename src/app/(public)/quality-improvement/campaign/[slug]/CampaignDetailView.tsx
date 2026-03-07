@@ -120,7 +120,7 @@ export function CampaignDetailView({ campaign, diagrams, cycles, actionItems }: 
         href="/quality-improvement"
         className="text-sm text-muted-foreground hover:text-nmh-teal flex items-center gap-1"
       >
-        <ArrowLeft className="h-3.5 w-3.5" /> Back to QI Tools
+        <ArrowLeft className="h-3.5 w-3.5" /> Back to QI Campaigns
       </Link>
 
       {/* Campaign Header */}
