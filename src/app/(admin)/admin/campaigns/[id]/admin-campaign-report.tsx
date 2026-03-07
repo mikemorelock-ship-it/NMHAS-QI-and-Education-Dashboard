@@ -85,6 +85,11 @@ import {
   toggleActionItemStatus,
 } from "@/actions/action-items";
 import {
+  createCampaignEvent,
+  updateCampaignEvent,
+  deleteCampaignEvent,
+} from "@/actions/campaign-events";
+import {
   CAMPAIGN_STATUS_LABELS,
   CAMPAIGN_STATUS_COLORS,
   PDSA_STATUS_LABELS,
@@ -95,6 +100,7 @@ import {
   ACTION_ITEM_PRIORITY_LABELS,
   ACTION_ITEM_PRIORITY_COLORS,
   DRIVER_NODE_TYPE_COLORS,
+  DRIVER_NODE_TYPE_LABELS,
   NMH_COLORS,
 } from "@/lib/constants";
 import { ControlChart } from "@/components/dashboard/ControlChart";
@@ -203,7 +209,16 @@ interface ActionItemRow {
 interface MilestoneInfo {
   date: string;
   label: string;
-  type: "action" | "pdsa" | "campaign";
+  description?: string | null;
+  type: "action" | "pdsa" | "campaign" | "milestone" | "barrier" | "event";
+}
+
+interface CampaignEventRow {
+  id: string;
+  date: string;
+  label: string;
+  description: string | null;
+  category: string;
 }
 
 interface GanttItem {
@@ -235,6 +250,7 @@ interface Props {
   divisions: { id: string; name: string }[];
   regions: { id: string; name: string; divisionId: string }[];
   metricDefinitions: { id: string; name: string }[];
+  campaignEvents: CampaignEventRow[];
 }
 
 // ---------------------------------------------------------------------------
@@ -251,6 +267,21 @@ const MILESTONE_ICONS: Record<string, string> = {
   campaign: "\u{1F3C1}",
   pdsa: "\u{1F504}",
   action: "\u2705",
+  milestone: "\u{1F3C1}",
+  barrier: "\u{1F6A7}",
+  event: "\u{1F4CC}",
+};
+
+const EVENT_CATEGORY_LABELS: Record<string, string> = {
+  milestone: "Milestone",
+  barrier: "Barrier",
+  event: "Event",
+};
+
+const EVENT_CATEGORY_COLORS: Record<string, string> = {
+  milestone: NMH_COLORS.teal,
+  barrier: NMH_COLORS.orange,
+  event: NMH_COLORS.gray,
 };
 
 /** Lucide icon for each PDSA status / phase */
@@ -414,136 +445,368 @@ function EditableDateField({
 
 interface DiagramTreeNode extends DiagramNodeInfo {
   children: DiagramTreeNode[];
+  depth: number;
 }
 
-const NODE_TYPE_LABELS: Record<string, string> = {
-  aim: "Aim",
-  primary: "Primary",
-  secondary: "Secondary",
-  changeIdea: "Change Idea",
-};
-
-const NODE_CHILD_TYPES: Record<string, string> = {
+const CHILD_TYPE: Record<string, string | null> = {
   aim: "primary",
   primary: "secondary",
   secondary: "changeIdea",
+  changeIdea: null,
 };
 
-function CompactDriverDiagram({
-  nodes,
-  diagramId,
+/** Build a flat display-order list with depth from the node tree */
+function buildDisplayOrder(nodes: DiagramNodeInfo[]): (DiagramNodeInfo & { depth: number })[] {
+  const childrenMap = new Map<string | null, DiagramNodeInfo[]>();
+  for (const node of nodes) {
+    const parentKey = node.parentId ?? null;
+    if (!childrenMap.has(parentKey)) childrenMap.set(parentKey, []);
+    childrenMap.get(parentKey)!.push(node);
+  }
+
+  const result: (DiagramNodeInfo & { depth: number })[] = [];
+  function walk(parentId: string | null, depth: number) {
+    const children = childrenMap.get(parentId) ?? [];
+    for (const child of children) {
+      result.push({ ...child, depth });
+      walk(child.id, depth + 1);
+    }
+  }
+  walk(null, 0);
+  return result;
+}
+
+// ---------------------------------------------------------------------------
+// Cascading Diagram Builder — wizard-style tree with inline PDSA cycles
+// ---------------------------------------------------------------------------
+
+function CascadingDiagramBuilder({
+  diagram,
   editMode,
+  expandedCycleIds,
+  onAccordionChange,
   onAddNode,
   onEditNode,
   onDeleteNode,
   onCreateCycleFromNode,
+  onFieldSave,
+  onStartNextCycle,
+  cloningCycleId,
+  onDeleteCycle,
+  onAdvanceCycle,
+  isCollapsed,
+  onToggleCollapse,
 }: {
-  nodes: DiagramNodeInfo[];
-  diagramId: string;
-  editMode?: boolean;
-  onAddNode?: (diagramId: string, parentId: string | null, type: string) => void;
-  onEditNode?: (node: DiagramNodeInfo) => void;
-  onDeleteNode?: (nodeId: string, nodeText: string) => void;
-  onCreateCycleFromNode?: (diagramId: string, changeIdeaNodeId: string, changeIdeaText: string) => void;
+  diagram: DiagramInfo;
+  editMode: boolean;
+  expandedCycleIds: string[];
+  onAccordionChange: (groupIds: string[], newExpanded: string[]) => void;
+  onAddNode: (diagramId: string, parentId: string | null, type: string) => void;
+  onEditNode: (node: DiagramNodeInfo) => void;
+  onDeleteNode: (nodeId: string, text: string) => void;
+  onCreateCycleFromNode: (diagramId: string, nodeId: string, text: string) => void;
+  onFieldSave: (cycleId: string, field: string, value: string | null) => void;
+  onStartNextCycle: (cycleId: string) => void;
+  cloningCycleId: string | null;
+  onDeleteCycle: (id: string, title: string) => void;
+  onAdvanceCycle: (cycleId: string) => void;
+  isCollapsed: boolean;
+  onToggleCollapse: () => void;
 }) {
-  const nodeMap = new Map<string, DiagramTreeNode>();
-  const roots: DiagramTreeNode[] = [];
+  const displayNodes = buildDisplayOrder(diagram.nodes);
 
-  for (const node of nodes) {
-    nodeMap.set(node.id, { ...node, children: [] });
-  }
-
-  for (const node of nodes) {
-    const treeNode = nodeMap.get(node.id)!;
-    if (node.parentId && nodeMap.has(node.parentId)) {
-      nodeMap.get(node.parentId)!.children.push(treeNode);
+  // Build a map of changeIdeaNodeId -> cycles for this diagram
+  const cyclesByChangeIdea = new Map<string, CycleInfo[]>();
+  const ungroupedCycles: CycleInfo[] = [];
+  for (const cycle of diagram.cycles) {
+    if (cycle.changeIdeaNodeId) {
+      if (!cyclesByChangeIdea.has(cycle.changeIdeaNodeId)) {
+        cyclesByChangeIdea.set(cycle.changeIdeaNodeId, []);
+      }
+      cyclesByChangeIdea.get(cycle.changeIdeaNodeId)!.push(cycle);
     } else {
-      roots.push(treeNode);
+      ungroupedCycles.push(cycle);
     }
   }
 
-  function renderNode(node: DiagramTreeNode, depth: number) {
-    const color = DRIVER_NODE_TYPE_COLORS[node.type] ?? "#4b4f54";
-    const childType = NODE_CHILD_TYPES[node.type];
-
-    return (
-      <div key={node.id} style={{ marginLeft: depth * 20 }} className="py-0.5">
-        <div className="flex items-center gap-2 text-sm group/node">
-          <span
-            className="inline-block w-2 h-2 rounded-full shrink-0"
-            style={{ backgroundColor: color }}
-          />
-          <span className="text-[10px] font-medium uppercase tracking-wide" style={{ color }}>
-            {NODE_TYPE_LABELS[node.type] ?? node.type}
-          </span>
-          <span className="font-medium">{node.text}</span>
-          {node.pdsaCycleCount > 0 && (
-            <span className="text-[10px] text-muted-foreground">({node.pdsaCycleCount} PDSA)</span>
-          )}
-          {editMode && (
-            <span className="inline-flex items-center gap-0.5 opacity-0 group-hover/node:opacity-100 transition-opacity">
-              {onEditNode && (
-                <button
-                  onClick={() => onEditNode(node)}
-                  className="p-0.5 rounded hover:bg-muted"
-                  title="Edit node"
-                >
-                  <Pencil className="h-3 w-3 text-muted-foreground" />
-                </button>
-              )}
-              {onDeleteNode && (
-                <button
-                  onClick={() => onDeleteNode(node.id, node.text)}
-                  className="p-0.5 rounded hover:bg-muted"
-                  title="Delete node"
-                >
-                  <Trash2 className="h-3 w-3 text-destructive" />
-                </button>
-              )}
-              {childType && onAddNode && (
-                <button
-                  onClick={() => onAddNode(diagramId, node.id, childType)}
-                  className="p-0.5 rounded hover:bg-muted"
-                  title={`Add ${NODE_TYPE_LABELS[childType] ?? childType}`}
-                >
-                  <Plus className="h-3 w-3 text-nmh-teal" />
-                </button>
-              )}
-              {node.type === "changeIdea" && onCreateCycleFromNode && (
-                <button
-                  onClick={() => onCreateCycleFromNode(diagramId, node.id, node.text)}
-                  className="p-0.5 rounded hover:bg-muted"
-                  title="Create PDSA cycle for this change idea"
-                >
-                  <RefreshCcw className="h-3 w-3 text-nmh-orange" />
-                </button>
-              )}
-            </span>
-          )}
-        </div>
-        {node.children.map((child) => renderNode(child, depth + 1))}
-      </div>
-    );
-  }
+  const primaryCount = diagram.nodes.filter((n) => n.type === "primary").length;
+  const changeIdeaCount = diagram.nodes.filter((n) => n.type === "changeIdea").length;
+  const hasPrimary = primaryCount > 0;
+  const hasChangeIdea = changeIdeaCount > 0;
 
   return (
-    <div className="space-y-0.5">
-      {roots.map((r) => renderNode(r, 0))}
-      {editMode && nodes.length === 0 && onAddNode && (
-        <button
-          onClick={() => onAddNode(diagramId, null, "aim")}
-          className="text-xs text-nmh-teal hover:underline flex items-center gap-1 mt-1"
-        >
-          <Plus className="h-3 w-3" /> Add Aim Statement
-        </button>
-      )}
-      {editMode && nodes.length > 0 && !nodes.some((n) => n.type === "aim") && onAddNode && (
-        <button
-          onClick={() => onAddNode(diagramId, null, "aim")}
-          className="text-xs text-nmh-teal hover:underline flex items-center gap-1 mt-1"
-        >
-          <Plus className="h-3 w-3" /> Add Aim Statement
-        </button>
+    <div className="space-y-3">
+      {/* Collapsible header */}
+      <button
+        onClick={onToggleCollapse}
+        className="flex items-center gap-2 w-full text-left"
+      >
+        <ChevronRight
+          className={`h-4 w-4 text-muted-foreground transition-transform ${!isCollapsed ? "rotate-90" : ""}`}
+        />
+        <span className="font-semibold text-nmh-gray">{diagram.name}</span>
+        {diagram.metricName && (
+          <Badge
+            variant="outline"
+            className="text-xs bg-nmh-teal/5 text-nmh-teal border-nmh-teal/20"
+          >
+            <BarChart3 className="h-3 w-3 mr-1" />
+            {diagram.metricName}
+          </Badge>
+        )}
+        <span className="text-xs text-muted-foreground ml-auto">
+          {diagram.nodes.length} nodes &middot; {diagram.cycles.length} cycles
+        </span>
+      </button>
+
+      {!isCollapsed && (
+        <div className="space-y-3 pl-2">
+          {diagram.description && (
+            <p className="text-sm text-muted-foreground">{diagram.description}</p>
+          )}
+
+          {editMode && (
+            <p className="text-sm text-muted-foreground">
+              Build your improvement tree: start with an Aim, then add Primary Drivers, Secondary
+              Drivers, and Change Ideas. Test each Change Idea with a PDSA Cycle.
+            </p>
+          )}
+
+          {/* Aim node prompt */}
+          {editMode && !diagram.nodes.some((n) => n.type === "aim") && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-xs border-dashed"
+              style={{
+                borderColor: `${DRIVER_NODE_TYPE_COLORS.aim}60`,
+                color: DRIVER_NODE_TYPE_COLORS.aim,
+              }}
+              onClick={() => onAddNode(diagram.id, null, "aim")}
+            >
+              <Plus className="h-3.5 w-3.5 mr-1" />
+              Add Aim Statement
+            </Button>
+          )}
+
+          {/* Node tree */}
+          {displayNodes.length > 0 && (
+            <div className="space-y-0.5 border rounded-lg p-4 bg-muted/20">
+              {displayNodes.map((node) => {
+                const childType = CHILD_TYPE[node.type];
+                const color = DRIVER_NODE_TYPE_COLORS[node.type] ?? "#6b7280";
+                const label = DRIVER_NODE_TYPE_LABELS[node.type] ?? node.type;
+                const childLabel = childType
+                  ? (DRIVER_NODE_TYPE_LABELS[childType] ?? childType)
+                  : "";
+                const childColor = childType
+                  ? (DRIVER_NODE_TYPE_COLORS[childType] ?? "#6b7280")
+                  : "";
+
+                // PDSA cycles for this node (if it's a change idea)
+                const nodeCycles =
+                  node.type === "changeIdea"
+                    ? cyclesByChangeIdea.get(node.id) ?? []
+                    : [];
+                const nodeCycleIds = nodeCycles.map((c) => c.id);
+                const nodeExpandedIds = expandedCycleIds.filter((id) =>
+                  nodeCycleIds.includes(id)
+                );
+
+                return (
+                  <div key={node.id}>
+                    {/* Node row */}
+                    <div
+                      className="flex items-center gap-2 py-1.5"
+                      style={{ paddingLeft: `${node.depth * 24 + 8}px` }}
+                    >
+                      <Badge
+                        variant="outline"
+                        className="text-xs shrink-0"
+                        style={{ borderColor: color, color }}
+                      >
+                        {label}
+                      </Badge>
+                      <span className="text-sm font-medium flex-1 truncate">
+                        {node.text}
+                      </span>
+                      {editMode && (
+                        <span className="flex items-center gap-0.5 shrink-0">
+                          <button
+                            onClick={() => onEditNode(node)}
+                            className="p-1 rounded hover:bg-muted"
+                            title="Edit"
+                          >
+                            <Pencil className="h-3 w-3 text-muted-foreground" />
+                          </button>
+                          <button
+                            onClick={() => onDeleteNode(node.id, node.text)}
+                            className="p-1 rounded hover:bg-muted text-destructive/60 hover:text-destructive"
+                            title="Delete"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </button>
+                        </span>
+                      )}
+                    </div>
+
+                    {/* PDSA cycles nested under change ideas */}
+                    {node.type === "changeIdea" && nodeCycles.length > 0 && (
+                      <div
+                        style={{ paddingLeft: `${(node.depth + 1) * 24 + 8}px` }}
+                        className="py-1"
+                      >
+                        <Accordion
+                          type="multiple"
+                          value={nodeExpandedIds}
+                          onValueChange={(val: string[]) =>
+                            onAccordionChange(nodeCycleIds, val)
+                          }
+                          className="space-y-1"
+                        >
+                          {nodeCycles.map((cycle) => (
+                            <AccordionItem
+                              key={cycle.id}
+                              value={cycle.id}
+                              className="border rounded-md px-3 bg-white"
+                            >
+                              <AccordionTrigger className="py-2 hover:no-underline">
+                                <PdsaCycleCompactHeader cycle={cycle} />
+                              </AccordionTrigger>
+                              <AccordionContent>
+                                <PdsaCycleExpandedContent
+                                  cycle={cycle}
+                                  editing={editMode}
+                                  onFieldSave={onFieldSave}
+                                  onStartNextCycle={onStartNextCycle}
+                                  isCloning={cloningCycleId === cycle.id}
+                                  onDelete={(id, title) => onDeleteCycle(id, title)}
+                                  onAdvance={onAdvanceCycle}
+                                />
+                              </AccordionContent>
+                            </AccordionItem>
+                          ))}
+                        </Accordion>
+                      </div>
+                    )}
+
+                    {/* Create PDSA button for change ideas */}
+                    {editMode && node.type === "changeIdea" && (
+                      <div
+                        style={{ paddingLeft: `${(node.depth + 1) * 24 + 8}px` }}
+                        className="py-0.5"
+                      >
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-xs border-dashed h-7"
+                          style={{
+                            borderColor: `${NMH_COLORS.orange}60`,
+                            color: NMH_COLORS.orange,
+                          }}
+                          onClick={() =>
+                            onCreateCycleFromNode(diagram.id, node.id, node.text)
+                          }
+                        >
+                          <RefreshCcw className="h-3 w-3 mr-1" />
+                          Add PDSA Cycle
+                        </Button>
+                      </div>
+                    )}
+
+                    {/* "Add child" button below the node */}
+                    {editMode && childType && (
+                      <div
+                        style={{ paddingLeft: `${(node.depth + 1) * 24 + 8}px` }}
+                        className="py-0.5"
+                      >
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-xs border-dashed h-7"
+                          style={{
+                            borderColor: `${childColor}60`,
+                            color: childColor,
+                          }}
+                          onClick={() => onAddNode(diagram.id, node.id, childType)}
+                        >
+                          <Plus className="h-3 w-3 mr-1" />
+                          Add {childLabel}
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Ungrouped cycles (not linked to any change idea) */}
+          {ungroupedCycles.length > 0 && (
+            <div className="space-y-1 pl-2">
+              <p className="text-xs font-medium text-muted-foreground">
+                Unlinked PDSA Cycles
+              </p>
+              <Accordion
+                type="multiple"
+                value={expandedCycleIds.filter((id) =>
+                  ungroupedCycles.some((c) => c.id === id)
+                )}
+                onValueChange={(val: string[]) =>
+                  onAccordionChange(
+                    ungroupedCycles.map((c) => c.id),
+                    val
+                  )
+                }
+                className="space-y-1"
+              >
+                {ungroupedCycles.map((cycle) => (
+                  <AccordionItem
+                    key={cycle.id}
+                    value={cycle.id}
+                    className="border rounded-md px-3"
+                  >
+                    <AccordionTrigger className="py-2 hover:no-underline">
+                      <PdsaCycleCompactHeader cycle={cycle} />
+                    </AccordionTrigger>
+                    <AccordionContent>
+                      <PdsaCycleExpandedContent
+                        cycle={cycle}
+                        editing={editMode}
+                        onFieldSave={onFieldSave}
+                        onStartNextCycle={onStartNextCycle}
+                        isCloning={cloningCycleId === cycle.id}
+                        onDelete={(id, title) => onDeleteCycle(id, title)}
+                        onAdvance={onAdvanceCycle}
+                      />
+                    </AccordionContent>
+                  </AccordionItem>
+                ))}
+              </Accordion>
+            </div>
+          )}
+
+          {/* Progress summary */}
+          {diagram.nodes.length > 0 && (
+            <div className="flex flex-wrap items-center gap-3 text-xs pt-1">
+              <span className="text-muted-foreground">
+                {diagram.nodes.length} nodes
+              </span>
+              <span className={hasPrimary ? "text-green-600" : "text-amber-600"}>
+                {primaryCount} primary driver{primaryCount !== 1 ? "s" : ""}
+                {!hasPrimary && " (need at least 1)"}
+              </span>
+              <span className={hasChangeIdea ? "text-green-600" : "text-amber-600"}>
+                {changeIdeaCount} change idea{changeIdeaCount !== 1 ? "s" : ""}
+                {!hasChangeIdea && " (need at least 1)"}
+              </span>
+              <span className="text-muted-foreground">
+                {diagram.cycles.length} PDSA cycle
+                {diagram.cycles.length !== 1 ? "s" : ""}
+              </span>
+            </div>
+          )}
+        </div>
       )}
     </div>
   );
@@ -1121,6 +1384,7 @@ export function AdminCampaignReport({
   users,
   campaignCycles,
   metricDefinitions,
+  campaignEvents,
 }: Props) {
   const [editMode, setEditMode] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -1177,6 +1441,22 @@ export function AdminCampaignReport({
       .map((c) => c.id);
   });
   const [cloningCycleId, setCloningCycleId] = useState<string | null>(null);
+
+  // Collapsed diagram state
+  const [collapsedDiagramIds, setCollapsedDiagramIds] = useState<Set<string>>(new Set());
+  const isDiagramCollapsed = (id: string) => collapsedDiagramIds.has(id);
+  const toggleDiagramCollapse = (id: string) =>
+    setCollapsedDiagramIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+
+  // Campaign event state
+  const [showCreateEvent, setShowCreateEvent] = useState(false);
+  const [editEvent, setEditEvent] = useState<CampaignEventRow | null>(null);
+  const [deleteEventRow, setDeleteEventRow] = useState<CampaignEventRow | null>(null);
 
   // Computed stats
   const completedCycles = diagrams.flatMap((d) => d.cycles).filter((c) => c.status === "completed");
@@ -1432,6 +1712,45 @@ export function AdminCampaignReport({
     });
   }
 
+  // --- Campaign events ---
+
+  function handleCreateEvent(fd: FormData) {
+    fd.set("campaignId", campaign.id);
+    startTransition(async () => {
+      const res = await createCampaignEvent(fd);
+      if (!res.success) setError(res.error ?? "Failed to create event");
+      else {
+        setShowCreateEvent(false);
+        flashSave("Event created");
+      }
+    });
+  }
+
+  function handleEditEvent(fd: FormData) {
+    if (!editEvent) return;
+    fd.set("campaignId", campaign.id);
+    startTransition(async () => {
+      const res = await updateCampaignEvent(editEvent.id, fd);
+      if (!res.success) setError(res.error ?? "Failed to update event");
+      else {
+        setEditEvent(null);
+        flashSave("Event updated");
+      }
+    });
+  }
+
+  function handleDeleteEvent() {
+    if (!deleteEventRow) return;
+    startTransition(async () => {
+      const res = await deleteCampaignEvent(deleteEventRow.id);
+      if (!res.success) setError(res.error ?? "Failed to delete event");
+      else {
+        setDeleteEventRow(null);
+        flashSave("Event deleted");
+      }
+    });
+  }
+
   return (
     <div className="max-w-5xl mx-auto space-y-8">
       {/* ================================================================= */}
@@ -1659,13 +1978,13 @@ export function AdminCampaignReport({
       </section>
 
       {/* ================================================================= */}
-      {/* DRIVER DIAGRAMS                                                   */}
+      {/* DRIVER DIAGRAM & IMPROVEMENT PLAN (unified builder)               */}
       {/* ================================================================= */}
       <section className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold text-nmh-gray flex items-center gap-2">
             <GitBranchPlus className="h-5 w-5 text-nmh-teal" />
-            Driver Diagrams ({diagrams.length})
+            Driver Diagram &amp; Improvement Plan
           </h2>
           {editMode && (
             <div className="flex items-center gap-2">
@@ -1681,238 +2000,106 @@ export function AdminCampaignReport({
           )}
         </div>
 
+        {editMode && (
+          <div className="rounded-lg border border-nmh-teal/20 bg-nmh-teal/5 p-4 text-sm space-y-2">
+            <p className="font-medium text-nmh-gray">
+              How to use this section
+            </p>
+            <div className="text-muted-foreground space-y-1">
+              <p>
+                <strong className="text-nmh-teal">1. Aim</strong> &mdash; What are you trying to
+                accomplish? Write a clear, measurable aim statement.
+              </p>
+              <p>
+                <strong style={{ color: DRIVER_NODE_TYPE_COLORS.primary }}>2. Primary Drivers</strong>{" "}
+                &mdash; What are the key factors that drive your aim?
+              </p>
+              <p>
+                <strong style={{ color: DRIVER_NODE_TYPE_COLORS.secondary }}>3. Secondary Drivers</strong>{" "}
+                &mdash; What specific factors influence each primary driver?
+              </p>
+              <p>
+                <strong style={{ color: DRIVER_NODE_TYPE_COLORS.changeIdea }}>4. Change Ideas</strong>{" "}
+                &mdash; What specific, testable changes can you make?
+              </p>
+              <p>
+                <strong style={{ color: NMH_COLORS.orange }}>5. PDSA Cycles</strong> &mdash; Test each
+                change idea using Plan-Do-Study-Act cycles.
+              </p>
+            </div>
+          </div>
+        )}
+
         {diagrams.length === 0 ? (
-          <p className="text-sm text-muted-foreground text-center py-4">
-            No diagrams linked to this campaign yet.
-          </p>
+          <div className="text-center py-8 border rounded-lg border-dashed">
+            <GitBranchPlus className="h-8 w-8 text-muted-foreground/30 mx-auto mb-2" />
+            <p className="text-sm text-muted-foreground">
+              No driver diagrams linked to this campaign yet.
+            </p>
+            {editMode && (
+              <p className="text-xs text-muted-foreground mt-1">
+                Create a diagram to start building your improvement plan.
+              </p>
+            )}
+          </div>
         ) : (
           diagrams.map((diagram) => (
-            <div key={diagram.id} className="border rounded-lg p-4 space-y-3 break-inside-avoid">
-              <div className="flex items-center justify-between gap-2">
-                <Link
-                  href={`/admin/driver-diagrams/${diagram.id}`}
-                  className="font-semibold text-nmh-gray hover:text-nmh-teal transition-colors flex items-center gap-1.5"
-                >
-                  {diagram.name}
-                  <ArrowRight className="h-3.5 w-3.5 text-muted-foreground" />
-                </Link>
-                <div className="flex items-center gap-2">
-                  {diagram.metricName && (
-                    <Badge
-                      variant="outline"
-                      className="text-xs bg-nmh-teal/5 text-nmh-teal border-nmh-teal/20"
-                    >
-                      <BarChart3 className="h-3 w-3 mr-1" />
-                      {diagram.metricName}
-                    </Badge>
-                  )}
-                  {editMode && (
-                    <>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7"
-                        onClick={() => handleRemoveDiagram(diagram.id)}
-                        title="Unlink from campaign"
-                      >
-                        <X className="h-4 w-4 text-muted-foreground" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7"
-                        onClick={() => setDeleteDiagram({ id: diagram.id, name: diagram.name })}
-                        title="Delete diagram"
-                      >
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
-                    </>
-                  )}
+            <div
+              key={diagram.id}
+              className="border rounded-lg p-5 space-y-3 break-inside-avoid"
+            >
+              <div className="flex items-center gap-2">
+                <div className="flex-1">
+                  <CascadingDiagramBuilder
+                    diagram={diagram}
+                    editMode={editMode}
+                    expandedCycleIds={expandedCycleIds}
+                    onAccordionChange={handleAccordionChange}
+                    onAddNode={handleOpenAddNode}
+                    onEditNode={handleOpenEditNode}
+                    onDeleteNode={(id, text) => setDeleteNode({ id, text })}
+                    onCreateCycleFromNode={handleOpenCreateCycleFromNode}
+                    onFieldSave={savePdsaField}
+                    onStartNextCycle={handleStartNextCycle}
+                    cloningCycleId={cloningCycleId}
+                    onDeleteCycle={(id, title) => setDeleteCycle({ id, title })}
+                    onAdvanceCycle={handleAdvanceCycle}
+                    isCollapsed={isDiagramCollapsed(diagram.id)}
+                    onToggleCollapse={() => toggleDiagramCollapse(diagram.id)}
+                  />
                 </div>
+                {editMode && (
+                  <div className="flex items-center gap-0.5 shrink-0 self-start mt-1">
+                    <Link
+                      href={`/admin/driver-diagrams/${diagram.id}`}
+                      className="p-1 rounded hover:bg-muted"
+                      title="Open full diagram page"
+                    >
+                      <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                    </Link>
+                    <button
+                      onClick={() => handleRemoveDiagram(diagram.id)}
+                      className="p-1 rounded hover:bg-muted"
+                      title="Unlink from campaign"
+                    >
+                      <X className="h-4 w-4 text-muted-foreground" />
+                    </button>
+                    <button
+                      onClick={() =>
+                        setDeleteDiagram({ id: diagram.id, name: diagram.name })
+                      }
+                      className="p-1 rounded hover:bg-muted"
+                      title="Delete diagram"
+                    >
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </button>
+                  </div>
+                )}
               </div>
-              {diagram.description && (
-                <p className="text-sm text-muted-foreground">{diagram.description}</p>
-              )}
-              <CompactDriverDiagram
-                nodes={diagram.nodes}
-                diagramId={diagram.id}
-                editMode={editMode}
-                onAddNode={handleOpenAddNode}
-                onEditNode={handleOpenEditNode}
-                onDeleteNode={(id, text) => setDeleteNode({ id, text })}
-                onCreateCycleFromNode={handleOpenCreateCycleFromNode}
-              />
             </div>
           ))
         )}
       </section>
-
-      {/* ================================================================= */}
-      {/* PDSA CYCLES                                                       */}
-      {/* ================================================================= */}
-      {(totalCycles > 0 || editMode) && (
-        <section className="space-y-4">
-          <h2 className="text-lg font-semibold text-nmh-gray flex items-center gap-2">
-            <RefreshCcw className="h-5 w-5 text-nmh-orange" />
-            Change Ideas &amp; PDSA Cycles ({totalCycles})
-          </h2>
-
-          {diagrams.map((diagram) => {
-            if (diagram.cycles.length === 0 && !editMode) return null;
-
-            const grouped = new Map<string, CycleInfo[]>();
-            const ungrouped: CycleInfo[] = [];
-            for (const cycle of diagram.cycles) {
-              if (cycle.changeIdea) {
-                const key = cycle.changeIdea;
-                if (!grouped.has(key)) grouped.set(key, []);
-                grouped.get(key)!.push(cycle);
-              } else {
-                ungrouped.push(cycle);
-              }
-            }
-
-            return (
-              <div key={diagram.id} className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-base font-medium text-muted-foreground">{diagram.name}</h3>
-                  {editMode && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setCreateCycleInfo({ diagramId: diagram.id })}
-                    >
-                      <Plus className="h-3.5 w-3.5 mr-1" /> Add PDSA Cycle
-                    </Button>
-                  )}
-                </div>
-
-                {/* Grouped by change idea */}
-                {Array.from(grouped.entries()).map(([changeIdea, cycles]) => {
-                  const groupCycleIds = cycles.map((c) => c.id);
-                  const groupExpandedIds = expandedCycleIds.filter((id) =>
-                    groupCycleIds.includes(id)
-                  );
-
-                  return (
-                    <div key={changeIdea} className="border rounded-lg p-4 space-y-3">
-                      <div className="flex items-center gap-2 text-sm">
-                        <span className="font-medium text-nmh-gray">Change Idea:</span>
-                        <span className="text-muted-foreground">{changeIdea}</span>
-                        <span className="text-muted-foreground/50">
-                          ({cycles.length} cycle{cycles.length !== 1 ? "s" : ""})
-                        </span>
-                      </div>
-                      {/* Progression chain */}
-                      <div className="flex items-center gap-1.5 flex-wrap text-sm">
-                        {cycles.map((c, idx) => {
-                          const ChainIcon = c.outcome
-                            ? PDSA_OUTCOME_ICONS[c.outcome]
-                            : PDSA_STATUS_ICONS[c.status];
-                          return (
-                            <span key={c.id} className="flex items-center gap-1">
-                              {idx > 0 && <span className="text-muted-foreground/40">&rarr;</span>}
-                              <Badge
-                                variant="secondary"
-                                className={`text-xs gap-1 ${
-                                  c.outcome === "adopt"
-                                    ? "bg-green-100 text-green-700"
-                                    : c.outcome === "adapt"
-                                      ? "bg-yellow-100 text-yellow-700"
-                                      : c.outcome === "abandon"
-                                        ? "bg-red-100 text-red-700"
-                                        : "bg-muted"
-                                }`}
-                              >
-                                {ChainIcon && <ChainIcon className="h-3 w-3" />}
-                                Cycle {c.cycleNumber}
-                                {c.outcome
-                                  ? `: ${PDSA_OUTCOME_LABELS[c.outcome] ?? c.outcome}`
-                                  : ` (${PDSA_STATUS_LABELS[c.status] ?? c.status})`}
-                              </Badge>
-                            </span>
-                          );
-                        })}
-                      </div>
-                      {/* Collapsible cycle cards */}
-                      <Accordion
-                        type="multiple"
-                        value={groupExpandedIds}
-                        onValueChange={(val: string[]) => handleAccordionChange(groupCycleIds, val)}
-                        className="space-y-1"
-                      >
-                        {cycles.map((cycle) => (
-                          <AccordionItem
-                            key={cycle.id}
-                            value={cycle.id}
-                            className="border rounded-md px-3"
-                          >
-                            <AccordionTrigger className="py-2 hover:no-underline">
-                              <PdsaCycleCompactHeader cycle={cycle} />
-                            </AccordionTrigger>
-                            <AccordionContent>
-                              <PdsaCycleExpandedContent
-                                cycle={cycle}
-                                editing={editMode}
-                                onFieldSave={savePdsaField}
-                                onStartNextCycle={handleStartNextCycle}
-                                isCloning={cloningCycleId === cycle.id}
-                                onDelete={(id, title) => setDeleteCycle({ id, title })}
-                                onAdvance={handleAdvanceCycle}
-                              />
-                            </AccordionContent>
-                          </AccordionItem>
-                        ))}
-                      </Accordion>
-                    </div>
-                  );
-                })}
-
-                {/* Ungrouped cycles (no change idea linked) */}
-                {ungrouped.length > 0 &&
-                  (() => {
-                    const ungroupedIds = ungrouped.map((c) => c.id);
-                    const ungroupedExpandedIds = expandedCycleIds.filter((id) =>
-                      ungroupedIds.includes(id)
-                    );
-
-                    return (
-                      <Accordion
-                        type="multiple"
-                        value={ungroupedExpandedIds}
-                        onValueChange={(val: string[]) => handleAccordionChange(ungroupedIds, val)}
-                        className="space-y-1"
-                      >
-                        {ungrouped.map((cycle) => (
-                          <AccordionItem
-                            key={cycle.id}
-                            value={cycle.id}
-                            className="border rounded-md px-3"
-                          >
-                            <AccordionTrigger className="py-2 hover:no-underline">
-                              <PdsaCycleCompactHeader cycle={cycle} />
-                            </AccordionTrigger>
-                            <AccordionContent>
-                              <PdsaCycleExpandedContent
-                                cycle={cycle}
-                                editing={editMode}
-                                onFieldSave={savePdsaField}
-                                onStartNextCycle={handleStartNextCycle}
-                                isCloning={cloningCycleId === cycle.id}
-                                onDelete={(id, title) => setDeleteCycle({ id, title })}
-                                onAdvance={handleAdvanceCycle}
-                              />
-                            </AccordionContent>
-                          </AccordionItem>
-                        ))}
-                      </Accordion>
-                    );
-                  })()}
-              </div>
-            );
-          })}
-        </section>
-      )}
 
       {/* ================================================================= */}
       {/* METRIC PERFORMANCE                                                */}
@@ -2025,30 +2212,90 @@ export function AdminCampaignReport({
       )}
 
       {/* ================================================================= */}
-      {/* MILESTONES                                                        */}
+      {/* MILESTONES, BARRIERS, EVENTS                                     */}
       {/* ================================================================= */}
-      {milestones.length > 0 && (
-        <section className="space-y-3 break-inside-avoid">
+      <section className="space-y-3 break-inside-avoid">
+        <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold text-nmh-gray flex items-center gap-2">
             <Flag className="h-5 w-5 text-nmh-teal" />
-            Milestones
+            Milestones, Barriers, Events
           </h2>
+          {editMode && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                setError(null);
+                setShowCreateEvent(true);
+              }}
+            >
+              <Plus className="h-3.5 w-3.5 mr-1" /> Add Entry
+            </Button>
+          )}
+        </div>
+        {milestones.length === 0 && campaignEvents.length === 0 ? (
+          <p className="text-sm text-muted-foreground text-center py-4">
+            No milestones, barriers, or events yet.
+          </p>
+        ) : (
           <div className="border rounded-lg divide-y">
-            {milestones.map((m, i) => (
-              <div key={i} className="flex items-center gap-3 px-4 py-2 text-sm">
-                <span className="text-base">{MILESTONE_ICONS[m.type] ?? "\u{1F4CC}"}</span>
-                <span className="text-muted-foreground w-[100px] shrink-0 text-xs">
-                  {formatDate(m.date)}
-                </span>
-                <span className="font-medium flex-1">{m.label}</span>
-                <Badge variant="secondary" className="text-[10px] capitalize">
-                  {m.type}
-                </Badge>
-              </div>
-            ))}
+            {milestones.map((m, i) => {
+              const catColor = EVENT_CATEGORY_COLORS[m.type] ?? NMH_COLORS.gray;
+              const isUserEntry = m.type === "milestone" || m.type === "barrier" || m.type === "event";
+              const matchingEvent = isUserEntry
+                ? campaignEvents.find((e) => e.label === m.label && e.date === m.date)
+                : null;
+              return (
+                <div
+                  key={i}
+                  className="flex items-center gap-3 px-4 py-2 text-sm group"
+                  title={m.description ?? undefined}
+                >
+                  <span className="text-base">{MILESTONE_ICONS[m.type] ?? "\u{1F4CC}"}</span>
+                  <span className="text-muted-foreground w-[100px] shrink-0 text-xs">
+                    {formatDate(m.date)}
+                  </span>
+                  <span className="font-medium flex-1">
+                    {m.label}
+                    {m.description && (
+                      <span className="ml-1 text-xs text-muted-foreground italic hidden group-hover:inline">
+                        — {m.description}
+                      </span>
+                    )}
+                  </span>
+                  <Badge
+                    variant="secondary"
+                    style={{ backgroundColor: `${catColor}20`, color: catColor }}
+                    className="text-[10px] capitalize shrink-0"
+                  >
+                    {EVENT_CATEGORY_LABELS[m.type] ?? m.type}
+                  </Badge>
+                  {editMode && matchingEvent && (
+                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-6 w-6"
+                        onClick={() => setEditEvent(matchingEvent)}
+                      >
+                        <Pencil className="h-3 w-3" />
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-6 w-6 text-destructive"
+                        onClick={() => setDeleteEventRow(matchingEvent)}
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
-        </section>
-      )}
+        )}
+      </section>
 
       {/* ================================================================= */}
       {/* ACTION ITEMS                                                      */}
@@ -2359,7 +2606,7 @@ export function AdminCampaignReport({
           <DialogHeader>
             <DialogTitle>
               {nodeDialog?.mode === "edit" ? "Edit" : "Add"}{" "}
-              {NODE_TYPE_LABELS[nodeDialog?.type ?? ""] ?? "Node"}
+              {DRIVER_NODE_TYPE_LABELS[nodeDialog?.type ?? ""] ?? "Node"}
             </DialogTitle>
           </DialogHeader>
           {nodeDialog && (
@@ -2518,6 +2765,117 @@ export function AdminCampaignReport({
               Cancel
             </Button>
             <Button variant="destructive" onClick={handleDeleteCycle} disabled={isPending}>
+              {isPending ? "Deleting..." : "Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create / Edit Campaign Event Dialog */}
+      <Dialog
+        open={showCreateEvent || !!editEvent}
+        onOpenChange={(open) => {
+          if (!open) {
+            setShowCreateEvent(false);
+            setEditEvent(null);
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{editEvent ? "Edit Entry" : "Add Entry"}</DialogTitle>
+          </DialogHeader>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              const fd = new FormData(e.currentTarget);
+              if (editEvent) handleEditEvent(fd);
+              else handleCreateEvent(fd);
+            }}
+          >
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="event-date">Date</Label>
+                <Input
+                  id="event-date"
+                  name="date"
+                  type="date"
+                  required
+                  defaultValue={editEvent?.date ?? ""}
+                />
+              </div>
+              <div>
+                <Label htmlFor="event-label">Label</Label>
+                <Input
+                  id="event-label"
+                  name="label"
+                  required
+                  maxLength={200}
+                  defaultValue={editEvent?.label ?? ""}
+                  placeholder="e.g., Grant funding approved"
+                />
+              </div>
+              <div>
+                <Label htmlFor="event-description">Description (shown on hover)</Label>
+                <Textarea
+                  id="event-description"
+                  name="description"
+                  rows={2}
+                  maxLength={1000}
+                  defaultValue={editEvent?.description ?? ""}
+                  placeholder="Optional details about this entry"
+                />
+              </div>
+              <div>
+                <Label htmlFor="event-category">Category</Label>
+                <Select name="category" defaultValue={editEvent?.category ?? "milestone"}>
+                  <SelectTrigger id="event-category">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="milestone">🏁 Milestone — Key achievement or target date</SelectItem>
+                    <SelectItem value="barrier">🚧 Barrier — Something that blocked or slowed progress</SelectItem>
+                    <SelectItem value="event">📌 Event — Notable occurrence that affected the campaign</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <DialogFooter className="mt-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setShowCreateEvent(false);
+                  setEditEvent(null);
+                }}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" disabled={isPending}>
+                {isPending ? "Saving..." : editEvent ? "Save" : "Create"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Campaign Event Confirmation */}
+      <Dialog
+        open={!!deleteEventRow}
+        onOpenChange={(open) => { if (!open) setDeleteEventRow(null); }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Entry</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Are you sure you want to delete <strong>{deleteEventRow?.label}</strong>?
+          </p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteEventRow(null)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleDeleteEvent} disabled={isPending}>
               {isPending ? "Deleting..." : "Delete"}
             </Button>
           </DialogFooter>

@@ -82,8 +82,15 @@ export default async function CampaignDetailPage({ params }: { params: Promise<{
   // Fetch admin-specific lookup data in parallel
   // -------------------------------------------------------------------------
 
-  const [unassignedDiagrams, users, allCycles, divisions, regions, metricDefinitions] =
-    await Promise.all([
+  const [
+    unassignedDiagrams,
+    users,
+    allCycles,
+    divisions,
+    regions,
+    metricDefinitions,
+    campaignEvents,
+  ] = await Promise.all([
     prisma.driverDiagram.findMany({
       where: { campaignId: null, isActive: true },
       orderBy: { name: "asc" },
@@ -111,6 +118,17 @@ export default async function CampaignDetailPage({ params }: { params: Promise<{
       where: { isActive: true },
       orderBy: { name: "asc" },
       select: { id: true, name: true },
+    }),
+    prisma.campaignEvent.findMany({
+      where: { campaignId: id },
+      orderBy: { date: "asc" },
+      select: {
+        id: true,
+        date: true,
+        label: true,
+        description: true,
+        category: true,
+      },
     }),
   ]);
 
@@ -290,7 +308,8 @@ export default async function CampaignDetailPage({ params }: { params: Promise<{
   const milestones: Array<{
     date: string;
     label: string;
-    type: "action" | "pdsa" | "campaign";
+    description?: string | null;
+    type: "action" | "pdsa" | "campaign" | "milestone" | "barrier" | "event";
   }> = [];
 
   if (campaign.startDate) {
@@ -330,7 +349,26 @@ export default async function CampaignDetailPage({ params }: { params: Promise<{
     }
   }
 
+  // Add user-created campaign events
+  for (const evt of campaignEvents) {
+    milestones.push({
+      date: evt.date.toISOString().split("T")[0],
+      label: evt.label,
+      description: evt.description,
+      type: evt.category as "milestone" | "barrier" | "event",
+    });
+  }
+
   milestones.sort((a, b) => a.date.localeCompare(b.date));
+
+  // Serialize campaign events for client
+  const campaignEventsData = campaignEvents.map((evt) => ({
+    id: evt.id,
+    date: evt.date.toISOString().split("T")[0],
+    label: evt.label,
+    description: evt.description,
+    category: evt.category,
+  }));
 
   // -------------------------------------------------------------------------
   // Build Gantt items
@@ -443,6 +481,7 @@ export default async function CampaignDetailPage({ params }: { params: Promise<{
       divisions={divisions}
       regions={regions}
       metricDefinitions={metricDefinitions}
+      campaignEvents={campaignEventsData}
     />
   );
 }

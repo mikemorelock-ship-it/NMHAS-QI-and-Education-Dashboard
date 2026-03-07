@@ -322,6 +322,7 @@ model Campaign {
   shareLinks        CampaignShareLink[]
   rootCauseAnalyses RootCauseAnalysis[]
   justCultureAssessments JustCultureAssessment[]
+  events            CampaignEvent[]
 
   @@index([ownerId])
   @@index([status])
@@ -358,6 +359,26 @@ model CampaignRegion {
   @@unique([campaignId, regionId])
   @@index([campaignId])
   @@index([regionId])
+}
+
+// ---------------------------------------------------------------------------
+// Campaign Events — milestones, barriers, and notable events
+// ---------------------------------------------------------------------------
+
+model CampaignEvent {
+  id          String   @id @default(cuid())
+  campaignId  String
+  date        DateTime
+  label       String
+  description String?
+  category    String   @default("milestone") // "milestone" | "barrier" | "event"
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  @@index([campaignId])
+  @@index([date])
 }
 
 // ---------------------------------------------------------------------------
