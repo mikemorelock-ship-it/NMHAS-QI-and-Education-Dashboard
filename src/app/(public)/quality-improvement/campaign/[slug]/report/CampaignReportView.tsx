@@ -10,7 +10,6 @@ import {
   Calendar,
   User,
   GitBranchPlus,
-  RefreshCcw,
   ListChecks,
   BarChart3,
   CheckCircle2,
@@ -35,6 +34,12 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { createCampaignShareLink } from "@/actions/campaigns";
 import {
   CAMPAIGN_STATUS_LABELS,
@@ -90,11 +95,13 @@ interface CycleInfo {
   status: string;
   outcome: string | null;
   changeIdea: string | null;
+  changeIdeaNodeId: string | null;
   metricName: string | null;
   planDescription: string | null;
   planPrediction: string | null;
   doStartDate: string | null;
   doEndDate: string | null;
+  doObservations: string | null;
   studyResults: string | null;
   studyLearnings: string | null;
   actDecision: string | null;
@@ -216,20 +223,27 @@ function formatDate(iso: string) {
 // Sub-components
 // ---------------------------------------------------------------------------
 
-/** Compact driver diagram tree for the report */
+/** Cascading driver diagram tree with inline expandable PDSA cycles */
 
 interface DiagramTreeNode extends DiagramNodeInfo {
   children: DiagramTreeNode[];
 }
 
-function CompactDriverDiagram({ nodes }: { nodes: DiagramNodeInfo[] }) {
+const NODE_TYPE_LABELS: Record<string, string> = {
+  aim: "Aim",
+  primary: "Primary Driver",
+  secondary: "Secondary Driver",
+  changeIdea: "Change Idea",
+};
+
+function CascadingDriverTree({ nodes, cycles }: { nodes: DiagramNodeInfo[]; cycles: CycleInfo[] }) {
+  // Build tree
   const nodeMap = new Map<string, DiagramTreeNode>();
   const roots: DiagramTreeNode[] = [];
 
   for (const node of nodes) {
     nodeMap.set(node.id, { ...node, children: [] });
   }
-
   for (const node of nodes) {
     const treeNode = nodeMap.get(node.id)!;
     if (node.parentId && nodeMap.has(node.parentId)) {
@@ -239,36 +253,248 @@ function CompactDriverDiagram({ nodes }: { nodes: DiagramNodeInfo[] }) {
     }
   }
 
+  // Index cycles by changeIdeaNodeId
+  const cyclesByNode = new Map<string, CycleInfo[]>();
+  for (const c of cycles) {
+    if (c.changeIdeaNodeId) {
+      if (!cyclesByNode.has(c.changeIdeaNodeId)) cyclesByNode.set(c.changeIdeaNodeId, []);
+      cyclesByNode.get(c.changeIdeaNodeId)!.push(c);
+    }
+  }
+
+  // Collect ungrouped cycles (no changeIdeaNodeId)
+  const ungroupedCycles = cycles.filter((c) => !c.changeIdeaNodeId);
+
   function renderNode(node: DiagramTreeNode, depth: number) {
     const color = DRIVER_NODE_TYPE_COLORS[node.type] ?? "#4b4f54";
-    const typeLabels: Record<string, string> = {
-      aim: "Aim",
-      primary: "Primary",
-      secondary: "Secondary",
-      changeIdea: "Change Idea",
-    };
+    const nodeCycles = cyclesByNode.get(node.id) ?? [];
 
     return (
-      <div key={node.id} style={{ marginLeft: depth * 20 }} className="py-0.5">
-        <div className="flex items-center gap-2 text-sm">
-          <span
-            className="inline-block w-2 h-2 rounded-full shrink-0"
-            style={{ backgroundColor: color }}
-          />
-          <span className="text-[10px] font-medium uppercase tracking-wide" style={{ color }}>
-            {typeLabels[node.type] ?? node.type}
-          </span>
-          <span className="font-medium">{node.text}</span>
-          {node.pdsaCycleCount > 0 && (
-            <span className="text-[10px] text-muted-foreground">({node.pdsaCycleCount} PDSA)</span>
-          )}
+      <div key={node.id}>
+        {/* Node row */}
+        <div
+          className="flex items-center gap-2 py-1.5"
+          style={{ paddingLeft: `${depth * 32 + 8}px` }}
+        >
+          <Badge
+            variant="outline"
+            className="text-xs shrink-0"
+            style={{ borderColor: color, color }}
+          >
+            {NODE_TYPE_LABELS[node.type] ?? node.type}
+          </Badge>
+          <span className="font-medium text-sm">{node.text}</span>
+          {/* Quick-glance outcome badges for change ideas */}
+          {node.type === "changeIdea" &&
+            nodeCycles.map((c) => {
+              const OutcomeIcon = c.outcome ? PDSA_OUTCOME_ICONS[c.outcome] : null;
+              const StatusIcon = PDSA_STATUS_ICONS[c.status];
+              return (
+                <Badge
+                  key={c.id}
+                  variant="secondary"
+                  className={`text-xs gap-0.5 ${
+                    c.outcome === "adopt"
+                      ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                      : c.outcome === "adapt"
+                        ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400"
+                        : c.outcome === "abandon"
+                          ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
+                          : "bg-muted"
+                  }`}
+                >
+                  {OutcomeIcon ? (
+                    <OutcomeIcon className="h-3 w-3" />
+                  ) : (
+                    StatusIcon && <StatusIcon className="h-3 w-3" />
+                  )}
+                  #{c.cycleNumber}
+                  {c.outcome
+                    ? `: ${PDSA_OUTCOME_LABELS[c.outcome] ?? c.outcome}`
+                    : ` ${PDSA_STATUS_LABELS[c.status] ?? c.status}`}
+                </Badge>
+              );
+            })}
         </div>
+
+        {/* Expandable PDSA cycles for this change idea */}
+        {node.type === "changeIdea" && nodeCycles.length > 0 && (
+          <div style={{ paddingLeft: `${(depth + 1) * 32 + 8}px` }} className="py-1">
+            <Accordion type="multiple" className="space-y-1">
+              {nodeCycles.map((cycle) => (
+                <AccordionItem
+                  key={cycle.id}
+                  value={cycle.id}
+                  className="border rounded-md px-3 bg-card"
+                >
+                  <AccordionTrigger className="py-2 hover:no-underline">
+                    <PdsaCycleCompactBadge cycle={cycle} />
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    <PdsaCycleSummaryContent cycle={cycle} />
+                  </AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
+          </div>
+        )}
+
+        {/* Render children */}
         {node.children.map((child) => renderNode(child, depth + 1))}
       </div>
     );
   }
 
-  return <div className="space-y-0.5">{roots.map((r) => renderNode(r, 0))}</div>;
+  return (
+    <div>
+      {roots.map((r) => renderNode(r, 0))}
+      {/* Ungrouped cycles (not linked to any change idea node) */}
+      {ungroupedCycles.length > 0 && (
+        <div className="mt-3 space-y-2">
+          <p className="text-xs text-muted-foreground font-medium pl-2">
+            Other PDSA Cycles (not linked to a change idea)
+          </p>
+          <Accordion type="multiple" className="space-y-1 pl-2">
+            {ungroupedCycles.map((cycle) => (
+              <AccordionItem
+                key={cycle.id}
+                value={cycle.id}
+                className="border rounded-md px-3 bg-card"
+              >
+                <AccordionTrigger className="py-2 hover:no-underline">
+                  <PdsaCycleCompactBadge cycle={cycle} />
+                </AccordionTrigger>
+                <AccordionContent>
+                  <PdsaCycleSummaryContent cycle={cycle} />
+                </AccordionContent>
+              </AccordionItem>
+            ))}
+          </Accordion>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Compact badge row for collapsed PDSA cycle in accordion trigger */
+function PdsaCycleCompactBadge({ cycle }: { cycle: CycleInfo }) {
+  const statusColor = PDSA_STATUS_COLORS[cycle.status] ?? "#4b4f54";
+  const StatusIcon = PDSA_STATUS_ICONS[cycle.status];
+  const OutcomeIcon = cycle.outcome ? PDSA_OUTCOME_ICONS[cycle.outcome] : null;
+
+  return (
+    <div className="flex items-center gap-2 text-sm">
+      <span className="font-medium">
+        {cycle.title} <span className="text-muted-foreground">#{cycle.cycleNumber}</span>
+      </span>
+      <Badge
+        variant="secondary"
+        className="text-xs gap-1"
+        style={{ backgroundColor: `${statusColor}15`, color: statusColor }}
+      >
+        {StatusIcon && <StatusIcon className="h-3 w-3" />}
+        {PDSA_STATUS_LABELS[cycle.status] ?? cycle.status}
+      </Badge>
+      {cycle.outcome && (
+        <Badge
+          variant="secondary"
+          className={`text-xs gap-1 ${
+            cycle.outcome === "adopt"
+              ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+              : cycle.outcome === "adapt"
+                ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400"
+                : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
+          }`}
+        >
+          {OutcomeIcon && <OutcomeIcon className="h-3 w-3" />}
+          {PDSA_OUTCOME_LABELS[cycle.outcome] ?? cycle.outcome}
+        </Badge>
+      )}
+    </div>
+  );
+}
+
+/** Expanded PDSA cycle content (read-only) */
+function PdsaCycleSummaryContent({ cycle }: { cycle: CycleInfo }) {
+  return (
+    <div className="text-sm space-y-3">
+      <div className="grid grid-cols-2 gap-3 text-sm">
+        {cycle.planDescription && (
+          <div>
+            <span
+              className="font-medium inline-flex items-center gap-1"
+              style={{ color: PDSA_STATUS_COLORS.planning }}
+            >
+              <ClipboardList className="h-3.5 w-3.5" />
+              Plan:
+            </span>{" "}
+            {cycle.planDescription}
+          </div>
+        )}
+        {cycle.planPrediction && (
+          <div>
+            <span className="font-medium text-muted-foreground">Prediction:</span>{" "}
+            {cycle.planPrediction}
+          </div>
+        )}
+        {(cycle.doStartDate || cycle.doEndDate) && (
+          <div>
+            <span
+              className="font-medium inline-flex items-center gap-1"
+              style={{ color: PDSA_STATUS_COLORS.doing }}
+            >
+              <Play className="h-3.5 w-3.5" />
+              Do:
+            </span>{" "}
+            {cycle.doStartDate ? formatDate(cycle.doStartDate) : "—"} →{" "}
+            {cycle.doEndDate ? formatDate(cycle.doEndDate) : "ongoing"}
+          </div>
+        )}
+        {cycle.doObservations && (
+          <div>
+            <span className="font-medium text-muted-foreground">Observations:</span>{" "}
+            {cycle.doObservations}
+          </div>
+        )}
+        {cycle.studyResults && (
+          <div>
+            <span
+              className="font-medium inline-flex items-center gap-1"
+              style={{ color: PDSA_STATUS_COLORS.studying }}
+            >
+              <Search className="h-3.5 w-3.5" />
+              Study:
+            </span>{" "}
+            {cycle.studyResults}
+          </div>
+        )}
+        {cycle.studyLearnings && (
+          <div>
+            <span className="font-medium text-muted-foreground">Learnings:</span>{" "}
+            {cycle.studyLearnings}
+          </div>
+        )}
+        {cycle.actDecision && (
+          <div>
+            <span
+              className="font-medium inline-flex items-center gap-1"
+              style={{ color: PDSA_STATUS_COLORS.acting }}
+            >
+              <Zap className="h-3.5 w-3.5" />
+              Act:
+            </span>{" "}
+            {cycle.actDecision}
+          </div>
+        )}
+        {cycle.actNextSteps && (
+          <div>
+            <span className="font-medium text-muted-foreground">Next Steps:</span>{" "}
+            {cycle.actNextSteps}
+          </div>
+        )}
+      </div>
+    </div>
+  );
 }
 
 /** Compact Gantt chart for the report — purely CSS, no interactivity */
@@ -412,123 +638,6 @@ function ReportGanttChart({ items }: { items: GanttItem[] }) {
           <span className="inline-block w-px h-3 bg-primary/40" />
           Today
         </span>
-      </div>
-    </div>
-  );
-}
-
-/** PDSA cycle summary card for report */
-function PdsaCycleSummary({ cycle }: { cycle: CycleInfo }) {
-  const statusColor = PDSA_STATUS_COLORS[cycle.status] ?? "#4b4f54";
-  const StatusIcon = PDSA_STATUS_ICONS[cycle.status];
-  const OutcomeIcon = cycle.outcome ? PDSA_OUTCOME_ICONS[cycle.outcome] : null;
-
-  return (
-    <div className="border rounded-md p-4 text-sm space-y-3 break-inside-avoid">
-      <div className="flex items-center justify-between gap-2 flex-wrap">
-        <div className="flex items-center gap-2">
-          <span className="font-semibold">{cycle.title}</span>
-          <span className="text-sm text-muted-foreground">Cycle #{cycle.cycleNumber}</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <Badge
-            variant="secondary"
-            className="text-xs gap-1"
-            style={{ backgroundColor: `${statusColor}15`, color: statusColor }}
-          >
-            {StatusIcon && <StatusIcon className="h-3 w-3" />}
-            {PDSA_STATUS_LABELS[cycle.status] ?? cycle.status}
-          </Badge>
-          {cycle.outcome && (
-            <Badge
-              variant="secondary"
-              className={`text-xs gap-1 ${
-                cycle.outcome === "adopt"
-                  ? "bg-green-100 text-green-700"
-                  : cycle.outcome === "adapt"
-                    ? "bg-yellow-100 text-yellow-700"
-                    : "bg-red-100 text-red-700"
-              }`}
-            >
-              {OutcomeIcon && <OutcomeIcon className="h-3 w-3" />}
-              {PDSA_OUTCOME_LABELS[cycle.outcome] ?? cycle.outcome}
-            </Badge>
-          )}
-        </div>
-      </div>
-
-      {cycle.changeIdea && (
-        <p className="text-sm text-muted-foreground">Change Idea: {cycle.changeIdea}</p>
-      )}
-
-      <div className="grid grid-cols-2 gap-3 text-sm">
-        {cycle.planDescription && (
-          <div>
-            <span
-              className="font-medium inline-flex items-center gap-1"
-              style={{ color: PDSA_STATUS_COLORS.planning }}
-            >
-              <ClipboardList className="h-3.5 w-3.5" />
-              Plan:
-            </span>{" "}
-            {cycle.planDescription}
-          </div>
-        )}
-        {cycle.planPrediction && (
-          <div>
-            <span className="font-medium text-muted-foreground">Prediction:</span>{" "}
-            {cycle.planPrediction}
-          </div>
-        )}
-        {(cycle.doStartDate || cycle.doEndDate) && (
-          <div>
-            <span
-              className="font-medium inline-flex items-center gap-1"
-              style={{ color: PDSA_STATUS_COLORS.doing }}
-            >
-              <Play className="h-3.5 w-3.5" />
-              Do:
-            </span>{" "}
-            {cycle.doStartDate ? formatDate(cycle.doStartDate) : "—"} →{" "}
-            {cycle.doEndDate ? formatDate(cycle.doEndDate) : "ongoing"}
-          </div>
-        )}
-        {cycle.studyResults && (
-          <div>
-            <span
-              className="font-medium inline-flex items-center gap-1"
-              style={{ color: PDSA_STATUS_COLORS.studying }}
-            >
-              <Search className="h-3.5 w-3.5" />
-              Study:
-            </span>{" "}
-            {cycle.studyResults}
-          </div>
-        )}
-        {cycle.studyLearnings && (
-          <div>
-            <span className="font-medium text-muted-foreground">Learnings:</span>{" "}
-            {cycle.studyLearnings}
-          </div>
-        )}
-        {cycle.actDecision && (
-          <div>
-            <span
-              className="font-medium inline-flex items-center gap-1"
-              style={{ color: PDSA_STATUS_COLORS.acting }}
-            >
-              <Zap className="h-3.5 w-3.5" />
-              Act:
-            </span>{" "}
-            {cycle.actDecision}
-          </div>
-        )}
-        {cycle.actNextSteps && (
-          <div>
-            <span className="font-medium text-muted-foreground">Next Steps:</span>{" "}
-            {cycle.actNextSteps}
-          </div>
-        )}
       </div>
     </div>
   );
@@ -825,17 +934,22 @@ export function CampaignReportView({
       </section>
 
       {/* ================================================================= */}
-      {/* DRIVER DIAGRAMS                                                   */}
+      {/* DRIVER DIAGRAMS & PDSA CYCLES (unified cascading tree)            */}
       {/* ================================================================= */}
       {diagrams.length > 0 && (
         <section className="space-y-4">
           <h2 className="text-lg font-semibold text-nmh-gray flex items-center gap-2">
             <GitBranchPlus className="h-5 w-5 text-nmh-teal" />
-            Driver Diagrams
+            Driver Diagrams &amp; PDSA Cycles
+            {totalCycles > 0 && (
+              <span className="text-sm font-normal text-muted-foreground">
+                ({totalCycles} cycle{totalCycles !== 1 ? "s" : ""})
+              </span>
+            )}
           </h2>
 
           {diagrams.map((diagram) => (
-            <div key={diagram.id} className="border rounded-lg p-4 space-y-3 break-inside-avoid">
+            <div key={diagram.id} className="border rounded-lg p-4 space-y-3">
               <div className="flex items-center justify-between gap-2">
                 <Link
                   href={`/quality-improvement/diagram/${diagram.slug}`}
@@ -857,102 +971,9 @@ export function CampaignReportView({
               {diagram.description && (
                 <p className="text-sm text-muted-foreground">{diagram.description}</p>
               )}
-              <CompactDriverDiagram nodes={diagram.nodes} />
+              <CascadingDriverTree nodes={diagram.nodes} cycles={diagram.cycles} />
             </div>
           ))}
-        </section>
-      )}
-
-      {/* ================================================================= */}
-      {/* PDSA CYCLES                                                       */}
-      {/* ================================================================= */}
-      {totalCycles > 0 && (
-        <section className="space-y-4">
-          <h2 className="text-lg font-semibold text-nmh-gray flex items-center gap-2">
-            <RefreshCcw className="h-5 w-5 text-nmh-orange" />
-            Change Ideas &amp; PDSA Cycles ({totalCycles})
-          </h2>
-
-          {diagrams.map((diagram) => {
-            if (diagram.cycles.length === 0) return null;
-
-            // Group cycles by change idea for progression tracking
-            const grouped = new Map<string, CycleInfo[]>();
-            const ungrouped: CycleInfo[] = [];
-            for (const cycle of diagram.cycles) {
-              if (cycle.changeIdea) {
-                const key = cycle.changeIdea;
-                if (!grouped.has(key)) grouped.set(key, []);
-                grouped.get(key)!.push(cycle);
-              } else {
-                ungrouped.push(cycle);
-              }
-            }
-
-            return (
-              <div key={diagram.id} className="space-y-4">
-                <h3 className="text-base font-medium text-muted-foreground">{diagram.name}</h3>
-
-                {/* Grouped by change idea */}
-                {Array.from(grouped.entries()).map(([changeIdea, cycles]) => (
-                  <div key={changeIdea} className="border rounded-lg p-4 space-y-3">
-                    <div className="flex items-center gap-2 text-sm">
-                      <span className="font-medium text-nmh-gray">Change Idea:</span>
-                      <span className="text-muted-foreground">{changeIdea}</span>
-                      <span className="text-muted-foreground/50">
-                        ({cycles.length} cycle{cycles.length !== 1 ? "s" : ""})
-                      </span>
-                    </div>
-                    {/* Progression chain */}
-                    <div className="flex items-center gap-1.5 flex-wrap text-sm">
-                      {cycles.map((c, idx) => {
-                        const ChainIcon = c.outcome
-                          ? PDSA_OUTCOME_ICONS[c.outcome]
-                          : PDSA_STATUS_ICONS[c.status];
-                        return (
-                          <span key={c.id} className="flex items-center gap-1">
-                            {idx > 0 && <span className="text-muted-foreground/40">→</span>}
-                            <Badge
-                              variant="secondary"
-                              className={`text-xs gap-1 ${
-                                c.outcome === "adopt"
-                                  ? "bg-green-100 text-green-700"
-                                  : c.outcome === "adapt"
-                                    ? "bg-yellow-100 text-yellow-700"
-                                    : c.outcome === "abandon"
-                                      ? "bg-red-100 text-red-700"
-                                      : "bg-muted"
-                              }`}
-                            >
-                              {ChainIcon && <ChainIcon className="h-3 w-3" />}
-                              Cycle {c.cycleNumber}
-                              {c.outcome
-                                ? `: ${PDSA_OUTCOME_LABELS[c.outcome] ?? c.outcome}`
-                                : ` (${PDSA_STATUS_LABELS[c.status] ?? c.status})`}
-                            </Badge>
-                          </span>
-                        );
-                      })}
-                    </div>
-                    <div className="space-y-2">
-                      {cycles.map((cycle) => (
-                        <PdsaCycleSummary key={cycle.id} cycle={cycle} />
-                      ))}
-                    </div>
-                  </div>
-                ))}
-
-                {/* Ungrouped cycles (no change idea linked) */}
-                {ungrouped.length > 0 && (
-                  <div className="space-y-2">
-                    {ungrouped.map((cycle) => (
-                      <PdsaCycleSummary key={cycle.id} cycle={cycle} />
-                    ))}
-                  </div>
-                )}
-              </div>
-            );
-          })}
         </section>
       )}
 

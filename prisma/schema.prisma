@@ -322,6 +322,7 @@ model Campaign {
   shareLinks        CampaignShareLink[]
   rootCauseAnalyses RootCauseAnalysis[]
   justCultureAssessments JustCultureAssessment[]
+  events            CampaignEvent[]
 
   @@index([ownerId])
   @@index([status])
@@ -358,6 +359,26 @@ model CampaignRegion {
   @@unique([campaignId, regionId])
   @@index([campaignId])
   @@index([regionId])
+}
+
+// ---------------------------------------------------------------------------
+// Campaign Events — milestones, barriers, and notable events
+// ---------------------------------------------------------------------------
+
+model CampaignEvent {
+  id          String   @id @default(cuid())
+  campaignId  String
+  date        DateTime
+  label       String
+  description String?
+  category    String   @default("milestone") // "milestone" | "barrier" | "event"
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  @@index([campaignId])
+  @@index([date])
 }
 
 // ---------------------------------------------------------------------------
@@ -432,7 +453,29 @@ model DriverNode {
   children      DriverNode[]  @relation("DriverNodeHierarchy")
   pdsaCycles    PdsaCycle[]
 
+  // Many-to-many: additional parent driver associations
+  associations       DriverNodeAssociation[] @relation("NodeAssociations")
+  associatedChildren DriverNodeAssociation[] @relation("ParentAssociations")
+
   @@index([driverDiagramId])
+  @@index([parentId])
+}
+
+// ---------------------------------------------------------------------------
+// Driver Node Associations — many-to-many links between nodes and additional
+// parent drivers (beyond the primary parentId relationship)
+// ---------------------------------------------------------------------------
+
+model DriverNodeAssociation {
+  id       String @id @default(cuid())
+  nodeId   String // the child node (changeIdea or secondary)
+  parentId String // the additional associated parent driver
+
+  node   DriverNode @relation("NodeAssociations", fields: [nodeId], references: [id], onDelete: Cascade)
+  parent DriverNode @relation("ParentAssociations", fields: [parentId], references: [id], onDelete: Cascade)
+
+  @@unique([nodeId, parentId])
+  @@index([nodeId])
   @@index([parentId])
 }
 
