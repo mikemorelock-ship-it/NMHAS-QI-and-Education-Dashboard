@@ -84,7 +84,7 @@ export function PublicHeader({ userName, userRole }: PublicHeaderProps) {
           title="Quality Improvement"
         >
           <GitBranchPlus className="size-4" aria-hidden="true" />
-          <span className="hidden md:inline">QI Tools</span>
+          <span className="hidden md:inline">QI Campaigns</span>
         </Link>
         <Link
           href="/field-training"
