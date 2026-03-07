@@ -38,7 +38,8 @@ export function formatMetricValue(
   value: number,
   unit: string,
   rateMultiplier?: number | null,
-  rateSuffix?: string | null
+  rateSuffix?: string | null,
+  scoreMax?: number | null
 ): string {
   switch (unit) {
     case "currency":
@@ -53,7 +54,7 @@ export function formatMetricValue(
     case "duration":
       return `${value.toFixed(1)} min`;
     case "score":
-      return `${value.toFixed(1)}/10`;
+      return scoreMax ? `${value.toFixed(1)}/${scoreMax}` : value.toFixed(1);
     case "count":
       return new Intl.NumberFormat("en-US").format(Math.round(value));
     case "rate": {

@@ -233,6 +233,7 @@ export default async function RegionMetricDetailPage({ params }: PageProps) {
           chartType: metric.chartType,
           category: metric.categoryLegacy,
           target: metric.target,
+          desiredDirection: metric.desiredDirection as "up" | "down",
           dataType: metric.dataType as "proportion" | "rate" | "continuous",
           spcSigmaLevel: metric.spcSigmaLevel,
           baselineStart: metric.baselineStart?.toISOString() ?? null,

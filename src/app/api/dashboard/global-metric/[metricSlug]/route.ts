@@ -371,6 +371,7 @@ export async function GET(
       target: metric.target,
       rateMultiplier: metric.rateMultiplier ?? null,
       rateSuffix: metric.rateSuffix ?? null,
+      scoreMax: metric.scoreMax ?? null,
       dataType: metric.dataType,
       spcSigmaLevel: metric.spcSigmaLevel,
       baselineStart: metric.baselineStart?.toISOString() ?? null,

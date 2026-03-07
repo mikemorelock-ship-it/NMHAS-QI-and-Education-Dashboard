@@ -21,6 +21,7 @@ interface KpiCardProps {
   desiredDirection?: "up" | "down";
   rateMultiplier?: number | null;
   rateSuffix?: string | null;
+  scoreMax?: number | null;
   viewMode?: "metrics" | "charts";
   spcData?: SPCChartData | null;
 }
@@ -37,6 +38,7 @@ export function KpiCard({
   desiredDirection = "up",
   rateMultiplier,
   rateSuffix,
+  scoreMax,
   viewMode = "metrics",
   spcData,
 }: KpiCardProps) {
@@ -82,7 +84,7 @@ export function KpiCard({
               )}
             </p>
             <p className="text-lg font-bold tracking-tight shrink-0">
-              {formatMetricValue(value, unit, rateMultiplier, rateSuffix)}
+              {formatMetricValue(value, unit, rateMultiplier, rateSuffix, scoreMax)}
             </p>
           </div>
 
@@ -118,7 +120,7 @@ export function KpiCard({
                   meetsTarget ? "bg-[#00b0ad]/10 text-[#00b0ad]" : "bg-[#e04726]/10 text-[#e04726]"
                 )}
               >
-                Target: {formatMetricValue(target, unit, null, rateSuffix)}
+                Target: {formatMetricValue(target, unit, null, rateSuffix, scoreMax)}
               </span>
             )}
           </div>
@@ -139,7 +141,7 @@ export function KpiCard({
                 )}
               </p>
               <p className="text-3xl font-bold tracking-tight mt-1 lg:text-4xl">
-                {formatMetricValue(value, unit, rateMultiplier, rateSuffix)}
+                {formatMetricValue(value, unit, rateMultiplier, rateSuffix, scoreMax)}
               </p>
             </div>
 
@@ -191,7 +193,7 @@ export function KpiCard({
                   meetsTarget ? "bg-[#00b0ad]/10 text-[#00b0ad]" : "bg-[#e04726]/10 text-[#e04726]"
                 )}
               >
-                Target: {formatMetricValue(target, unit, null, rateSuffix)}
+                Target: {formatMetricValue(target, unit, null, rateSuffix, scoreMax)}
                 <span className="sr-only">{meetsTarget ? " (on target)" : " (off target)"}</span>
               </span>
             )}

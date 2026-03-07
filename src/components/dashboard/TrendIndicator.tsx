@@ -6,16 +6,18 @@ import { cn } from "@/lib/utils";
 interface TrendIndicatorProps {
   value: number;
   direction: "up" | "down" | "flat";
+  desiredDirection?: "up" | "down";
 }
 
-export function TrendIndicator({ value, direction }: TrendIndicatorProps) {
+export function TrendIndicator({ value, direction, desiredDirection = "up" }: TrendIndicatorProps) {
+  const isFavorable = direction === "flat" ? null : direction === desiredDirection;
   return (
     <div
       className={cn(
         "inline-flex items-center gap-1 text-sm font-medium",
-        direction === "up" && "text-[var(--color-nmh-teal)]",
-        direction === "down" && "text-[var(--color-nmh-orange)]",
-        direction === "flat" && "text-muted-foreground"
+        isFavorable === true && "text-[var(--color-nmh-teal)]",
+        isFavorable === false && "text-[var(--color-nmh-orange)]",
+        isFavorable === null && "text-muted-foreground"
       )}
     >
       {direction === "up" && <TrendingUp className="size-4" aria-hidden="true" />}

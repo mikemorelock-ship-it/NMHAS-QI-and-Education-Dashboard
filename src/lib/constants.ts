@@ -25,7 +25,7 @@ export const UNIT_LABELS: Record<string, string> = {
   currency: "$",
   percentage: "%",
   duration: "min",
-  score: "/10",
+  score: "",
   rate: "rate",
 };
 

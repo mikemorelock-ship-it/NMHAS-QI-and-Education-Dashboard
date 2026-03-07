@@ -98,6 +98,7 @@ model MetricDefinition {
   denominatorLabel   String?                         // custom label for denominator (e.g. "Total", "Exposure")
   rateMultiplier     Int?                            // e.g. 1000, 10000 — display multiplier for rate unit
   rateSuffix         String?                         // e.g. "per 1,000 transports"
+  scoreMax           Float?                           // max value for "score" unit (e.g. 10, 100) — null = plain number
   desiredDirection   String   @default("up")          // "up" | "down" — which trend direction is good
   isActive        Boolean  @default(true)
   createdAt      DateTime @default(now())

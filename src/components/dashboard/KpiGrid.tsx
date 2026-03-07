@@ -45,6 +45,7 @@ export function KpiGrid({ kpis, divisionSlug, viewMode = "metrics" }: KpiGridPro
             desiredDirection={kpi.desiredDirection}
             rateMultiplier={kpi.rateMultiplier}
             rateSuffix={kpi.rateSuffix}
+            scoreMax={kpi.scoreMax}
             viewMode={viewMode}
             spcData={kpi.spcData}
           />
