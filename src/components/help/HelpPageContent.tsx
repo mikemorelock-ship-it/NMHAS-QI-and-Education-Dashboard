@@ -31,6 +31,7 @@ import {
   ArrowRight,
   Sparkles,
   ChevronDown,
+  ChevronsUpDown,
   Target,
   ListChecks,
   Wand2,
@@ -201,16 +202,17 @@ function ReleaseGroup({
   release,
   entries,
   isLatest,
-  defaultOpen,
+  open,
+  onToggle,
   lastSeenDate,
 }: {
   release: ReleaseInfo;
   entries: ChangelogEntry[];
   isLatest: boolean;
-  defaultOpen: boolean;
+  open: boolean;
+  onToggle: () => void;
   lastSeenDate: string | null;
 }) {
-  const [open, setOpen] = useState(defaultOpen);
 
   const featureCount = entries.filter((e) => e.category === "feature").length;
   const improvementCount = entries.filter((e) => e.category === "improvement").length;
@@ -226,7 +228,7 @@ function ReleaseGroup({
       {/* Clickable header */}
       <button
         type="button"
-        onClick={() => setOpen(!open)}
+        onClick={onToggle}
         className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-muted/50 transition-colors rounded-lg"
       >
         <ChevronDown
@@ -332,6 +334,7 @@ export function HelpPageContent({ portal }: { portal: PortalId }) {
   const [featureSearch, setFeatureSearch] = useState("");
   const [glossarySearch, setGlossarySearch] = useState("");
   const [lastSeenDate] = useState<string | null>(() => localStorage.getItem(CHANGELOG_STORAGE_KEY));
+  const [openReleases, setOpenReleases] = useState<Set<string>>(new Set());
 
   const meta = PORTAL_META[portal];
   const allFeatures = useMemo(() => getFeaturesForPortal(portal), [portal]);
@@ -379,13 +382,30 @@ export function HelpPageContent({ portal }: { portal: PortalId }) {
       {/* Updates section — collapsible by release */}
       {releaseGroups.length > 0 && (
         <section className="space-y-4">
-          <div className="flex items-center gap-2">
-            <Sparkles className="size-5 text-nmh-teal" />
-            <h2 className="text-lg font-semibold">Updates</h2>
-            <span className="text-xs text-muted-foreground">
-              {CHANGELOG.length} total across {releaseGroups.length} release
-              {releaseGroups.length !== 1 ? "s" : ""}
-            </span>
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <Sparkles className="size-5 text-nmh-teal" />
+              <h2 className="text-lg font-semibold">Updates</h2>
+              <span className="text-xs text-muted-foreground">
+                {CHANGELOG.length} total across {releaseGroups.length} release
+                {releaseGroups.length !== 1 ? "s" : ""}
+              </span>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-xs text-muted-foreground gap-1.5"
+              onClick={() => {
+                const allVersions = releaseGroups.map((g) => g.release.version);
+                const allOpen = allVersions.every((v) => openReleases.has(v));
+                setOpenReleases(allOpen ? new Set() : new Set(allVersions));
+              }}
+            >
+              <ChevronsUpDown className="size-3.5" />
+              {releaseGroups.every((g) => openReleases.has(g.release.version))
+                ? "Collapse All"
+                : "Expand All"}
+            </Button>
           </div>
 
           <div className="space-y-3">
@@ -395,7 +415,18 @@ export function HelpPageContent({ portal }: { portal: PortalId }) {
                 release={group.release}
                 entries={group.entries}
                 isLatest={idx === 0}
-                defaultOpen={false}
+                open={openReleases.has(group.release.version)}
+                onToggle={() =>
+                  setOpenReleases((prev) => {
+                    const next = new Set(prev);
+                    if (next.has(group.release.version)) {
+                      next.delete(group.release.version);
+                    } else {
+                      next.add(group.release.version);
+                    }
+                    return next;
+                  })
+                }
                 lastSeenDate={lastSeenDate}
               />
             ))}
