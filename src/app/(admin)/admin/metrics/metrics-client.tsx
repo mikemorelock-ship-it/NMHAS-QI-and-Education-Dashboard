@@ -1040,10 +1040,19 @@ function YearTargetInput({
       type="text"
       inputMode="decimal"
       value={localValue}
+      onFocus={(e) => {
+        // Select all on focus so typing replaces the initial "0"
+        e.target.select();
+      }}
       onChange={(e) => {
-        const raw = e.target.value;
+        let raw = e.target.value;
         // Allow empty, digits, decimal point, and leading minus
         if (raw === "" || raw === "-" || raw === "." || raw === "-." || /^-?\d*\.?\d*$/.test(raw)) {
+          // Strip leading zeros unless followed by a decimal point
+          // "05" → "5", but "0.5" stays "0.5"
+          if (/^-?0\d/.test(raw) && !raw.includes(".")) {
+            raw = raw.replace(/^(-?)0+/, "$1") || "0";
+          }
           setLocalValue(raw);
           const parsed = parseFloat(raw);
           if (Number.isFinite(parsed)) {
