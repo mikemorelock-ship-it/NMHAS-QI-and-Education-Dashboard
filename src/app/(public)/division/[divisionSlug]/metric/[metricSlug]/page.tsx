@@ -196,7 +196,7 @@ export default async function DivisionMetricDetailPage({ params }: PageProps) {
             ...periodStartFilter,
           },
           orderBy: { periodStart: "asc" },
-          select: { periodStart: true, value: true },
+          select: { periodStart: true, value: true, denominator: true },
         });
 
         if (regEntries.length === 0) return null;
@@ -210,6 +210,8 @@ export default async function DivisionMetricDetailPage({ params }: PageProps) {
           regTrend = ((regCurrent - regPrevious) / Math.abs(regPrevious)) * 100;
         }
 
+        const totalCases = regEntries.reduce((sum, e) => sum + (e.denominator ?? 0), 0);
+
         return {
           divisionId: region.id,
           divisionName: region.name,
@@ -222,6 +224,7 @@ export default async function DivisionMetricDetailPage({ params }: PageProps) {
               value: e.value,
             }))
           ),
+          totalCases: totalCases > 0 ? totalCases : undefined,
         };
       })
     );

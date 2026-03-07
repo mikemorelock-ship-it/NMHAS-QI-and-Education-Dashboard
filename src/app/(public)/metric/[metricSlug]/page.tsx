@@ -113,6 +113,7 @@ export default async function GlobalMetricDetailPage({ params }: PageProps) {
   // -----------------------------------------------------------------------
 
   const perDivisionSeries: Map<string, { periodStart: Date; value: number }[]> = new Map();
+  const perDivisionRawEntries: Map<string, Array<{ denominator: number | null }>> = new Map();
 
   for (const div of divisions) {
     const divHasRegions = !noRegionDivs.has(div.id);
@@ -129,6 +130,7 @@ export default async function GlobalMetricDetailPage({ params }: PageProps) {
 
     const aggregated = aggregateByPeriodWeighted(regionEntries, dataType, aggType);
     perDivisionSeries.set(div.id, aggregated);
+    perDivisionRawEntries.set(div.id, regionEntries);
   }
 
   // -----------------------------------------------------------------------
@@ -163,6 +165,9 @@ export default async function GlobalMetricDetailPage({ params }: PageProps) {
         divTrend = ((divCurrent - divPrevious) / Math.abs(divPrevious)) * 100;
       }
 
+      const rawEntries = perDivisionRawEntries.get(div.id) ?? [];
+      const totalCases = rawEntries.reduce((sum, e) => sum + (e.denominator ?? 0), 0);
+
       return {
         divisionId: div.id,
         divisionName: div.name,
@@ -175,6 +180,7 @@ export default async function GlobalMetricDetailPage({ params }: PageProps) {
             value: s.value,
           }))
         ),
+        totalCases: totalCases > 0 ? totalCases : undefined,
       };
     })
     .filter((d): d is NonNullable<typeof d> => d !== null);
