@@ -48,7 +48,7 @@ export async function GET(request: NextRequest) {
 
     // Determine which divisions have no regions (e.g., Communications Center)
     const divisionsWithoutRegions = await getDivisionsWithoutRegions(divisionIds);
-    const entryDivisionFilter = buildEntryWhereForDivisions(divisionsWithoutRegions);
+    const entryDivisionFilter = buildEntryWhereForDivisions(divisionsWithoutRegions, divisionIds);
 
     // Fetch regions so we can map regionId -> divisionId
     const regions = await prisma.region.findMany({
