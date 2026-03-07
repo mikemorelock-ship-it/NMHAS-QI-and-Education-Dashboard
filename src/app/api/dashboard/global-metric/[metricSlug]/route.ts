@@ -7,6 +7,10 @@ import {
   type MetricDataType,
 } from "@/lib/aggregation";
 import { computeSPCData } from "@/lib/spc-server";
+import {
+  getDivisionsWithoutRegions,
+  buildEntryWhereForDivisions,
+} from "@/lib/division-query-utils";
 
 export const dynamic = "force-dynamic";
 
@@ -73,14 +77,17 @@ export async function GET(
         : [];
 
     // =========================================================================
-    // BULK FETCH: all region-level entries for this metric across all divisions
-    // Replaces N+1 per-division queries with 1 bulk query + JS partitioning.
+    // BULK FETCH: all entries for this metric across all divisions.
+    // Includes division-level entries for divisions without departments.
     // =========================================================================
+
+    const noRegionDivs = await getDivisionsWithoutRegions(divisionIds);
+    const globalEntryFilter = buildEntryWhereForDivisions(noRegionDivs);
 
     const allRegionEntries = await prisma.metricEntry.findMany({
       where: {
         metricDefinitionId: metric.id,
-        regionId: { not: null },
+        ...globalEntryFilter,
         ...periodStartFilter,
       },
       orderBy: { periodStart: "asc" },
@@ -264,7 +271,7 @@ export async function GET(
             where: {
               metricDefinitionId: { in: childMetricIds },
               divisionId: { in: divisionIds },
-              regionId: { not: null },
+              ...globalEntryFilter,
               ...periodStartFilter,
             },
             orderBy: { periodStart: "asc" },
@@ -324,7 +331,7 @@ export async function GET(
         baselineEnd: metric.baselineEnd,
         entryWhereClause: {
           metricDefinitionId: metric.id,
-          regionId: { not: null },
+          ...globalEntryFilter,
           ...periodStartFilter,
         },
       },

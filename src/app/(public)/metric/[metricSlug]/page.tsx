@@ -10,6 +10,11 @@ import {
 } from "@/lib/aggregation";
 import { computeSPCData } from "@/lib/spc-server";
 import {
+  getDivisionsWithoutRegions,
+  buildEntryWhereForDivisions,
+  buildEntryWhereForSingleDivision,
+} from "@/lib/division-query-utils";
+import {
   Breadcrumb,
   BreadcrumbList,
   BreadcrumbItem,
@@ -74,16 +79,17 @@ export default async function GlobalMetricDetailPage({ params }: PageProps) {
       : [];
 
   // -----------------------------------------------------------------------
-  // Global time series — flat aggregation across ALL region entries
+  // Global time series — flat aggregation across ALL entries
+  // Includes division-level entries for divisions without departments.
   // -----------------------------------------------------------------------
 
-  // Flat aggregation: gather all region-level entries across all
-  // divisions and aggregate directly. This gives each department
-  // (region) equal weight, matching the scorecard calculation.
+  const noRegionDivs = await getDivisionsWithoutRegions(divisionIds);
+  const globalEntryFilter = buildEntryWhereForDivisions(noRegionDivs);
+
   const allRegionEntries = await prisma.metricEntry.findMany({
     where: {
       metricDefinitionId: metric.id,
-      regionId: { not: null },
+      ...globalEntryFilter,
       ...periodStartFilter,
     },
     orderBy: { periodStart: "asc" },
@@ -106,11 +112,12 @@ export default async function GlobalMetricDetailPage({ params }: PageProps) {
   const perDivisionSeries: Map<string, { periodStart: Date; value: number }[]> = new Map();
 
   for (const div of divisions) {
+    const divHasRegions = !noRegionDivs.has(div.id);
+    const divFilter = buildEntryWhereForSingleDivision(div.id, divHasRegions);
     const regionEntries = await prisma.metricEntry.findMany({
       where: {
         metricDefinitionId: metric.id,
-        divisionId: div.id,
-        regionId: { not: null },
+        ...divFilter,
         ...periodStartFilter,
       },
       orderBy: { periodStart: "asc" },
@@ -225,7 +232,7 @@ export default async function GlobalMetricDetailPage({ params }: PageProps) {
         where: {
           metricDefinitionId: child.id,
           divisionId: { in: divisionIds },
-          regionId: { not: null },
+          ...globalEntryFilter,
           ...periodStartFilter,
         },
         orderBy: { periodStart: "asc" },
@@ -298,7 +305,7 @@ export default async function GlobalMetricDetailPage({ params }: PageProps) {
       baselineEnd: metric.baselineEnd,
       entryWhereClause: {
         metricDefinitionId: metric.id,
-        regionId: { not: null },
+        ...globalEntryFilter,
         ...periodStartFilter,
       },
     },

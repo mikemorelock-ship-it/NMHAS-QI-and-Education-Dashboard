@@ -8,6 +8,7 @@ import {
   type MetricDataType,
 } from "@/lib/aggregation";
 import { calculateSPC, type DataType, type SPCDataPoint } from "@/lib/spc";
+import { buildEntryWhereForSingleDivision } from "@/lib/division-query-utils";
 
 export const dynamic = "force-dynamic";
 
@@ -272,10 +273,13 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         : [];
 
     const allMetricIds = metricDefinitions.map((m) => m.id);
+    const divisionHasRegions = division.regions.length > 0;
+    const divEntryFilter = buildEntryWhereForSingleDivision(division.id, divisionHasRegions);
 
     // =========================================================================
-    // BULK FETCH: all region-level entries for all metrics in 1-2 queries
-    // Replaces 2-3 queries per metric (N+1) with bulk fetch + JS partitioning.
+    // BULK FETCH: all entries for all metrics in 1-2 queries.
+    // For divisions with regions, fetches region-level entries.
+    // For divisions without regions, fetches division-level entries.
     // =========================================================================
 
     const allRegionEntries =
@@ -283,8 +287,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         ? await prisma.metricEntry.findMany({
             where: {
               metricDefinitionId: { in: allMetricIds },
-              divisionId: division.id,
-              regionId: { not: null },
+              ...divEntryFilter,
             },
             orderBy: { periodStart: "asc" },
             select: {
@@ -304,8 +307,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         ? await prisma.metricEntry.findMany({
             where: {
               metricDefinitionId: { in: allMetricIds },
-              divisionId: division.id,
-              regionId: { not: null },
+              ...divEntryFilter,
               ...periodStartFilter,
             },
             orderBy: { periodStart: "asc" },

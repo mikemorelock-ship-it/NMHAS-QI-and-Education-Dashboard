@@ -7,6 +7,10 @@ import {
   type AggregationType,
   type MetricDataType,
 } from "@/lib/aggregation";
+import {
+  getDivisionsWithoutRegions,
+  buildEntryWhereForDivisions,
+} from "@/lib/division-query-utils";
 
 export const dynamic = "force-dynamic";
 
@@ -220,44 +224,63 @@ export async function GET(request: NextRequest) {
       });
     } else if (divisionIds.length > 0) {
       // Divisions selected (no specific departments) → find all regions in
-      // those divisions and fetch their entries for aggregation
+      // those divisions and fetch their entries for aggregation.
+      // For divisions without regions, fetch division-level entries directly.
+      const noRegionDivs = await getDivisionsWithoutRegions(divisionIds);
       const regionsInDivisions = await prisma.region.findMany({
         where: { divisionId: { in: divisionIds }, isActive: true },
         select: { id: true },
       });
       const regionIdsForDivisions = regionsInDivisions.map((r) => r.id);
+      const noRegionDivIds = Array.from(noRegionDivs);
+
+      const orClauses: Record<string, unknown>[] = [];
+      if (regionIdsForDivisions.length > 0) {
+        orClauses.push({ regionId: { in: regionIdsForDivisions } });
+      }
+      if (noRegionDivIds.length > 0) {
+        orClauses.push({ divisionId: { in: noRegionDivIds }, regionId: null });
+      }
 
       rawEntries =
-        regionIdsForDivisions.length > 0
+        orClauses.length > 0
           ? await prisma.metricEntry.findMany({
               where: {
                 metricDefinitionId: { in: metricIds },
                 periodStart: { gte: yearStart, lte: yearEnd },
-                regionId: { in: regionIdsForDivisions },
+                OR: orClauses,
               },
               orderBy: { periodStart: "asc" },
               select: entrySelect,
             })
           : [];
     } else {
-      // No filter → fetch region-level entries for metrics that have them,
-      // then fall back to department-level entries for metrics that don't
-      // (e.g., Quality, Clinical Dev, Education metrics have no region data).
+      // No filter → fetch region-level entries AND division-level entries
+      // for divisions without regions. Then fall back to department-level
+      // entries for metrics that still have no data.
+      const allDivisions = await prisma.division.findMany({
+        where: { isActive: true },
+        select: { id: true },
+      });
+      const allDivIds = allDivisions.map((d) => d.id);
+      const noRegionDivsAll = await getDivisionsWithoutRegions(allDivIds);
+      const entryFilter = buildEntryWhereForDivisions(noRegionDivsAll);
+
       const regionEntries = await prisma.metricEntry.findMany({
         where: {
           metricDefinitionId: { in: metricIds },
           periodStart: { gte: yearStart, lte: yearEnd },
-          regionId: { not: null },
+          ...entryFilter,
         },
         orderBy: { periodStart: "asc" },
         select: entrySelect,
       });
 
-      // Determine which metrics had region-level entries
+      // Determine which metrics had region/division-level entries
       const metricsWithRegionData = new Set(regionEntries.map((e) => e.metricDefinitionId));
       const metricsWithoutRegionData = metricIds.filter((id) => !metricsWithRegionData.has(id));
 
-      // Fetch department-level entries for metrics that lack region data
+      // Fetch department-level entries for metrics that lack any data
       let deptEntries: RawEntry[] = [];
       if (metricsWithoutRegionData.length > 0) {
         deptEntries = await prisma.metricEntry.findMany({
