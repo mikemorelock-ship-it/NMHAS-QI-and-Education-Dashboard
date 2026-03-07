@@ -129,7 +129,7 @@ export default async function CampaignDetailPage({ params }: { params: Promise<{
         description: true,
         category: true,
       },
-    }),
+    }).catch(() => [] as Array<{ id: string; date: Date; label: string; description: string | null; category: string }>),
   ]);
 
   // -------------------------------------------------------------------------
