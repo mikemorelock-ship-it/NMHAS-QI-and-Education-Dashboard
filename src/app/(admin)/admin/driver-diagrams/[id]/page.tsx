@@ -26,6 +26,13 @@ export default async function DriverDiagramDetailPage({
         orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
         include: {
           _count: { select: { pdsaCycles: true } },
+          associations: {
+            select: {
+              id: true,
+              parentId: true,
+              parent: { select: { id: true, text: true, type: true } },
+            },
+          },
         },
       },
       _count: { select: { pdsaCycles: true } },
@@ -51,6 +58,12 @@ export default async function DriverDiagramDetailPage({
     description: n.description,
     sortOrder: n.sortOrder,
     pdsaCycleCount: n._count.pdsaCycles,
+    associations: n.associations.map((a) => ({
+      id: a.id,
+      parentId: a.parentId,
+      parentText: a.parent.text,
+      parentType: a.parent.type,
+    })),
   }));
 
   return <DriverDiagramDetailClient diagram={diagramInfo} nodes={nodes} />;

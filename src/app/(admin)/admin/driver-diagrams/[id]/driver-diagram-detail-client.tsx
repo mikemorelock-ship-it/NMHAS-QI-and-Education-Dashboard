@@ -1,8 +1,13 @@
 "use client";
 
-import React, { useState, useTransition } from "react";
+import React, { useState, useEffect, useTransition } from "react";
 import Link from "next/link";
-import { createDriverNode, updateDriverNode, deleteDriverNode } from "@/actions/driver-diagrams";
+import {
+  createDriverNode,
+  updateDriverNode,
+  deleteDriverNode,
+  updateDriverNodeAssociations,
+} from "@/actions/driver-diagrams";
 import { DRIVER_NODE_TYPE_LABELS } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,11 +22,19 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Plus, Pencil, Trash2, ArrowLeft, RefreshCcw } from "lucide-react";
+import { Plus, Pencil, Trash2, ArrowLeft, RefreshCcw, Link2 } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
+
+interface AssociationInfo {
+  id: string;
+  parentId: string;
+  parentText: string;
+  parentType: string;
+}
 
 interface NodeRow {
   id: string;
@@ -31,6 +44,7 @@ interface NodeRow {
   description: string | null;
   sortOrder: number;
   pdsaCycleCount: number;
+  associations: AssociationInfo[];
 }
 
 interface DiagramInfo {
@@ -142,8 +156,38 @@ export function DriverDiagramDetailClient({ diagram, nodes }: DriverDiagramDetai
   const [editNode, setEditNode] = useState<NodeRow | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<NodeRow | null>(null);
 
+  // Association state for edit dialog
+  const [selectedAssociationIds, setSelectedAssociationIds] = useState<Set<string>>(new Set());
+
   // Error state
   const [error, setError] = useState<string | null>(null);
+
+  // Sync association checkboxes when edit dialog opens
+  useEffect(() => {
+    if (editNode) {
+      setSelectedAssociationIds(new Set(editNode.associations.map((a) => a.parentId)));
+    } else {
+      setSelectedAssociationIds(new Set());
+    }
+  }, [editNode]);
+
+  // Compute eligible parents for the currently-edited node
+  const EXPECTED_PARENT: Record<string, string> = { changeIdea: "secondary", secondary: "primary" };
+  const eligibleParents =
+    editNode && EXPECTED_PARENT[editNode.type]
+      ? nodes.filter(
+          (n) => n.type === EXPECTED_PARENT[editNode.type] && n.id !== editNode.parentId
+        )
+      : [];
+
+  function toggleAssociation(parentId: string) {
+    setSelectedAssociationIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(parentId)) next.delete(parentId);
+      else next.add(parentId);
+      return next;
+    });
+  }
 
   const displayNodes = buildDisplayOrder(nodes);
   const hasAim = nodes.some((n) => n.type === "aim");
@@ -253,6 +297,16 @@ export function DriverDiagramDetailClient({ diagram, nodes }: DriverDiagramDetai
                       <Badge variant="secondary" className="text-xs shrink-0">
                         <RefreshCcw className="h-3 w-3 mr-1" />
                         {node.pdsaCycleCount} PDSA
+                      </Badge>
+                    )}
+                    {node.associations.length > 0 && (
+                      <Badge
+                        variant="outline"
+                        className="text-xs shrink-0 border-dashed"
+                        title={`Also linked to: ${node.associations.map((a) => a.parentText).join(", ")}`}
+                      >
+                        <Link2 className="h-3 w-3 mr-1" />+{node.associations.length} driver
+                        {node.associations.length > 1 ? "s" : ""}
                       </Badge>
                     )}
                   </div>
@@ -393,12 +447,23 @@ export function DriverDiagramDetailClient({ diagram, nodes }: DriverDiagramDetai
               action={async (formData) => {
                 startTransition(async () => {
                   const result = await updateDriverNode(editNode.id, formData);
-                  if (result.success) {
-                    setEditNode(null);
-                    setError(null);
-                  } else {
+                  if (!result.success) {
                     setError(result.error ?? "Failed to update node.");
+                    return;
                   }
+                  // Save associations if this node type supports them
+                  if (EXPECTED_PARENT[editNode.type]) {
+                    const assocResult = await updateDriverNodeAssociations(
+                      editNode.id,
+                      Array.from(selectedAssociationIds)
+                    );
+                    if (!assocResult.success) {
+                      setError(assocResult.error ?? "Failed to update associations.");
+                      return;
+                    }
+                  }
+                  setEditNode(null);
+                  setError(null);
                 });
               }}
             >
@@ -441,6 +506,35 @@ export function DriverDiagramDetailClient({ diagram, nodes }: DriverDiagramDetai
                     min={0}
                   />
                 </div>
+                {eligibleParents.length > 0 && (
+                  <div className="space-y-2">
+                    <Label>Additional Driver Associations</Label>
+                    <p className="text-xs text-muted-foreground">
+                      Select additional{" "}
+                      {EXPECTED_PARENT[editNode.type] === "secondary"
+                        ? "secondary drivers"
+                        : "primary drivers"}{" "}
+                      this node is also associated with.
+                    </p>
+                    <div className="rounded-md border p-3 max-h-40 overflow-y-auto space-y-2">
+                      {eligibleParents.map((p) => (
+                        <label key={p.id} className="flex items-center gap-2 cursor-pointer">
+                          <Checkbox
+                            checked={selectedAssociationIds.has(p.id)}
+                            onCheckedChange={() => toggleAssociation(p.id)}
+                          />
+                          <Badge
+                            variant="outline"
+                            className={`text-xs ${BADGE_CLASSES[p.type]}`}
+                          >
+                            {DRIVER_NODE_TYPE_LABELS[p.type]}
+                          </Badge>
+                          <span className="text-sm">{p.text}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
 
               <DialogFooter className="mt-4">

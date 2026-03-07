@@ -445,3 +445,111 @@ export async function reorderDriverNodes(
   revalidateAll();
   return { success: true };
 }
+
+// ---------------------------------------------------------------------------
+// Driver Node Associations (many-to-many additional parent links)
+// ---------------------------------------------------------------------------
+
+const VALID_PARENT_TYPE: Record<string, string> = {
+  changeIdea: "secondary",
+  secondary: "primary",
+};
+
+export async function updateDriverNodeAssociations(
+  nodeId: string,
+  parentIds: string[]
+): Promise<ActionResult> {
+  let session;
+  try {
+    session = await requireAdmin("manage_driver_diagrams");
+  } catch {
+    return { success: false, error: "Insufficient permissions" };
+  }
+
+  try {
+    // Fetch the node being associated
+    const node = await prisma.driverNode.findUnique({ where: { id: nodeId } });
+    if (!node) return { success: false, error: "Node not found." };
+
+    const expectedParentType = VALID_PARENT_TYPE[node.type];
+    if (!expectedParentType) {
+      return {
+        success: false,
+        error: "Only change ideas and secondary drivers can have additional associations.",
+      };
+    }
+
+    // Filter out the node's primary parent (already linked via parentId)
+    const filteredIds = parentIds.filter((pid) => pid !== node.parentId);
+
+    // Validate all target parents belong to same diagram and have correct type
+    if (filteredIds.length > 0) {
+      const parents = await prisma.driverNode.findMany({
+        where: { id: { in: filteredIds } },
+        select: { id: true, driverDiagramId: true, type: true },
+      });
+
+      for (const p of parents) {
+        if (p.driverDiagramId !== node.driverDiagramId) {
+          return { success: false, error: "All associated drivers must belong to the same diagram." };
+        }
+        if (p.type !== expectedParentType) {
+          return {
+            success: false,
+            error: `A ${node.type} can only be associated with ${expectedParentType} drivers.`,
+          };
+        }
+      }
+
+      // Ensure all requested IDs were found
+      const foundIds = new Set(parents.map((p) => p.id));
+      const missing = filteredIds.filter((id) => !foundIds.has(id));
+      if (missing.length > 0) {
+        return { success: false, error: "One or more selected drivers were not found." };
+      }
+    }
+
+    // Diff against existing associations
+    const existing = await prisma.driverNodeAssociation.findMany({
+      where: { nodeId },
+      select: { id: true, parentId: true },
+    });
+
+    const existingParentIds = new Set(existing.map((a) => a.parentId));
+    const desiredParentIds = new Set(filteredIds);
+
+    const toCreate = filteredIds.filter((pid) => !existingParentIds.has(pid));
+    const toDelete = existing.filter((a) => !desiredParentIds.has(a.parentId)).map((a) => a.id);
+
+    // Apply changes in a transaction
+    if (toCreate.length > 0 || toDelete.length > 0) {
+      await prisma.$transaction([
+        ...(toDelete.length > 0
+          ? [prisma.driverNodeAssociation.deleteMany({ where: { id: { in: toDelete } } })]
+          : []),
+        ...toCreate.map((pid) =>
+          prisma.driverNodeAssociation.create({
+            data: { nodeId, parentId: pid },
+          })
+        ),
+      ]);
+    }
+
+    await prisma.auditLog.create({
+      data: {
+        action: "UPDATE",
+        entity: "DriverNodeAssociation",
+        entityId: nodeId,
+        details: `Updated associations for ${node.type} "${node.text}" — ${filteredIds.length} total`,
+        actorId: session.userId,
+        actorType: "admin",
+      },
+    });
+
+    revalidateAll();
+    return { success: true };
+  } catch (err) {
+    console.error("updateDriverNodeAssociations error:", err);
+    return { success: false, error: "Failed to update associations." };
+  }
+}

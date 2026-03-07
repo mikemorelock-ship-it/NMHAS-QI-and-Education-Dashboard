@@ -453,7 +453,29 @@ model DriverNode {
   children      DriverNode[]  @relation("DriverNodeHierarchy")
   pdsaCycles    PdsaCycle[]
 
+  // Many-to-many: additional parent driver associations
+  associations       DriverNodeAssociation[] @relation("NodeAssociations")
+  associatedChildren DriverNodeAssociation[] @relation("ParentAssociations")
+
   @@index([driverDiagramId])
+  @@index([parentId])
+}
+
+// ---------------------------------------------------------------------------
+// Driver Node Associations — many-to-many links between nodes and additional
+// parent drivers (beyond the primary parentId relationship)
+// ---------------------------------------------------------------------------
+
+model DriverNodeAssociation {
+  id       String @id @default(cuid())
+  nodeId   String // the child node (changeIdea or secondary)
+  parentId String // the additional associated parent driver
+
+  node   DriverNode @relation("NodeAssociations", fields: [nodeId], references: [id], onDelete: Cascade)
+  parent DriverNode @relation("ParentAssociations", fields: [parentId], references: [id], onDelete: Cascade)
+
+  @@unique([nodeId, parentId])
+  @@index([nodeId])
   @@index([parentId])
 }
 
