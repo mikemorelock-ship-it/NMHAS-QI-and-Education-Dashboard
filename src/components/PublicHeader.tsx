@@ -14,6 +14,7 @@ import {
 import { NMH_COLORS } from "@/lib/constants";
 import { logoutAction } from "@/actions/auth";
 import { Button } from "@/components/ui/button";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 interface PublicHeaderProps {
   userName: string;
@@ -124,6 +125,8 @@ export function PublicHeader({ userName, userRole }: PublicHeaderProps) {
             <span className="hidden md:inline">Admin</span>
           </Link>
         )}
+        <div className="w-px h-5 bg-white/20 mx-1 shrink-0" aria-hidden="true" />
+        <ThemeToggle className="text-white/80 hover:text-white hover:bg-white/15 shrink-0" />
         <div className="w-px h-5 bg-white/20 mx-1 shrink-0" aria-hidden="true" />
         <span className="hidden lg:inline text-white/60 text-xs whitespace-nowrap shrink-0">
           {userName}

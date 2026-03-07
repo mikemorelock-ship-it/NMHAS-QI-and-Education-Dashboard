@@ -72,7 +72,7 @@ export function SnapshotReportClient({ data }: SnapshotReportClientProps) {
   const { profile, dorSummary, phaseProgress, skillProgress, coachingProgress } = data;
 
   return (
-    <div className="min-h-screen bg-gray-50 print:bg-white">
+    <div className="min-h-screen bg-background print:bg-white">
       <div className="max-w-4xl mx-auto p-6 space-y-6 print:p-4 print:space-y-4">
         {/* Header */}
         <div className="bg-gradient-to-r from-teal-600 to-teal-700 rounded-xl p-6 text-white print:rounded-none print:bg-teal-600">
