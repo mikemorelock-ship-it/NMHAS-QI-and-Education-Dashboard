@@ -34,6 +34,7 @@ import {
   ThumbsUp,
   Repeat2,
   Ban,
+  ChevronRight,
   type LucideIcon,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -55,9 +56,22 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { updateCampaignField } from "@/actions/campaigns";
-import { assignDiagramToCampaign } from "@/actions/campaigns";
-import { updatePdsaCycleField, clonePdsaCycle } from "@/actions/pdsa-cycles";
+import { updateCampaignField, assignDiagramToCampaign } from "@/actions/campaigns";
+import {
+  updatePdsaCycleField,
+  clonePdsaCycle,
+  createPdsaCycle,
+  deletePdsaCycle,
+  advancePdsaCycle,
+} from "@/actions/pdsa-cycles";
+import {
+  createDriverDiagram,
+  updateDriverDiagram,
+  deleteDriverDiagram,
+  createDriverNode,
+  updateDriverNode,
+  deleteDriverNode,
+} from "@/actions/driver-diagrams";
 import {
   Accordion,
   AccordionItem,
@@ -220,6 +234,7 @@ interface Props {
   campaignCycles: { id: string; title: string }[];
   divisions: { id: string; name: string }[];
   regions: { id: string; name: string; divisionId: string }[];
+  metricDefinitions: { id: string; name: string }[];
 }
 
 // ---------------------------------------------------------------------------
@@ -401,7 +416,36 @@ interface DiagramTreeNode extends DiagramNodeInfo {
   children: DiagramTreeNode[];
 }
 
-function CompactDriverDiagram({ nodes }: { nodes: DiagramNodeInfo[] }) {
+const NODE_TYPE_LABELS: Record<string, string> = {
+  aim: "Aim",
+  primary: "Primary",
+  secondary: "Secondary",
+  changeIdea: "Change Idea",
+};
+
+const NODE_CHILD_TYPES: Record<string, string> = {
+  aim: "primary",
+  primary: "secondary",
+  secondary: "changeIdea",
+};
+
+function CompactDriverDiagram({
+  nodes,
+  diagramId,
+  editMode,
+  onAddNode,
+  onEditNode,
+  onDeleteNode,
+  onCreateCycleFromNode,
+}: {
+  nodes: DiagramNodeInfo[];
+  diagramId: string;
+  editMode?: boolean;
+  onAddNode?: (diagramId: string, parentId: string | null, type: string) => void;
+  onEditNode?: (node: DiagramNodeInfo) => void;
+  onDeleteNode?: (nodeId: string, nodeText: string) => void;
+  onCreateCycleFromNode?: (diagramId: string, changeIdeaNodeId: string, changeIdeaText: string) => void;
+}) {
   const nodeMap = new Map<string, DiagramTreeNode>();
   const roots: DiagramTreeNode[] = [];
 
@@ -420,26 +464,61 @@ function CompactDriverDiagram({ nodes }: { nodes: DiagramNodeInfo[] }) {
 
   function renderNode(node: DiagramTreeNode, depth: number) {
     const color = DRIVER_NODE_TYPE_COLORS[node.type] ?? "#4b4f54";
-    const typeLabels: Record<string, string> = {
-      aim: "Aim",
-      primary: "Primary",
-      secondary: "Secondary",
-      changeIdea: "Change Idea",
-    };
+    const childType = NODE_CHILD_TYPES[node.type];
 
     return (
       <div key={node.id} style={{ marginLeft: depth * 20 }} className="py-0.5">
-        <div className="flex items-center gap-2 text-sm">
+        <div className="flex items-center gap-2 text-sm group/node">
           <span
             className="inline-block w-2 h-2 rounded-full shrink-0"
             style={{ backgroundColor: color }}
           />
           <span className="text-[10px] font-medium uppercase tracking-wide" style={{ color }}>
-            {typeLabels[node.type] ?? node.type}
+            {NODE_TYPE_LABELS[node.type] ?? node.type}
           </span>
           <span className="font-medium">{node.text}</span>
           {node.pdsaCycleCount > 0 && (
             <span className="text-[10px] text-muted-foreground">({node.pdsaCycleCount} PDSA)</span>
+          )}
+          {editMode && (
+            <span className="inline-flex items-center gap-0.5 opacity-0 group-hover/node:opacity-100 transition-opacity">
+              {onEditNode && (
+                <button
+                  onClick={() => onEditNode(node)}
+                  className="p-0.5 rounded hover:bg-muted"
+                  title="Edit node"
+                >
+                  <Pencil className="h-3 w-3 text-muted-foreground" />
+                </button>
+              )}
+              {onDeleteNode && (
+                <button
+                  onClick={() => onDeleteNode(node.id, node.text)}
+                  className="p-0.5 rounded hover:bg-muted"
+                  title="Delete node"
+                >
+                  <Trash2 className="h-3 w-3 text-destructive" />
+                </button>
+              )}
+              {childType && onAddNode && (
+                <button
+                  onClick={() => onAddNode(diagramId, node.id, childType)}
+                  className="p-0.5 rounded hover:bg-muted"
+                  title={`Add ${NODE_TYPE_LABELS[childType] ?? childType}`}
+                >
+                  <Plus className="h-3 w-3 text-nmh-teal" />
+                </button>
+              )}
+              {node.type === "changeIdea" && onCreateCycleFromNode && (
+                <button
+                  onClick={() => onCreateCycleFromNode(diagramId, node.id, node.text)}
+                  className="p-0.5 rounded hover:bg-muted"
+                  title="Create PDSA cycle for this change idea"
+                >
+                  <RefreshCcw className="h-3 w-3 text-nmh-orange" />
+                </button>
+              )}
+            </span>
           )}
         </div>
         {node.children.map((child) => renderNode(child, depth + 1))}
@@ -447,7 +526,27 @@ function CompactDriverDiagram({ nodes }: { nodes: DiagramNodeInfo[] }) {
     );
   }
 
-  return <div className="space-y-0.5">{roots.map((r) => renderNode(r, 0))}</div>;
+  return (
+    <div className="space-y-0.5">
+      {roots.map((r) => renderNode(r, 0))}
+      {editMode && nodes.length === 0 && onAddNode && (
+        <button
+          onClick={() => onAddNode(diagramId, null, "aim")}
+          className="text-xs text-nmh-teal hover:underline flex items-center gap-1 mt-1"
+        >
+          <Plus className="h-3 w-3" /> Add Aim Statement
+        </button>
+      )}
+      {editMode && nodes.length > 0 && !nodes.some((n) => n.type === "aim") && onAddNode && (
+        <button
+          onClick={() => onAddNode(diagramId, null, "aim")}
+          className="text-xs text-nmh-teal hover:underline flex items-center gap-1 mt-1"
+        >
+          <Plus className="h-3 w-3" /> Add Aim Statement
+        </button>
+      )}
+    </div>
+  );
 }
 
 function ReportGanttChart({ items }: { items: GanttItem[] }) {
@@ -595,15 +694,20 @@ function PdsaCycleExpandedContent({
   onFieldSave,
   onStartNextCycle,
   isCloning,
+  onDelete,
+  onAdvance,
 }: {
   cycle: CycleInfo;
   editing: boolean;
   onFieldSave: (cycleId: string, field: string, value: string | null) => void;
   onStartNextCycle?: (cycleId: string) => void;
   isCloning?: boolean;
+  onDelete?: (cycleId: string, title: string) => void;
+  onAdvance?: (cycleId: string) => void;
 }) {
   const statusColor = PDSA_STATUS_COLORS[cycle.status] ?? "#4b4f54";
   const canStartNext = cycle.status === "acting" || cycle.status === "completed";
+  const canAdvance = ["planning", "doing", "studying", "acting"].includes(cycle.status);
 
   return (
     <div className="text-sm space-y-3">
@@ -756,27 +860,56 @@ function PdsaCycleExpandedContent({
         </div>
       </div>
 
-      {/* Start Next Cycle button */}
-      {canStartNext && onStartNextCycle && (
-        <div className="pt-2 border-t mt-2">
-          <Button
-            size="sm"
-            className="gap-1.5 text-xs bg-nmh-teal hover:bg-nmh-teal/90 text-white"
-            onClick={() => onStartNextCycle(cycle.id)}
-            disabled={isCloning}
-          >
-            {isCloning ? (
-              <>
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                Creating...
-              </>
-            ) : (
-              <>
-                <CopyPlus className="h-3.5 w-3.5" />
-                Start Next Cycle
-              </>
-            )}
-          </Button>
+      {/* Cycle action buttons */}
+      {(canStartNext || (editing && (canAdvance || onDelete))) && (
+        <div className="pt-2 border-t mt-2 flex items-center gap-2 flex-wrap">
+          {editing && canAdvance && onAdvance && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="gap-1.5 text-xs"
+              onClick={() => onAdvance(cycle.id)}
+            >
+              <ChevronRight className="h-3.5 w-3.5" />
+              Advance to{" "}
+              {PDSA_STATUS_LABELS[
+                (["planning", "doing", "studying", "acting", "completed"] as const)[
+                  ["planning", "doing", "studying", "acting"].indexOf(cycle.status) + 1
+                ]
+              ] ?? "Next"}
+            </Button>
+          )}
+          {canStartNext && onStartNextCycle && (
+            <Button
+              size="sm"
+              className="gap-1.5 text-xs bg-nmh-teal hover:bg-nmh-teal/90 text-white"
+              onClick={() => onStartNextCycle(cycle.id)}
+              disabled={isCloning}
+            >
+              {isCloning ? (
+                <>
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  Creating...
+                </>
+              ) : (
+                <>
+                  <CopyPlus className="h-3.5 w-3.5" />
+                  Start Next Cycle
+                </>
+              )}
+            </Button>
+          )}
+          {editing && onDelete && (
+            <Button
+              size="sm"
+              variant="ghost"
+              className="gap-1.5 text-xs text-destructive hover:text-destructive ml-auto"
+              onClick={() => onDelete(cycle.id, cycle.title)}
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              Delete Cycle
+            </Button>
+          )}
         </div>
       )}
     </div>
@@ -987,6 +1120,7 @@ export function AdminCampaignReport({
   unassignedDiagrams,
   users,
   campaignCycles,
+  metricDefinitions,
 }: Props) {
   const [editMode, setEditMode] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -1001,6 +1135,32 @@ export function AdminCampaignReport({
   // Add diagram state
   const [showAddDiagram, setShowAddDiagram] = useState(false);
   const [selectedDiagramId, setSelectedDiagramId] = useState("");
+
+  // Create diagram state
+  const [showCreateDiagram, setShowCreateDiagram] = useState(false);
+
+  // Delete diagram state
+  const [deleteDiagram, setDeleteDiagram] = useState<{ id: string; name: string } | null>(null);
+
+  // Driver node dialog state
+  const [nodeDialog, setNodeDialog] = useState<{
+    mode: "create" | "edit";
+    diagramId: string;
+    parentId: string | null;
+    type: string;
+    nodeId?: string;
+    text?: string;
+    description?: string;
+  } | null>(null);
+  const [deleteNode, setDeleteNode] = useState<{ id: string; text: string } | null>(null);
+
+  // PDSA cycle create/delete state
+  const [createCycleInfo, setCreateCycleInfo] = useState<{
+    diagramId: string;
+    changeIdeaNodeId?: string;
+    changeIdeaText?: string;
+  } | null>(null);
+  const [deleteCycle, setDeleteCycle] = useState<{ id: string; title: string } | null>(null);
 
   // Chart modes
   const [chartModes, setChartModes] = useState<Record<string, ChartMode>>({});
@@ -1093,6 +1253,136 @@ export function AdminCampaignReport({
     startTransition(async () => {
       const res = await assignDiagramToCampaign(diagramId, null);
       if (!res.success) setError(res.error ?? "Failed");
+    });
+  }
+
+  // --- Create diagram ---
+
+  function handleCreateDiagram(fd: FormData) {
+    fd.set("campaignId", campaign.id);
+    fd.set("status", "active");
+    startTransition(async () => {
+      const res = await createDriverDiagram(fd);
+      if (!res.success) setError(res.error ?? "Failed to create diagram");
+      else {
+        setShowCreateDiagram(false);
+        flashSave("Diagram created");
+      }
+    });
+  }
+
+  // --- Delete diagram ---
+
+  function handleDeleteDiagram() {
+    if (!deleteDiagram) return;
+    startTransition(async () => {
+      const res = await deleteDriverDiagram(deleteDiagram.id);
+      if (!res.success) setError(res.error ?? "Failed to delete diagram");
+      else {
+        setDeleteDiagram(null);
+        flashSave("Diagram deleted");
+      }
+    });
+  }
+
+  // --- Driver node management ---
+
+  function handleOpenAddNode(diagramId: string, parentId: string | null, type: string) {
+    setNodeDialog({ mode: "create", diagramId, parentId, type });
+  }
+
+  function handleOpenEditNode(node: DiagramNodeInfo) {
+    // Find which diagram this node belongs to
+    const diagram = diagrams.find((d) => d.nodes.some((n) => n.id === node.id));
+    if (!diagram) return;
+    setNodeDialog({
+      mode: "edit",
+      diagramId: diagram.id,
+      parentId: node.parentId,
+      type: node.type,
+      nodeId: node.id,
+      text: node.text,
+      description: node.description ?? undefined,
+    });
+  }
+
+  function handleNodeDialogSubmit(fd: FormData) {
+    if (!nodeDialog) return;
+    if (nodeDialog.mode === "create") {
+      fd.set("driverDiagramId", nodeDialog.diagramId);
+      if (nodeDialog.parentId) fd.set("parentId", nodeDialog.parentId);
+      fd.set("type", nodeDialog.type);
+      startTransition(async () => {
+        const res = await createDriverNode(fd);
+        if (!res.success) setError(res.error ?? "Failed to create node");
+        else {
+          setNodeDialog(null);
+          flashSave("Node created");
+        }
+      });
+    } else if (nodeDialog.nodeId) {
+      startTransition(async () => {
+        const res = await updateDriverNode(nodeDialog.nodeId!, fd);
+        if (!res.success) setError(res.error ?? "Failed to update node");
+        else {
+          setNodeDialog(null);
+          flashSave("Node updated");
+        }
+      });
+    }
+  }
+
+  function handleDeleteNode() {
+    if (!deleteNode) return;
+    startTransition(async () => {
+      const res = await deleteDriverNode(deleteNode.id);
+      if (!res.success) setError(res.error ?? "Failed to delete node");
+      else {
+        setDeleteNode(null);
+        flashSave("Node deleted");
+      }
+    });
+  }
+
+  // --- PDSA cycle create/delete ---
+
+  function handleOpenCreateCycleFromNode(diagramId: string, changeIdeaNodeId: string, changeIdeaText: string) {
+    setCreateCycleInfo({ diagramId, changeIdeaNodeId, changeIdeaText });
+  }
+
+  function handleCreateCycle(fd: FormData) {
+    if (!createCycleInfo) return;
+    fd.set("driverDiagramId", createCycleInfo.diagramId);
+    if (createCycleInfo.changeIdeaNodeId) {
+      fd.set("changeIdeaNodeId", createCycleInfo.changeIdeaNodeId);
+    }
+    startTransition(async () => {
+      const res = await createPdsaCycle(fd);
+      if (!res.success) setError(res.error ?? "Failed to create PDSA cycle");
+      else {
+        setCreateCycleInfo(null);
+        flashSave("PDSA cycle created");
+      }
+    });
+  }
+
+  function handleDeleteCycle() {
+    if (!deleteCycle) return;
+    startTransition(async () => {
+      const res = await deletePdsaCycle(deleteCycle.id);
+      if (!res.success) setError(res.error ?? "Failed to delete PDSA cycle");
+      else {
+        setDeleteCycle(null);
+        flashSave("PDSA cycle deleted");
+      }
+    });
+  }
+
+  function handleAdvanceCycle(cycleId: string) {
+    startTransition(async () => {
+      const res = await advancePdsaCycle(cycleId);
+      if (!res.success) setError(res.error ?? "Failed to advance cycle");
+      else flashSave("Cycle advanced");
     });
   }
 
@@ -1377,10 +1667,17 @@ export function AdminCampaignReport({
             <GitBranchPlus className="h-5 w-5 text-nmh-teal" />
             Driver Diagrams ({diagrams.length})
           </h2>
-          {editMode && unassignedDiagrams.length > 0 && (
-            <Button size="sm" variant="outline" onClick={() => setShowAddDiagram(true)}>
-              <Plus className="h-3.5 w-3.5 mr-1" /> Add Diagram
-            </Button>
+          {editMode && (
+            <div className="flex items-center gap-2">
+              {unassignedDiagrams.length > 0 && (
+                <Button size="sm" variant="outline" onClick={() => setShowAddDiagram(true)}>
+                  <Plus className="h-3.5 w-3.5 mr-1" /> Link Existing
+                </Button>
+              )}
+              <Button size="sm" variant="outline" onClick={() => setShowCreateDiagram(true)}>
+                <Plus className="h-3.5 w-3.5 mr-1" /> Create Diagram
+              </Button>
+            </div>
           )}
         </div>
 
@@ -1410,22 +1707,41 @@ export function AdminCampaignReport({
                     </Badge>
                   )}
                   {editMode && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7"
-                      onClick={() => handleRemoveDiagram(diagram.id)}
-                      title="Remove from campaign"
-                    >
-                      <X className="h-4 w-4 text-muted-foreground" />
-                    </Button>
+                    <>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7"
+                        onClick={() => handleRemoveDiagram(diagram.id)}
+                        title="Unlink from campaign"
+                      >
+                        <X className="h-4 w-4 text-muted-foreground" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7"
+                        onClick={() => setDeleteDiagram({ id: diagram.id, name: diagram.name })}
+                        title="Delete diagram"
+                      >
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </>
                   )}
                 </div>
               </div>
               {diagram.description && (
                 <p className="text-sm text-muted-foreground">{diagram.description}</p>
               )}
-              <CompactDriverDiagram nodes={diagram.nodes} />
+              <CompactDriverDiagram
+                nodes={diagram.nodes}
+                diagramId={diagram.id}
+                editMode={editMode}
+                onAddNode={handleOpenAddNode}
+                onEditNode={handleOpenEditNode}
+                onDeleteNode={(id, text) => setDeleteNode({ id, text })}
+                onCreateCycleFromNode={handleOpenCreateCycleFromNode}
+              />
             </div>
           ))
         )}
@@ -1442,7 +1758,7 @@ export function AdminCampaignReport({
           </h2>
 
           {diagrams.map((diagram) => {
-            if (diagram.cycles.length === 0) return null;
+            if (diagram.cycles.length === 0 && !editMode) return null;
 
             const grouped = new Map<string, CycleInfo[]>();
             const ungrouped: CycleInfo[] = [];
@@ -1458,7 +1774,18 @@ export function AdminCampaignReport({
 
             return (
               <div key={diagram.id} className="space-y-4">
-                <h3 className="text-base font-medium text-muted-foreground">{diagram.name}</h3>
+                <div className="flex items-center justify-between">
+                  <h3 className="text-base font-medium text-muted-foreground">{diagram.name}</h3>
+                  {editMode && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setCreateCycleInfo({ diagramId: diagram.id })}
+                    >
+                      <Plus className="h-3.5 w-3.5 mr-1" /> Add PDSA Cycle
+                    </Button>
+                  )}
+                </div>
 
                 {/* Grouped by change idea */}
                 {Array.from(grouped.entries()).map(([changeIdea, cycles]) => {
@@ -1530,6 +1857,8 @@ export function AdminCampaignReport({
                                 onFieldSave={savePdsaField}
                                 onStartNextCycle={handleStartNextCycle}
                                 isCloning={cloningCycleId === cycle.id}
+                                onDelete={(id, title) => setDeleteCycle({ id, title })}
+                                onAdvance={handleAdvanceCycle}
                               />
                             </AccordionContent>
                           </AccordionItem>
@@ -1570,6 +1899,8 @@ export function AdminCampaignReport({
                                 onFieldSave={savePdsaField}
                                 onStartNextCycle={handleStartNextCycle}
                                 isCloning={cloningCycleId === cycle.id}
+                                onDelete={(id, title) => setDeleteCycle({ id, title })}
+                                onAdvance={handleAdvanceCycle}
                               />
                             </AccordionContent>
                           </AccordionItem>
@@ -1932,6 +2263,261 @@ export function AdminCampaignReport({
               Cancel
             </Button>
             <Button variant="destructive" onClick={handleDeleteAction} disabled={isPending}>
+              {isPending ? "Deleting..." : "Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create Diagram Dialog */}
+      <Dialog open={showCreateDiagram} onOpenChange={setShowCreateDiagram}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Create Driver Diagram</DialogTitle>
+          </DialogHeader>
+          <form action={handleCreateDiagram}>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="diagram-name">Name *</Label>
+                <Input
+                  id="diagram-name"
+                  name="name"
+                  required
+                  maxLength={150}
+                  placeholder="e.g., etCO2 Compliance Driver Diagram"
+                />
+              </div>
+              <div>
+                <Label htmlFor="diagram-description">Description</Label>
+                <Textarea
+                  id="diagram-description"
+                  name="description"
+                  rows={3}
+                  maxLength={500}
+                  placeholder="Optional description..."
+                />
+              </div>
+              <div>
+                <Label htmlFor="diagram-metric">Associated Metric</Label>
+                <Select name="metricDefinitionId" defaultValue="__none__">
+                  <SelectTrigger id="diagram-metric">
+                    <SelectValue placeholder="None" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">None</SelectItem>
+                    {metricDefinitions.map((m) => (
+                      <SelectItem key={m.id} value={m.id}>
+                        {m.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <DialogFooter className="mt-4">
+              <Button type="button" variant="outline" onClick={() => setShowCreateDiagram(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={isPending}>
+                {isPending ? "Creating..." : "Create"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Diagram Confirmation */}
+      <Dialog
+        open={!!deleteDiagram}
+        onOpenChange={(open) => { if (!open) setDeleteDiagram(null); }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Driver Diagram</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Are you sure you want to delete <strong>{deleteDiagram?.name}</strong>? This will also
+            delete all nodes and unlink PDSA cycles.
+          </p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteDiagram(null)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleDeleteDiagram} disabled={isPending}>
+              {isPending ? "Deleting..." : "Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create/Edit Node Dialog */}
+      <Dialog
+        open={!!nodeDialog}
+        onOpenChange={(open) => { if (!open) setNodeDialog(null); }}
+      >
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>
+              {nodeDialog?.mode === "edit" ? "Edit" : "Add"}{" "}
+              {NODE_TYPE_LABELS[nodeDialog?.type ?? ""] ?? "Node"}
+            </DialogTitle>
+          </DialogHeader>
+          {nodeDialog && (
+            <form action={handleNodeDialogSubmit}>
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="node-text">Text *</Label>
+                  <Input
+                    id="node-text"
+                    name="text"
+                    required
+                    maxLength={500}
+                    defaultValue={nodeDialog.text ?? ""}
+                    placeholder={
+                      nodeDialog.type === "aim"
+                        ? "e.g., Achieve 98% etCO2 compliance"
+                        : nodeDialog.type === "changeIdea"
+                          ? "e.g., Add pre-transport checklist reminder"
+                          : "Enter text..."
+                    }
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="node-description">Description</Label>
+                  <Textarea
+                    id="node-description"
+                    name="description"
+                    rows={3}
+                    maxLength={1000}
+                    defaultValue={nodeDialog.description ?? ""}
+                    placeholder="Optional description..."
+                  />
+                </div>
+              </div>
+              <DialogFooter className="mt-4">
+                <Button type="button" variant="outline" onClick={() => setNodeDialog(null)}>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={isPending}>
+                  {isPending
+                    ? nodeDialog.mode === "edit"
+                      ? "Saving..."
+                      : "Creating..."
+                    : nodeDialog.mode === "edit"
+                      ? "Save"
+                      : "Create"}
+                </Button>
+              </DialogFooter>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Node Confirmation */}
+      <Dialog
+        open={!!deleteNode}
+        onOpenChange={(open) => { if (!open) setDeleteNode(null); }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Node</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Are you sure you want to delete <strong>{deleteNode?.text}</strong> and all its
+            descendants?
+          </p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteNode(null)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleDeleteNode} disabled={isPending}>
+              {isPending ? "Deleting..." : "Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create PDSA Cycle Dialog */}
+      <Dialog
+        open={!!createCycleInfo}
+        onOpenChange={(open) => { if (!open) setCreateCycleInfo(null); }}
+      >
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Create PDSA Cycle</DialogTitle>
+          </DialogHeader>
+          {createCycleInfo && (
+            <form action={handleCreateCycle}>
+              <div className="space-y-4">
+                {createCycleInfo.changeIdeaText && (
+                  <div className="rounded-md bg-muted/50 px-3 py-2 text-sm">
+                    <span className="text-muted-foreground">Change Idea:</span>{" "}
+                    <span className="font-medium">{createCycleInfo.changeIdeaText}</span>
+                  </div>
+                )}
+                <div>
+                  <Label htmlFor="cycle-title">Title *</Label>
+                  <Input
+                    id="cycle-title"
+                    name="title"
+                    required
+                    maxLength={200}
+                    defaultValue={createCycleInfo.changeIdeaText ?? ""}
+                    placeholder="e.g., Test checklist reminder intervention"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="cycle-plan">Plan Description</Label>
+                  <Textarea
+                    id="cycle-plan"
+                    name="planDescription"
+                    rows={3}
+                    maxLength={2000}
+                    placeholder="What are we trying to accomplish? What changes can we make that will result in improvement?"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="cycle-prediction">Prediction</Label>
+                  <Textarea
+                    id="cycle-prediction"
+                    name="planPrediction"
+                    rows={2}
+                    maxLength={2000}
+                    placeholder="What do we predict will happen?"
+                  />
+                </div>
+              </div>
+              <DialogFooter className="mt-4">
+                <Button type="button" variant="outline" onClick={() => setCreateCycleInfo(null)}>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={isPending}>
+                  {isPending ? "Creating..." : "Create"}
+                </Button>
+              </DialogFooter>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete PDSA Cycle Confirmation */}
+      <Dialog
+        open={!!deleteCycle}
+        onOpenChange={(open) => { if (!open) setDeleteCycle(null); }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete PDSA Cycle</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Are you sure you want to delete <strong>{deleteCycle?.title}</strong>? This will also
+            remove any linked action items.
+          </p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteCycle(null)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleDeleteCycle} disabled={isPending}>
               {isPending ? "Deleting..." : "Delete"}
             </Button>
           </DialogFooter>

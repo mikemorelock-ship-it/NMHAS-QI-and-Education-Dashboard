@@ -82,7 +82,8 @@ export default async function CampaignDetailPage({ params }: { params: Promise<{
   // Fetch admin-specific lookup data in parallel
   // -------------------------------------------------------------------------
 
-  const [unassignedDiagrams, users, allCycles, divisions, regions] = await Promise.all([
+  const [unassignedDiagrams, users, allCycles, divisions, regions, metricDefinitions] =
+    await Promise.all([
     prisma.driverDiagram.findMany({
       where: { campaignId: null, isActive: true },
       orderBy: { name: "asc" },
@@ -105,6 +106,11 @@ export default async function CampaignDetailPage({ params }: { params: Promise<{
     prisma.region.findMany({
       orderBy: { name: "asc" },
       select: { id: true, name: true, divisionId: true },
+    }),
+    prisma.metricDefinition.findMany({
+      where: { isActive: true },
+      orderBy: { name: "asc" },
+      select: { id: true, name: true },
     }),
   ]);
 
@@ -436,6 +442,7 @@ export default async function CampaignDetailPage({ params }: { params: Promise<{
       campaignCycles={allCycles}
       divisions={divisions}
       regions={regions}
+      metricDefinitions={metricDefinitions}
     />
   );
 }
