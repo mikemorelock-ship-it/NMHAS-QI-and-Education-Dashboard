@@ -8,6 +8,10 @@ import {
   type MetricDataType,
 } from "@/lib/aggregation";
 import { calculateSPC, type DataType, type SPCDataPoint } from "@/lib/spc";
+import {
+  getDivisionsWithoutRegions,
+  buildEntryWhereForDivisions,
+} from "@/lib/division-query-utils";
 
 export const dynamic = "force-dynamic";
 
@@ -41,6 +45,10 @@ export async function GET(request: NextRequest) {
     });
 
     const divisionIds = divisions.map((d) => d.id);
+
+    // Determine which divisions have no regions (e.g., Communications Center)
+    const divisionsWithoutRegions = await getDivisionsWithoutRegions(divisionIds);
+    const entryDivisionFilter = buildEntryWhereForDivisions(divisionsWithoutRegions);
 
     // Fetch regions so we can map regionId -> divisionId
     const regions = await prisma.region.findMany({
@@ -132,15 +140,16 @@ export async function GET(request: NextRequest) {
     const yearTargetMap = new Map(yearTargetRows.map((yt) => [yt.metricDefinitionId, yt.target]));
 
     // =========================================================================
-    // BULK FETCH: all region-level entries for all associated KPI metrics at once
-    // This replaces ~200 individual queries with 1-2 bulk queries.
+    // BULK FETCH: all entries for all associated KPI metrics at once.
+    // Includes region-level entries for divisions with departments AND
+    // division-level entries for divisions without departments.
     // =========================================================================
     const allRegionEntries =
       kpiMetricIdSet.size > 0
         ? await prisma.metricEntry.findMany({
             where: {
               metricDefinitionId: { in: Array.from(kpiMetricIdSet) },
-              regionId: { not: null },
+              ...entryDivisionFilter,
             },
             orderBy: { periodStart: "asc" },
             select: {
@@ -161,7 +170,7 @@ export async function GET(request: NextRequest) {
         ? await prisma.metricEntry.findMany({
             where: {
               metricDefinitionId: { in: Array.from(kpiMetricIdSet) },
-              regionId: { not: null },
+              ...entryDivisionFilter,
               ...periodStartFilter,
             },
             orderBy: { periodStart: "asc" },

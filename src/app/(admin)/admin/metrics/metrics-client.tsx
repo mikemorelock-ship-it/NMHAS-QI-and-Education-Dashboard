@@ -1017,6 +1017,67 @@ function SortableMetricRow({
 }
 
 // ---------------------------------------------------------------------------
+// YearTargetInput — manages local string state so decimals can be typed
+// ---------------------------------------------------------------------------
+
+function YearTargetInput({
+  value,
+  onChange,
+}: {
+  value: number;
+  onChange: (v: number) => void;
+}) {
+  const [localValue, setLocalValue] = useState(String(value));
+
+  // Sync from parent when the numeric value changes externally
+  const parentStr = String(value);
+  if (parseFloat(localValue) !== value && parentStr !== localValue) {
+    setLocalValue(parentStr);
+  }
+
+  return (
+    <Input
+      type="text"
+      inputMode="decimal"
+      value={localValue}
+      onFocus={(e) => {
+        // Select all on focus so typing replaces the initial "0"
+        e.target.select();
+      }}
+      onChange={(e) => {
+        let raw = e.target.value;
+        // Allow empty, digits, decimal point, and leading minus
+        if (raw === "" || raw === "-" || raw === "." || raw === "-." || /^-?\d*\.?\d*$/.test(raw)) {
+          // Strip leading zeros unless followed by a decimal point
+          // "05" → "5", but "0.5" stays "0.5"
+          if (/^-?0\d/.test(raw) && !raw.includes(".")) {
+            raw = raw.replace(/^(-?)0+/, "$1") || "0";
+          }
+          setLocalValue(raw);
+          const parsed = parseFloat(raw);
+          if (Number.isFinite(parsed)) {
+            onChange(parsed);
+          }
+        }
+      }}
+      onBlur={() => {
+        // Clean up on blur: ensure a valid number is stored
+        const parsed = parseFloat(localValue);
+        if (Number.isFinite(parsed)) {
+          setLocalValue(String(parsed));
+          onChange(parsed);
+        } else {
+          setLocalValue("0");
+          onChange(0);
+        }
+      }}
+      className="flex-1"
+      placeholder="Target value"
+    />
+  );
+}
+
+// ---------------------------------------------------------------------------
 // MetricFormFields with Associations Picker
 // ---------------------------------------------------------------------------
 
@@ -1439,17 +1500,13 @@ function MetricFormFields({
                   className="w-28"
                   placeholder="Year"
                 />
-                <Input
-                  type="text"
-                  inputMode="decimal"
+                <YearTargetInput
                   value={yt.target}
-                  onChange={(e) => {
+                  onChange={(newTarget) => {
                     const updated = [...yearTargets];
-                    updated[idx] = { ...updated[idx], target: parseFloat(e.target.value) || 0 };
+                    updated[idx] = { ...updated[idx], target: newTarget };
                     onYearTargetsChange(updated);
                   }}
-                  className="flex-1"
-                  placeholder="Target value"
                 />
                 <Button
                   type="button"

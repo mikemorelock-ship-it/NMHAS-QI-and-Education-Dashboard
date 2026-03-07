@@ -7,6 +7,7 @@ import {
   type MetricDataType,
 } from "@/lib/aggregation";
 import { computeSPCData } from "@/lib/spc-server";
+import { buildEntryWhereForSingleDivision } from "@/lib/division-query-utils";
 
 export const dynamic = "force-dynamic";
 
@@ -100,6 +101,14 @@ export async function GET(
     const aggType = metric.aggregationType as AggregationType;
     const dataType = (metric.dataType ?? "continuous") as MetricDataType;
 
+    // Determine if this division has regions (used for entry queries)
+    const divHasRegions = !isUnassigned
+      ? (await prisma.region.count({ where: { divisionId: division!.id, isActive: true } })) > 0
+      : false;
+    const divEntryFilter = !isUnassigned
+      ? buildEntryWhereForSingleDivision(division!.id, divHasRegions)
+      : { divisionId: null, regionId: null };
+
     // -----------------------------------------------------------------
     // Time-series data
     // -----------------------------------------------------------------
@@ -127,8 +136,7 @@ export async function GET(
       const regionEntries = await prisma.metricEntry.findMany({
         where: {
           metricDefinitionId: metric.id,
-          divisionId: division!.id,
-          regionId: { not: null },
+          ...divEntryFilter,
           ...periodStartFilter,
         },
         orderBy: { periodStart: "asc" },
@@ -291,9 +299,7 @@ export async function GET(
         ? await prisma.metricEntry.findMany({
             where: {
               metricDefinitionId: { in: childMetricIds },
-              ...(isUnassigned
-                ? { divisionId: null, regionId: null }
-                : { divisionId: division!.id, regionId: { not: null } }),
+              ...divEntryFilter,
               ...periodStartFilter,
             },
             orderBy: { periodStart: "asc" },
@@ -375,14 +381,11 @@ export async function GET(
     // SPC Data
     // -----------------------------------------------------------------
 
-    const spcEntryWhere = isUnassigned
-      ? { metricDefinitionId: metric.id, divisionId: null, regionId: null, ...periodStartFilter }
-      : {
-          metricDefinitionId: metric.id,
-          divisionId: division!.id,
-          regionId: { not: null },
-          ...periodStartFilter,
-        };
+    const spcEntryWhere = {
+      metricDefinitionId: metric.id,
+      ...divEntryFilter,
+      ...periodStartFilter,
+    };
 
     const spcData = await computeSPCData(
       {

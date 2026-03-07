@@ -9,6 +9,7 @@ import {
   type MetricDataType,
 } from "@/lib/aggregation";
 import { computeSPCData } from "@/lib/spc-server";
+import { buildEntryWhereForSingleDivision } from "@/lib/division-query-utils";
 import {
   Breadcrumb,
   BreadcrumbList,
@@ -131,12 +132,17 @@ export default async function DivisionMetricDetailPage({ params }: PageProps) {
     }));
     values = entries.map((e) => e.value);
   } else {
-    // Normal: aggregate from region-level entries
+    // Check if this division has regions; if not, use division-level entries
+    const divRegionCount = await prisma.region.count({
+      where: { divisionId: division!.id, isActive: true },
+    });
+    const divHasRegions = divRegionCount > 0;
+    const divEntryFilter = buildEntryWhereForSingleDivision(division!.id, divHasRegions);
+
     const regionEntries = await prisma.metricEntry.findMany({
       where: {
         metricDefinitionId: metric.id,
-        divisionId: division!.id,
-        regionId: { not: null },
+        ...divEntryFilter,
         ...periodStartFilter,
       },
       orderBy: { periodStart: "asc" },
@@ -282,12 +288,17 @@ export default async function DivisionMetricDetailPage({ params }: PageProps) {
 
   const childMetrics: ChildMetricSummary[] = await Promise.all(
     childMetricDefs.map(async (child) => {
+      const childDivFilter = !isUnassigned
+        ? buildEntryWhereForSingleDivision(
+            division!.id,
+            (await prisma.region.count({ where: { divisionId: division!.id, isActive: true } })) > 0
+          )
+        : { divisionId: null, regionId: null };
+
       const childRegionEntries = await prisma.metricEntry.findMany({
         where: {
           metricDefinitionId: child.id,
-          ...(isUnassigned
-            ? { divisionId: null, regionId: null }
-            : { divisionId: division!.id, regionId: { not: null } }),
+          ...childDivFilter,
           ...periodStartFilter,
         },
         orderBy: { periodStart: "asc" },
@@ -351,14 +362,18 @@ export default async function DivisionMetricDetailPage({ params }: PageProps) {
   // SPC Data
   // -----------------------------------------------------------------------
 
-  const spcEntryWhere = isUnassigned
-    ? { metricDefinitionId: metric.id, divisionId: null, regionId: null, ...periodStartFilter }
-    : {
-        metricDefinitionId: metric.id,
-        divisionId: division!.id,
-        regionId: { not: null },
-        ...periodStartFilter,
-      };
+  const spcDivFilter = !isUnassigned
+    ? buildEntryWhereForSingleDivision(
+        division!.id,
+        (await prisma.region.count({ where: { divisionId: division!.id, isActive: true } })) > 0
+      )
+    : { divisionId: null, regionId: null };
+
+  const spcEntryWhere = {
+    metricDefinitionId: metric.id,
+    ...spcDivFilter,
+    ...periodStartFilter,
+  };
 
   const spcData = await computeSPCData(
     {
