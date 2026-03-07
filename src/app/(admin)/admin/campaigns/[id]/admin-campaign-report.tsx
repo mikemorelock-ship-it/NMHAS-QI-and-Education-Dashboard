@@ -66,7 +66,6 @@ import {
 } from "@/actions/pdsa-cycles";
 import {
   createDriverDiagram,
-  updateDriverDiagram,
   deleteDriverDiagram,
   createDriverNode,
   updateDriverNode,
@@ -442,11 +441,6 @@ function EditableDateField({
 // ---------------------------------------------------------------------------
 // Sub-components (from public report, adapted)
 // ---------------------------------------------------------------------------
-
-interface DiagramTreeNode extends DiagramNodeInfo {
-  children: DiagramTreeNode[];
-  depth: number;
-}
 
 const CHILD_TYPE: Record<string, string | null> = {
   aim: "primary",

@@ -10,7 +10,6 @@ import {
   Calendar,
   User,
   GitBranchPlus,
-  RefreshCcw,
   ListChecks,
   BarChart3,
   CheckCircle2,

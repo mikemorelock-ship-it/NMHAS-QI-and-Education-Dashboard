@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useTransition } from "react";
+import React, { useState, useTransition } from "react";
 import Link from "next/link";
 import {
   createDriverNode,
@@ -162,14 +162,13 @@ export function DriverDiagramDetailClient({ diagram, nodes }: DriverDiagramDetai
   // Error state
   const [error, setError] = useState<string | null>(null);
 
-  // Sync association checkboxes when edit dialog opens
-  useEffect(() => {
-    if (editNode) {
-      setSelectedAssociationIds(new Set(editNode.associations.map((a) => a.parentId)));
-    } else {
-      setSelectedAssociationIds(new Set());
-    }
-  }, [editNode]);
+  // Helper to open/close edit dialog and sync association checkboxes
+  function openEditNode(node: NodeRow | null) {
+    setEditNode(node);
+    setSelectedAssociationIds(
+      node ? new Set(node.associations.map((a) => a.parentId)) : new Set()
+    );
+  }
 
   // Compute eligible parents for the currently-edited node
   const EXPECTED_PARENT: Record<string, string> = { changeIdea: "secondary", secondary: "primary" };
@@ -211,7 +210,7 @@ export function DriverDiagramDetailClient({ diagram, nodes }: DriverDiagramDetai
 
   function handleEdit(node: NodeRow) {
     setError(null);
-    setEditNode(node);
+    openEditNode(node);
   }
 
   function handleDelete(node: NodeRow) {
@@ -434,7 +433,7 @@ export function DriverDiagramDetailClient({ diagram, nodes }: DriverDiagramDetai
       {/* ================================================================= */}
       {/* Edit Node Dialog                                                   */}
       {/* ================================================================= */}
-      <Dialog open={editNode !== null} onOpenChange={(open) => !open && setEditNode(null)}>
+      <Dialog open={editNode !== null} onOpenChange={(open) => !open && openEditNode(null)}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>
@@ -462,7 +461,7 @@ export function DriverDiagramDetailClient({ diagram, nodes }: DriverDiagramDetai
                       return;
                     }
                   }
-                  setEditNode(null);
+                  openEditNode(null);
                   setError(null);
                 });
               }}
@@ -538,7 +537,7 @@ export function DriverDiagramDetailClient({ diagram, nodes }: DriverDiagramDetai
               </div>
 
               <DialogFooter className="mt-4">
-                <Button type="button" variant="outline" onClick={() => setEditNode(null)}>
+                <Button type="button" variant="outline" onClick={() => openEditNode(null)}>
                   Cancel
                 </Button>
                 <Button
