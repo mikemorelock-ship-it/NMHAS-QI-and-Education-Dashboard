@@ -103,10 +103,7 @@ export async function createCampaignEvent(
   }
 }
 
-export async function updateCampaignEvent(
-  id: string,
-  formData: FormData
-): Promise<ActionResult> {
+export async function updateCampaignEvent(id: string, formData: FormData): Promise<ActionResult> {
   let session;
   try {
     session = await requireAdmin("manage_campaigns");

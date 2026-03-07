@@ -531,10 +531,7 @@ function CascadingDiagramBuilder({
   return (
     <div className="space-y-3">
       {/* Collapsible header */}
-      <button
-        onClick={onToggleCollapse}
-        className="flex items-center gap-2 w-full text-left"
-      >
+      <button onClick={onToggleCollapse} className="flex items-center gap-2 w-full text-left">
         <ChevronRight
           className={`h-4 w-4 text-muted-foreground transition-transform ${!isCollapsed ? "rotate-90" : ""}`}
         />
@@ -599,13 +596,9 @@ function CascadingDiagramBuilder({
 
                 // PDSA cycles for this node (if it's a change idea)
                 const nodeCycles =
-                  node.type === "changeIdea"
-                    ? cyclesByChangeIdea.get(node.id) ?? []
-                    : [];
+                  node.type === "changeIdea" ? (cyclesByChangeIdea.get(node.id) ?? []) : [];
                 const nodeCycleIds = nodeCycles.map((c) => c.id);
-                const nodeExpandedIds = expandedCycleIds.filter((id) =>
-                  nodeCycleIds.includes(id)
-                );
+                const nodeExpandedIds = expandedCycleIds.filter((id) => nodeCycleIds.includes(id));
 
                 return (
                   <div key={node.id}>
@@ -621,9 +614,7 @@ function CascadingDiagramBuilder({
                       >
                         {label}
                       </Badge>
-                      <span className="text-sm font-medium flex-1 truncate">
-                        {node.text}
-                      </span>
+                      <span className="text-sm font-medium flex-1 truncate">{node.text}</span>
                       {editMode && (
                         <span className="flex items-center gap-0.5 shrink-0">
                           <button
@@ -653,9 +644,7 @@ function CascadingDiagramBuilder({
                         <Accordion
                           type="multiple"
                           value={nodeExpandedIds}
-                          onValueChange={(val: string[]) =>
-                            onAccordionChange(nodeCycleIds, val)
-                          }
+                          onValueChange={(val: string[]) => onAccordionChange(nodeCycleIds, val)}
                           className="space-y-1"
                         >
                           {nodeCycles.map((cycle) => (
@@ -698,9 +687,7 @@ function CascadingDiagramBuilder({
                             borderColor: `${NMH_COLORS.orange}60`,
                             color: NMH_COLORS.orange,
                           }}
-                          onClick={() =>
-                            onCreateCycleFromNode(diagram.id, node.id, node.text)
-                          }
+                          onClick={() => onCreateCycleFromNode(diagram.id, node.id, node.text)}
                         >
                           <RefreshCcw className="h-3 w-3 mr-1" />
                           Add PDSA Cycle
@@ -738,14 +725,10 @@ function CascadingDiagramBuilder({
           {/* Ungrouped cycles (not linked to any change idea) */}
           {ungroupedCycles.length > 0 && (
             <div className="space-y-1 pl-2">
-              <p className="text-xs font-medium text-muted-foreground">
-                Unlinked PDSA Cycles
-              </p>
+              <p className="text-xs font-medium text-muted-foreground">Unlinked PDSA Cycles</p>
               <Accordion
                 type="multiple"
-                value={expandedCycleIds.filter((id) =>
-                  ungroupedCycles.some((c) => c.id === id)
-                )}
+                value={expandedCycleIds.filter((id) => ungroupedCycles.some((c) => c.id === id))}
                 onValueChange={(val: string[]) =>
                   onAccordionChange(
                     ungroupedCycles.map((c) => c.id),
@@ -755,11 +738,7 @@ function CascadingDiagramBuilder({
                 className="space-y-1"
               >
                 {ungroupedCycles.map((cycle) => (
-                  <AccordionItem
-                    key={cycle.id}
-                    value={cycle.id}
-                    className="border rounded-md px-3"
-                  >
+                  <AccordionItem key={cycle.id} value={cycle.id} className="border rounded-md px-3">
                     <AccordionTrigger className="py-2 hover:no-underline">
                       <PdsaCycleCompactHeader cycle={cycle} />
                     </AccordionTrigger>
@@ -783,9 +762,7 @@ function CascadingDiagramBuilder({
           {/* Progress summary */}
           {diagram.nodes.length > 0 && (
             <div className="flex flex-wrap items-center gap-3 text-xs pt-1">
-              <span className="text-muted-foreground">
-                {diagram.nodes.length} nodes
-              </span>
+              <span className="text-muted-foreground">{diagram.nodes.length} nodes</span>
               <span className={hasPrimary ? "text-green-600" : "text-amber-600"}>
                 {primaryCount} primary driver{primaryCount !== 1 ? "s" : ""}
                 {!hasPrimary && " (need at least 1)"}
@@ -1614,7 +1591,11 @@ export function AdminCampaignReport({
 
   // --- PDSA cycle create/delete ---
 
-  function handleOpenCreateCycleFromNode(diagramId: string, changeIdeaNodeId: string, changeIdeaText: string) {
+  function handleOpenCreateCycleFromNode(
+    diagramId: string,
+    changeIdeaNodeId: string,
+    changeIdeaText: string
+  ) {
     setCreateCycleInfo({ diagramId, changeIdeaNodeId, changeIdeaText });
   }
 
@@ -1990,29 +1971,33 @@ export function AdminCampaignReport({
 
         {editMode && (
           <div className="rounded-lg border border-nmh-teal/20 bg-nmh-teal/5 p-4 text-sm space-y-2">
-            <p className="font-medium text-nmh-gray">
-              How to use this section
-            </p>
+            <p className="font-medium text-nmh-gray">How to use this section</p>
             <div className="text-muted-foreground space-y-1">
               <p>
                 <strong className="text-nmh-teal">1. Aim</strong> &mdash; What are you trying to
                 accomplish? Write a clear, measurable aim statement.
               </p>
               <p>
-                <strong style={{ color: DRIVER_NODE_TYPE_COLORS.primary }}>2. Primary Drivers</strong>{" "}
+                <strong style={{ color: DRIVER_NODE_TYPE_COLORS.primary }}>
+                  2. Primary Drivers
+                </strong>{" "}
                 &mdash; What are the key factors that drive your aim?
               </p>
               <p>
-                <strong style={{ color: DRIVER_NODE_TYPE_COLORS.secondary }}>3. Secondary Drivers</strong>{" "}
+                <strong style={{ color: DRIVER_NODE_TYPE_COLORS.secondary }}>
+                  3. Secondary Drivers
+                </strong>{" "}
                 &mdash; What specific factors influence each primary driver?
               </p>
               <p>
-                <strong style={{ color: DRIVER_NODE_TYPE_COLORS.changeIdea }}>4. Change Ideas</strong>{" "}
+                <strong style={{ color: DRIVER_NODE_TYPE_COLORS.changeIdea }}>
+                  4. Change Ideas
+                </strong>{" "}
                 &mdash; What specific, testable changes can you make?
               </p>
               <p>
-                <strong style={{ color: NMH_COLORS.orange }}>5. PDSA Cycles</strong> &mdash; Test each
-                change idea using Plan-Do-Study-Act cycles.
+                <strong style={{ color: NMH_COLORS.orange }}>5. PDSA Cycles</strong> &mdash; Test
+                each change idea using Plan-Do-Study-Act cycles.
               </p>
             </div>
           </div>
@@ -2032,10 +2017,7 @@ export function AdminCampaignReport({
           </div>
         ) : (
           diagrams.map((diagram) => (
-            <div
-              key={diagram.id}
-              className="border rounded-lg p-5 space-y-3 break-inside-avoid"
-            >
+            <div key={diagram.id} className="border rounded-lg p-5 space-y-3 break-inside-avoid">
               <div className="flex items-center gap-2">
                 <div className="flex-1">
                   <CascadingDiagramBuilder
@@ -2073,9 +2055,7 @@ export function AdminCampaignReport({
                       <X className="h-4 w-4 text-muted-foreground" />
                     </button>
                     <button
-                      onClick={() =>
-                        setDeleteDiagram({ id: diagram.id, name: diagram.name })
-                      }
+                      onClick={() => setDeleteDiagram({ id: diagram.id, name: diagram.name })}
                       className="p-1 rounded hover:bg-muted"
                       title="Delete diagram"
                     >
@@ -2229,7 +2209,8 @@ export function AdminCampaignReport({
           <div className="border rounded-lg divide-y">
             {milestones.map((m, i) => {
               const catColor = EVENT_CATEGORY_COLORS[m.type] ?? NMH_COLORS.gray;
-              const isUserEntry = m.type === "milestone" || m.type === "barrier" || m.type === "event";
+              const isUserEntry =
+                m.type === "milestone" || m.type === "barrier" || m.type === "event";
               const matchingEvent = isUserEntry
                 ? campaignEvents.find((e) => e.label === m.label && e.date === m.date)
                 : null;
@@ -2564,7 +2545,9 @@ export function AdminCampaignReport({
       {/* Delete Diagram Confirmation */}
       <Dialog
         open={!!deleteDiagram}
-        onOpenChange={(open) => { if (!open) setDeleteDiagram(null); }}
+        onOpenChange={(open) => {
+          if (!open) setDeleteDiagram(null);
+        }}
       >
         <DialogContent>
           <DialogHeader>
@@ -2588,7 +2571,9 @@ export function AdminCampaignReport({
       {/* Create/Edit Node Dialog */}
       <Dialog
         open={!!nodeDialog}
-        onOpenChange={(open) => { if (!open) setNodeDialog(null); }}
+        onOpenChange={(open) => {
+          if (!open) setNodeDialog(null);
+        }}
       >
         <DialogContent className="max-w-lg">
           <DialogHeader>
@@ -2651,7 +2636,9 @@ export function AdminCampaignReport({
       {/* Delete Node Confirmation */}
       <Dialog
         open={!!deleteNode}
-        onOpenChange={(open) => { if (!open) setDeleteNode(null); }}
+        onOpenChange={(open) => {
+          if (!open) setDeleteNode(null);
+        }}
       >
         <DialogContent>
           <DialogHeader>
@@ -2675,7 +2662,9 @@ export function AdminCampaignReport({
       {/* Create PDSA Cycle Dialog */}
       <Dialog
         open={!!createCycleInfo}
-        onOpenChange={(open) => { if (!open) setCreateCycleInfo(null); }}
+        onOpenChange={(open) => {
+          if (!open) setCreateCycleInfo(null);
+        }}
       >
         <DialogContent className="max-w-lg">
           <DialogHeader>
@@ -2738,7 +2727,9 @@ export function AdminCampaignReport({
       {/* Delete PDSA Cycle Confirmation */}
       <Dialog
         open={!!deleteCycle}
-        onOpenChange={(open) => { if (!open) setDeleteCycle(null); }}
+        onOpenChange={(open) => {
+          if (!open) setDeleteCycle(null);
+        }}
       >
         <DialogContent>
           <DialogHeader>
@@ -2821,9 +2812,15 @@ export function AdminCampaignReport({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="milestone">🏁 Milestone — Key achievement or target date</SelectItem>
-                    <SelectItem value="barrier">🚧 Barrier — Something that blocked or slowed progress</SelectItem>
-                    <SelectItem value="event">📌 Event — Notable occurrence that affected the campaign</SelectItem>
+                    <SelectItem value="milestone">
+                      🏁 Milestone — Key achievement or target date
+                    </SelectItem>
+                    <SelectItem value="barrier">
+                      🚧 Barrier — Something that blocked or slowed progress
+                    </SelectItem>
+                    <SelectItem value="event">
+                      📌 Event — Notable occurrence that affected the campaign
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -2850,7 +2847,9 @@ export function AdminCampaignReport({
       {/* Delete Campaign Event Confirmation */}
       <Dialog
         open={!!deleteEventRow}
-        onOpenChange={(open) => { if (!open) setDeleteEventRow(null); }}
+        onOpenChange={(open) => {
+          if (!open) setDeleteEventRow(null);
+        }}
       >
         <DialogContent>
           <DialogHeader>

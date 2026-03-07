@@ -119,17 +119,28 @@ export default async function CampaignDetailPage({ params }: { params: Promise<{
       orderBy: { name: "asc" },
       select: { id: true, name: true },
     }),
-    prisma.campaignEvent.findMany({
-      where: { campaignId: id },
-      orderBy: { date: "asc" },
-      select: {
-        id: true,
-        date: true,
-        label: true,
-        description: true,
-        category: true,
-      },
-    }).catch(() => [] as Array<{ id: string; date: Date; label: string; description: string | null; category: string }>),
+    prisma.campaignEvent
+      .findMany({
+        where: { campaignId: id },
+        orderBy: { date: "asc" },
+        select: {
+          id: true,
+          date: true,
+          label: true,
+          description: true,
+          category: true,
+        },
+      })
+      .catch(
+        () =>
+          [] as Array<{
+            id: string;
+            date: Date;
+            label: string;
+            description: string | null;
+            category: string;
+          }>
+      ),
   ]);
 
   // -------------------------------------------------------------------------

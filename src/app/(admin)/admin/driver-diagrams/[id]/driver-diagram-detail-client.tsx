@@ -165,18 +165,14 @@ export function DriverDiagramDetailClient({ diagram, nodes }: DriverDiagramDetai
   // Helper to open/close edit dialog and sync association checkboxes
   function openEditNode(node: NodeRow | null) {
     setEditNode(node);
-    setSelectedAssociationIds(
-      node ? new Set(node.associations.map((a) => a.parentId)) : new Set()
-    );
+    setSelectedAssociationIds(node ? new Set(node.associations.map((a) => a.parentId)) : new Set());
   }
 
   // Compute eligible parents for the currently-edited node
   const EXPECTED_PARENT: Record<string, string> = { changeIdea: "secondary", secondary: "primary" };
   const eligibleParents =
     editNode && EXPECTED_PARENT[editNode.type]
-      ? nodes.filter(
-          (n) => n.type === EXPECTED_PARENT[editNode.type] && n.id !== editNode.parentId
-        )
+      ? nodes.filter((n) => n.type === EXPECTED_PARENT[editNode.type] && n.id !== editNode.parentId)
       : [];
 
   function toggleAssociation(parentId: string) {
@@ -522,10 +518,7 @@ export function DriverDiagramDetailClient({ diagram, nodes }: DriverDiagramDetai
                             checked={selectedAssociationIds.has(p.id)}
                             onCheckedChange={() => toggleAssociation(p.id)}
                           />
-                          <Badge
-                            variant="outline"
-                            className={`text-xs ${BADGE_CLASSES[p.type]}`}
-                          >
+                          <Badge variant="outline" className={`text-xs ${BADGE_CLASSES[p.type]}`}>
                             {DRIVER_NODE_TYPE_LABELS[p.type]}
                           </Badge>
                           <span className="text-sm">{p.text}</span>

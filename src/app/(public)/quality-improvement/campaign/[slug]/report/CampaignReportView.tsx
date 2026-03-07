@@ -236,13 +236,7 @@ const NODE_TYPE_LABELS: Record<string, string> = {
   changeIdea: "Change Idea",
 };
 
-function CascadingDriverTree({
-  nodes,
-  cycles,
-}: {
-  nodes: DiagramNodeInfo[];
-  cycles: CycleInfo[];
-}) {
+function CascadingDriverTree({ nodes, cycles }: { nodes: DiagramNodeInfo[]; cycles: CycleInfo[] }) {
   // Build tree
   const nodeMap = new Map<string, DiagramTreeNode>();
   const roots: DiagramTreeNode[] = [];

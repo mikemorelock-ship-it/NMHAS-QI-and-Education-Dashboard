@@ -491,7 +491,10 @@ export async function updateDriverNodeAssociations(
 
       for (const p of parents) {
         if (p.driverDiagramId !== node.driverDiagramId) {
-          return { success: false, error: "All associated drivers must belong to the same diagram." };
+          return {
+            success: false,
+            error: "All associated drivers must belong to the same diagram.",
+          };
         }
         if (p.type !== expectedParentType) {
           return {
