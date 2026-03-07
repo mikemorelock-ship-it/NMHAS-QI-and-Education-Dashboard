@@ -17,9 +17,7 @@ import { prisma } from "@/lib/db";
  * This determines which divisions store metric data at the division level
  * rather than the region level.
  */
-export async function getDivisionsWithoutRegions(
-  divisionIds: string[]
-): Promise<Set<string>> {
+export async function getDivisionsWithoutRegions(divisionIds: string[]): Promise<Set<string>> {
   if (divisionIds.length === 0) return new Set();
 
   const regionsInDivisions = await prisma.region.findMany({
@@ -53,10 +51,7 @@ export function buildEntryWhereForDivisions(
 
   // Include both: region-level entries + division-level entries for region-less divisions
   return {
-    OR: [
-      { regionId: { not: null } },
-      { divisionId: { in: noRegionIds }, regionId: null },
-    ],
+    OR: [{ regionId: { not: null } }, { divisionId: { in: noRegionIds }, regionId: null }],
   };
 }
 

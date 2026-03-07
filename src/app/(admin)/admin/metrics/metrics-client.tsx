@@ -1020,13 +1020,7 @@ function SortableMetricRow({
 // YearTargetInput — manages local string state so decimals can be typed
 // ---------------------------------------------------------------------------
 
-function YearTargetInput({
-  value,
-  onChange,
-}: {
-  value: number;
-  onChange: (v: number) => void;
-}) {
+function YearTargetInput({ value, onChange }: { value: number; onChange: (v: number) => void }) {
   const [localValue, setLocalValue] = useState(String(value));
 
   // Sync from parent when the numeric value changes externally
