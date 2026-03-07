@@ -8,14 +8,16 @@ interface OrgDivision {
   id: string;
   name: string;
   slug: string;
-  departments: Array<{ id: string; name: string }>;
+  departments: Array<{ id: string; name: string; slug?: string }>;
 }
 
 interface OrgHierarchyProps {
   metricSlug: string;
   divisions: OrgDivision[];
-  activeContext: "global" | "division" | "department";
+  activeContext: "global" | "division" | "department" | "region";
   activeDivisionSlug?: string;
+  /** When viewing a region, the ID of the active region */
+  activeRegionId?: string;
 }
 
 /**
@@ -32,13 +34,14 @@ interface OrgHierarchyProps {
  *       |        |          |
  *    ┌──┼──┐  ┌──┼──┐   ┌──┼──┐
  *    ▼  ▼  ▼  ▼  ▼  ▼   ▼  ▼  ▼
- *  AC1 AC2.. B  D  ..   C1 C2 ..    ← department names (leaf nodes, no link)
+ *  AC1 AC2.. B  D  ..   C1 C2 ..    ← clickable → /region/{id}/metric/{slug}
  */
 export function OrgHierarchy({
   metricSlug,
   divisions,
   activeContext,
   activeDivisionSlug,
+  activeRegionId,
 }: OrgHierarchyProps) {
   if (divisions.length === 0) return null;
 
@@ -75,7 +78,8 @@ export function OrgHierarchy({
         <div className="flex items-start gap-4 flex-wrap justify-center">
           {divisions.map((div) => {
             const isDivisionActive =
-              activeContext === "division" && activeDivisionSlug === div.slug;
+              (activeContext === "division" || activeContext === "region") &&
+              activeDivisionSlug === div.slug;
 
             return (
               <div key={div.id} className="flex flex-col items-center">
@@ -85,7 +89,7 @@ export function OrgHierarchy({
                 {/* Division node */}
                 <OrgNodeBox
                   label={div.name}
-                  isActive={isDivisionActive}
+                  isActive={isDivisionActive && activeContext === "division"}
                   href={`/division/${div.slug}/metric/${metricSlug}`}
                   level="division"
                 />
@@ -95,14 +99,43 @@ export function OrgHierarchy({
                   <>
                     <div className="w-px h-3" style={{ backgroundColor: NMH_COLORS.lightGray }} />
                     <div className="flex items-start gap-1.5 flex-wrap justify-center max-w-[220px]">
-                      {div.departments.map((dept) => (
-                        <span
-                          key={dept.id}
-                          className="text-[10px] leading-tight text-muted-foreground bg-muted/50 rounded px-1.5 py-0.5 whitespace-nowrap"
-                        >
-                          {dept.name}
-                        </span>
-                      ))}
+                      {div.departments.map((dept) => {
+                        const isActiveRegion =
+                          activeContext === "region" && activeRegionId === dept.id;
+                        const deptHref = dept.slug
+                          ? `/region/${dept.slug}/metric/${metricSlug}`
+                          : undefined;
+
+                        if (isActiveRegion) {
+                          return (
+                            <span
+                              key={dept.id}
+                              className="text-[10px] leading-tight font-semibold text-[#00b0ad] bg-[#00b0ad]/10 border border-[#00b0ad]/30 rounded px-1.5 py-0.5 whitespace-nowrap"
+                            >
+                              {dept.name}
+                            </span>
+                          );
+                        }
+
+                        if (deptHref) {
+                          return (
+                            <Link key={dept.id} href={deptHref}>
+                              <span className="text-[10px] leading-tight text-muted-foreground bg-muted/50 rounded px-1.5 py-0.5 whitespace-nowrap hover:text-[#00b0ad] hover:bg-[#00b0ad]/5 transition-colors cursor-pointer">
+                                {dept.name}
+                              </span>
+                            </Link>
+                          );
+                        }
+
+                        return (
+                          <span
+                            key={dept.id}
+                            className="text-[10px] leading-tight text-muted-foreground bg-muted/50 rounded px-1.5 py-0.5 whitespace-nowrap"
+                          >
+                            {dept.name}
+                          </span>
+                        );
+                      })}
                     </div>
                   </>
                 )}

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { formatPeriod, parseDateRangeFilter } from "@/lib/utils";
 import { computeSPCData } from "@/lib/spc-server";
+import { fillMissingPeriods } from "@/lib/fill-missing-periods";
 import { format } from "date-fns";
 
 export const dynamic = "force-dynamic";
@@ -92,10 +93,12 @@ export async function GET(
       select: { periodStart: true, value: true },
     });
 
-    const chartData = entries.map((e) => ({
-      period: formatPeriod(e.periodStart),
-      value: e.value,
-    }));
+    const chartData = fillMissingPeriods(
+      entries.map((e) => ({
+        period: formatPeriod(e.periodStart),
+        value: e.value,
+      }))
+    );
 
     // -----------------------------------------------------------------------
     // Summary statistics
@@ -238,10 +241,12 @@ export async function GET(
           divisionSlug: div.slug,
           currentValue: divCurrent,
           trend: Math.round(divTrend * 10) / 10,
-          data: divEntries.map((e) => ({
-            period: formatPeriod(e.periodStart),
-            value: e.value,
-          })),
+          data: fillMissingPeriods(
+            divEntries.map((e) => ({
+              period: formatPeriod(e.periodStart),
+              value: e.value,
+            }))
+          ),
         };
       })
       .filter((d): d is NonNullable<typeof d> => d !== null);

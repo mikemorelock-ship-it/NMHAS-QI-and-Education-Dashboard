@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { useTheme } from "next-themes";
 import {
   LineChart,
   BarChart,
@@ -98,6 +99,9 @@ export function MetricChart({
   baselineStartPeriod,
   baselineEndPeriod,
 }: MetricChartProps) {
+  const { resolvedTheme } = useTheme();
+  const tickColor = resolvedTheme === "dark" ? "#d4d4d4" : "#374151";
+
   /**
    * IHI Run Chart Rules — detect shifts and trends in the data.
    *
@@ -284,11 +288,16 @@ export function MetricChart({
    */
   const commonAxisElements = (
     <>
-      <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-      <XAxis dataKey="period" tick={{ fontSize: 12 }} tickLine={false} axisLine={false} />
+      <CartesianGrid strokeDasharray="3 3" className="opacity-30" stroke="currentColor" />
+      <XAxis
+        dataKey="period"
+        tick={{ fontSize: 12, fill: tickColor }}
+        tickLine={false}
+        axisLine={false}
+      />
       <YAxis
         domain={yDomain}
-        tick={{ fontSize: 12 }}
+        tick={{ fontSize: 12, fill: tickColor }}
         tickLine={false}
         axisLine={false}
         tickFormatter={formatYAxis}
@@ -339,10 +348,13 @@ export function MetricChart({
     cx?: number;
     cy?: number;
     index?: number;
-    payload?: { shift?: boolean; trend?: boolean };
+    payload?: { shift?: boolean; trend?: boolean; isFilled?: boolean };
   }) => {
     const { cx, cy, payload } = props;
     if (cx == null || cy == null) return null;
+    // Hide dots for LOCF-filled data points
+    if (payload?.isFilled)
+      return <circle key={`dot-${cx}-${cy}`} cx={cx} cy={cy} r={0} fill="none" />;
     let fill = color;
     if (payload?.shift) fill = NMH_COLORS.orange;
     else if (payload?.trend) fill = "#8b5cf6"; // purple

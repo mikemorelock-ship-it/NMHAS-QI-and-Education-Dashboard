@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTheme } from "next-themes";
 import {
   ResponsiveContainer,
   ComposedChart,
@@ -37,9 +38,15 @@ interface ControlChartProps {
 // Custom dot renderer: red for special cause, teal for normal
 // ---------------------------------------------------------------------------
 
-function CustomDot(props: { cx?: number; cy?: number; payload?: { specialCause?: boolean } }) {
+function CustomDot(props: {
+  cx?: number;
+  cy?: number;
+  payload?: { specialCause?: boolean; isFilled?: boolean };
+}) {
   const { cx, cy, payload } = props;
   if (cx == null || cy == null) return null;
+  // Hide dots for LOCF-filled data points
+  if (payload?.isFilled) return null;
 
   const isSpecial = payload?.specialCause ?? false;
 
@@ -182,6 +189,8 @@ export function ControlChart({
   const [limitMode, setLimitMode] = useState<"fixed" | "variable">(
     spcData.recommendVariableLimits ? "variable" : "fixed"
   );
+  const { resolvedTheme } = useTheme();
+  const tickColor = resolvedTheme === "dark" ? "#d4d4d4" : "#374151";
 
   if (!spcData || spcData.points.length === 0) {
     return (
@@ -262,7 +271,7 @@ export function ControlChart({
             data={activePoints}
             margin={{ top: chartTopMargin, right: 30, left: 10, bottom: 5 }}
           >
-            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+            <CartesianGrid strokeDasharray="3 3" className="opacity-30" stroke="currentColor" />
 
             {/* Baseline period shading */}
             {baselineStartPeriod != null && baselineEndPeriod != null && (
@@ -281,10 +290,10 @@ export function ControlChart({
               />
             )}
 
-            <XAxis dataKey="period" tick={{ fontSize: 11 }} tickLine={false} />
+            <XAxis dataKey="period" tick={{ fontSize: 11, fill: tickColor }} tickLine={false} />
             <YAxis
               domain={[Math.floor(yMin - yPadding), Math.ceil(yMax + yPadding)]}
-              tick={{ fontSize: 11 }}
+              tick={{ fontSize: 11, fill: tickColor }}
               tickLine={false}
               tickFormatter={(v: number) => formatMetricValue(v, unit, rateMultiplier, rateSuffix)}
             />
@@ -445,10 +454,10 @@ export function ControlChart({
               data={spcData.movingRange}
               margin={{ top: 5, right: 30, left: 10, bottom: 5 }}
             >
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-              <XAxis dataKey="period" tick={{ fontSize: 10 }} tickLine={false} />
+              <CartesianGrid strokeDasharray="3 3" className="opacity-30" stroke="currentColor" />
+              <XAxis dataKey="period" tick={{ fontSize: 10, fill: tickColor }} tickLine={false} />
               <YAxis
-                tick={{ fontSize: 10 }}
+                tick={{ fontSize: 10, fill: tickColor }}
                 tickLine={false}
                 tickFormatter={(v: number) =>
                   formatMetricValue(v, unit, rateMultiplier, rateSuffix)

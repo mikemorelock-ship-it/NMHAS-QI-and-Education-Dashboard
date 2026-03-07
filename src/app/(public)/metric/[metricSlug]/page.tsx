@@ -14,6 +14,7 @@ import {
   buildEntryWhereForDivisions,
   buildEntryWhereForSingleDivision,
 } from "@/lib/division-query-utils";
+import { fillMissingPeriods } from "@/lib/fill-missing-periods";
 import {
   Breadcrumb,
   BreadcrumbList,
@@ -98,10 +99,12 @@ export default async function GlobalMetricDetailPage({ params }: PageProps) {
 
   const globalSeries = aggregateByPeriodWeighted(allRegionEntries, dataType, aggType);
 
-  const chartData: ChartDataPoint[] = globalSeries.map((s) => ({
-    period: formatPeriod(s.periodStart),
-    value: s.value,
-  }));
+  const chartData: ChartDataPoint[] = fillMissingPeriods(
+    globalSeries.map((s) => ({
+      period: formatPeriod(s.periodStart),
+      value: s.value,
+    }))
+  );
 
   const values = globalSeries.map((s) => s.value);
 
@@ -110,6 +113,7 @@ export default async function GlobalMetricDetailPage({ params }: PageProps) {
   // -----------------------------------------------------------------------
 
   const perDivisionSeries: Map<string, { periodStart: Date; value: number }[]> = new Map();
+  const perDivisionRawEntries: Map<string, Array<{ denominator: number | null }>> = new Map();
 
   for (const div of divisions) {
     const divHasRegions = !noRegionDivs.has(div.id);
@@ -126,6 +130,7 @@ export default async function GlobalMetricDetailPage({ params }: PageProps) {
 
     const aggregated = aggregateByPeriodWeighted(regionEntries, dataType, aggType);
     perDivisionSeries.set(div.id, aggregated);
+    perDivisionRawEntries.set(div.id, regionEntries);
   }
 
   // -----------------------------------------------------------------------
@@ -160,16 +165,22 @@ export default async function GlobalMetricDetailPage({ params }: PageProps) {
         divTrend = ((divCurrent - divPrevious) / Math.abs(divPrevious)) * 100;
       }
 
+      const rawEntries = perDivisionRawEntries.get(div.id) ?? [];
+      const totalCases = rawEntries.reduce((sum, e) => sum + (e.denominator ?? 0), 0);
+
       return {
         divisionId: div.id,
         divisionName: div.name,
         divisionSlug: div.slug,
         currentValue: divCurrent,
         trend: Math.round(divTrend * 10) / 10,
-        data: series.map((s) => ({
-          period: formatPeriod(s.periodStart),
-          value: s.value,
-        })),
+        data: fillMissingPeriods(
+          series.map((s) => ({
+            period: formatPeriod(s.periodStart),
+            value: s.value,
+          }))
+        ),
+        totalCases: totalCases > 0 ? totalCases : undefined,
       };
     })
     .filter((d): d is NonNullable<typeof d> => d !== null);
@@ -189,7 +200,7 @@ export default async function GlobalMetricDetailPage({ params }: PageProps) {
         id: div.id,
         name: div.name,
         slug: div.slug,
-        departments: regions,
+        departments: regions.map((r) => ({ id: r.id, name: r.name, slug: r.id })),
       };
     })
   );
