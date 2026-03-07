@@ -239,8 +239,7 @@ export function MetricDetailClient({
   }, [data.stats.trend]);
 
   const desiredDirection = data.desiredDirection ?? "up";
-  const isFavorable =
-    trendDirection === "flat" ? null : trendDirection === desiredDirection;
+  const isFavorable = trendDirection === "flat" ? null : trendDirection === desiredDirection;
 
   const rateMultiplier = data.rateMultiplier;
   const rateSuffix = data.rateSuffix;
@@ -251,7 +250,9 @@ export function MetricDetailClient({
     data.target !== null ? targetToRaw(data.target, data.unit, rateMultiplier) : null;
   const atOrAboveTarget =
     rawTarget !== null &&
-    (desiredDirection === "down" ? data.stats.current <= rawTarget : data.stats.current >= rawTarget);
+    (desiredDirection === "down"
+      ? data.stats.current <= rawTarget
+      : data.stats.current >= rawTarget);
 
   // Unified QI annotations for chart overlays (includes manual annotations + PDSA cycles)
   const qiAnnotations: QIAnnotation[] = useMemo(() => {
@@ -298,7 +299,12 @@ export function MetricDetailClient({
       />
       <Tooltip
         content={
-          <DetailTooltip unit={data.unit} rateMultiplier={rateMultiplier} rateSuffix={rateSuffix} scoreMax={scoreMax} />
+          <DetailTooltip
+            unit={data.unit}
+            rateMultiplier={rateMultiplier}
+            rateSuffix={rateSuffix}
+            scoreMax={scoreMax}
+          />
         }
         cursor={{ strokeDasharray: "3 3" }}
       />
@@ -450,7 +456,13 @@ export function MetricDetailClient({
           <div className="flex-shrink-0 text-right sm:text-left">
             <p className="text-sm text-muted-foreground mb-1">Current Value</p>
             <p className="text-4xl md:text-5xl font-bold tracking-tight">
-              {formatMetricValue(data.stats.current, data.unit, rateMultiplier, rateSuffix, scoreMax)}
+              {formatMetricValue(
+                data.stats.current,
+                data.unit,
+                rateMultiplier,
+                rateSuffix,
+                scoreMax
+              )}
             </p>
             <div className="flex items-center gap-2 mt-2 justify-end sm:justify-start">
               <div
@@ -646,12 +658,24 @@ export function MetricDetailClient({
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
           <StatCard
             label="Current"
-            value={formatMetricValue(data.stats.current, data.unit, rateMultiplier, rateSuffix, scoreMax)}
+            value={formatMetricValue(
+              data.stats.current,
+              data.unit,
+              rateMultiplier,
+              rateSuffix,
+              scoreMax
+            )}
             icon={<Activity className="size-4" />}
           />
           <StatCard
             label="Previous"
-            value={formatMetricValue(data.stats.previous, data.unit, rateMultiplier, rateSuffix, scoreMax)}
+            value={formatMetricValue(
+              data.stats.previous,
+              data.unit,
+              rateMultiplier,
+              rateSuffix,
+              scoreMax
+            )}
             icon={<BarChart3 className="size-4" />}
           />
           <StatCard
@@ -676,17 +700,35 @@ export function MetricDetailClient({
           />
           <StatCard
             label="Average"
-            value={formatMetricValue(data.stats.average, data.unit, rateMultiplier, rateSuffix, scoreMax)}
+            value={formatMetricValue(
+              data.stats.average,
+              data.unit,
+              rateMultiplier,
+              rateSuffix,
+              scoreMax
+            )}
             icon={<Hash className="size-4" />}
           />
           <StatCard
             label="Min"
-            value={formatMetricValue(data.stats.min, data.unit, rateMultiplier, rateSuffix, scoreMax)}
+            value={formatMetricValue(
+              data.stats.min,
+              data.unit,
+              rateMultiplier,
+              rateSuffix,
+              scoreMax
+            )}
             icon={<TrendingDown className="size-4" />}
           />
           <StatCard
             label="Max"
-            value={formatMetricValue(data.stats.max, data.unit, rateMultiplier, rateSuffix, scoreMax)}
+            value={formatMetricValue(
+              data.stats.max,
+              data.unit,
+              rateMultiplier,
+              rateSuffix,
+              scoreMax
+            )}
             icon={<TrendingUp className="size-4" />}
           />
         </div>
@@ -886,7 +928,9 @@ export function MetricDetailClient({
                 <span className="capitalize">Unit: {data.unit}</span>
                 <span className="capitalize">Chart: {data.chartType}</span>
                 {data.target !== null && (
-                  <span>Target: {formatMetricValue(data.target, data.unit, null, rateSuffix, scoreMax)}</span>
+                  <span>
+                    Target: {formatMetricValue(data.target, data.unit, null, rateSuffix, scoreMax)}
+                  </span>
                 )}
               </div>
             </CardContent>

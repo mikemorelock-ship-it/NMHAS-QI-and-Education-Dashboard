@@ -1453,8 +1453,8 @@ function MetricFormFields({
             Score Range (e.g. 0–100)
           </Label>
           <p className="text-xs text-muted-foreground">
-            The maximum value on this score&apos;s scale. Values display as &quot;X / max&quot;. Leave
-            blank to show the raw number without a denominator.
+            The maximum value on this score&apos;s scale. Values display as &quot;X / max&quot;.
+            Leave blank to show the raw number without a denominator.
           </p>
           <Input
             id="scoreMax"

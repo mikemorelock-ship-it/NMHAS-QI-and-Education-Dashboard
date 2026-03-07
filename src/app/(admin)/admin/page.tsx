@@ -68,7 +68,13 @@ export default async function AdminOverviewPage() {
       orderBy: { createdAt: "desc" },
       include: {
         metricDefinition: {
-          select: { name: true, unit: true, rateMultiplier: true, rateSuffix: true, scoreMax: true },
+          select: {
+            name: true,
+            unit: true,
+            rateMultiplier: true,
+            rateSuffix: true,
+            scoreMax: true,
+          },
         },
         department: { select: { name: true } },
         division: { select: { name: true } },

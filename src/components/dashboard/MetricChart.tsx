@@ -310,7 +310,12 @@ export function MetricChart({
       />
       <Tooltip
         content={
-          <CustomTooltip unit={unit} rateMultiplier={rateMultiplier} rateSuffix={rateSuffix} scoreMax={scoreMax} />
+          <CustomTooltip
+            unit={unit}
+            rateMultiplier={rateMultiplier}
+            rateSuffix={rateSuffix}
+            scoreMax={scoreMax}
+          />
         }
         cursor={{ strokeDasharray: "3 3" }}
       />
@@ -485,7 +490,13 @@ export function MetricChart({
                 <span>
                   Median:{" "}
                   <strong style={{ color: NMH_COLORS.gray }}>
-                    {formatMetricValue(runChartAnalysis.median, unit, rateMultiplier, rateSuffix, scoreMax)}
+                    {formatMetricValue(
+                      runChartAnalysis.median,
+                      unit,
+                      rateMultiplier,
+                      rateSuffix,
+                      scoreMax
+                    )}
                   </strong>
                 </span>
               </span>
