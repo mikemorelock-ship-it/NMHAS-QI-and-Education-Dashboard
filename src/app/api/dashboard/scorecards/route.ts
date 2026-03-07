@@ -213,7 +213,7 @@ export async function GET(request: NextRequest) {
 
     if (regionIds.length > 0) {
       // Specific departments selected → fetch entries for those regions
-      rawEntries = await prisma.metricEntry.findMany({
+      const regionEntries = await prisma.metricEntry.findMany({
         where: {
           metricDefinitionId: { in: metricIds },
           periodStart: { gte: yearStart, lte: yearEnd },
@@ -222,6 +222,25 @@ export async function GET(request: NextRequest) {
         orderBy: { periodStart: "asc" },
         select: entrySelect,
       });
+
+      // Fall back to department-level entries for metrics with no region data
+      const metricsWithData = new Set(regionEntries.map((e) => e.metricDefinitionId));
+      const metricsWithoutData = metricIds.filter((id) => !metricsWithData.has(id));
+      let deptEntries: RawEntry[] = [];
+      if (metricsWithoutData.length > 0) {
+        deptEntries = await prisma.metricEntry.findMany({
+          where: {
+            metricDefinitionId: { in: metricsWithoutData },
+            periodStart: { gte: yearStart, lte: yearEnd },
+            divisionId: null,
+            regionId: null,
+          },
+          orderBy: { periodStart: "asc" },
+          select: entrySelect,
+        });
+      }
+
+      rawEntries = [...regionEntries, ...deptEntries];
     } else if (divisionIds.length > 0) {
       // Divisions selected (no specific departments) → find all regions in
       // those divisions and fetch their entries for aggregation.
@@ -242,7 +261,7 @@ export async function GET(request: NextRequest) {
         orClauses.push({ divisionId: { in: noRegionDivIds }, regionId: null });
       }
 
-      rawEntries =
+      const divisionEntries =
         orClauses.length > 0
           ? await prisma.metricEntry.findMany({
               where: {
@@ -254,6 +273,25 @@ export async function GET(request: NextRequest) {
               select: entrySelect,
             })
           : [];
+
+      // Fall back to department-level entries for metrics with no division data
+      const metricsWithData = new Set(divisionEntries.map((e) => e.metricDefinitionId));
+      const metricsWithoutData = metricIds.filter((id) => !metricsWithData.has(id));
+      let deptEntries: RawEntry[] = [];
+      if (metricsWithoutData.length > 0) {
+        deptEntries = await prisma.metricEntry.findMany({
+          where: {
+            metricDefinitionId: { in: metricsWithoutData },
+            periodStart: { gte: yearStart, lte: yearEnd },
+            divisionId: null,
+            regionId: null,
+          },
+          orderBy: { periodStart: "asc" },
+          select: entrySelect,
+        });
+      }
+
+      rawEntries = [...divisionEntries, ...deptEntries];
     } else {
       // No filter → fetch region-level entries AND division-level entries
       // for divisions without regions. Then fall back to department-level
