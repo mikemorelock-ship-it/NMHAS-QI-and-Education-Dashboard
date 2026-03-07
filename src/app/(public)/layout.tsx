@@ -27,7 +27,7 @@ export default async function PublicLayout({ children }: { children: React.React
       </a>
       <PublicHeader userName={`${session.firstName} ${session.lastName}`} userRole={session.role} />
       {/* Full-width content area -- fills remaining viewport height */}
-      <main id="main-content" className="flex-1 w-full overflow-y-auto overflow-x-hidden">
+      <main id="main-content" className="flex-1 min-h-0 w-full overflow-y-auto overflow-x-hidden">
         {children}
       </main>
       <IdleTimeout timeoutMinutes={30} />
