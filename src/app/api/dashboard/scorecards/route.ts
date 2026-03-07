@@ -117,6 +117,7 @@ export async function GET(request: NextRequest) {
         desiredDirection: true,
         rateMultiplier: true,
         rateSuffix: true,
+        scoreMax: true,
       },
     });
 
@@ -380,6 +381,7 @@ export async function GET(request: NextRequest) {
         desiredDirection: desired,
         rateMultiplier: metric.rateMultiplier ?? null,
         rateSuffix: metric.rateSuffix ?? null,
+        scoreMax: metric.scoreMax ?? null,
         targetYtd,
         actualYtd,
         monthlyValues,

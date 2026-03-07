@@ -52,6 +52,7 @@ interface MetricChartProps {
   href?: string;
   rateMultiplier?: number | null;
   rateSuffix?: string | null;
+  scoreMax?: number | null;
   baselineStartPeriod?: string | null;
   baselineEndPeriod?: string | null;
 }
@@ -66,6 +67,7 @@ function CustomTooltip({
   unit,
   rateMultiplier,
   rateSuffix,
+  scoreMax,
 }: {
   active?: boolean;
   payload?: Array<{ value: number }>;
@@ -73,6 +75,7 @@ function CustomTooltip({
   unit: string;
   rateMultiplier?: number | null;
   rateSuffix?: string | null;
+  scoreMax?: number | null;
 }) {
   if (!active || !payload || payload.length === 0) return null;
 
@@ -80,7 +83,7 @@ function CustomTooltip({
     <div className="rounded-lg border bg-background p-3 shadow-md text-sm">
       <p className="text-muted-foreground mb-1">{label}</p>
       <p className="font-semibold">
-        {formatMetricValue(payload[0].value, unit, rateMultiplier, rateSuffix)}
+        {formatMetricValue(payload[0].value, unit, rateMultiplier, rateSuffix, scoreMax)}
       </p>
     </div>
   );
@@ -96,6 +99,7 @@ export function MetricChart({
   href,
   rateMultiplier,
   rateSuffix,
+  scoreMax,
   baselineStartPeriod,
   baselineEndPeriod,
 }: MetricChartProps) {
@@ -306,7 +310,7 @@ export function MetricChart({
       />
       <Tooltip
         content={
-          <CustomTooltip unit={unit} rateMultiplier={rateMultiplier} rateSuffix={rateSuffix} />
+          <CustomTooltip unit={unit} rateMultiplier={rateMultiplier} rateSuffix={rateSuffix} scoreMax={scoreMax} />
         }
         cursor={{ strokeDasharray: "3 3" }}
       />
@@ -460,7 +464,7 @@ export function MetricChart({
                 <span>
                   Target:{" "}
                   <strong style={{ color: NMH_COLORS.orange }}>
-                    {formatMetricValue(target, unit, null, rateSuffix)}
+                    {formatMetricValue(target, unit, null, rateSuffix, scoreMax)}
                   </strong>
                 </span>
               </span>
@@ -481,7 +485,7 @@ export function MetricChart({
                 <span>
                   Median:{" "}
                   <strong style={{ color: NMH_COLORS.gray }}>
-                    {formatMetricValue(runChartAnalysis.median, unit, rateMultiplier, rateSuffix)}
+                    {formatMetricValue(runChartAnalysis.median, unit, rateMultiplier, rateSuffix, scoreMax)}
                   </strong>
                 </span>
               </span>

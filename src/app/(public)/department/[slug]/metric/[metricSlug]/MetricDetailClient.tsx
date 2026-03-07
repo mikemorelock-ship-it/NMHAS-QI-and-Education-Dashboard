@@ -134,6 +134,7 @@ function DetailTooltip({
   unit,
   rateMultiplier,
   rateSuffix,
+  scoreMax,
 }: {
   active?: boolean;
   payload?: Array<{ value: number }>;
@@ -141,6 +142,7 @@ function DetailTooltip({
   unit: string;
   rateMultiplier?: number | null;
   rateSuffix?: string | null;
+  scoreMax?: number | null;
 }) {
   if (!active || !payload || payload.length === 0) return null;
 
@@ -148,7 +150,7 @@ function DetailTooltip({
     <div className="rounded-lg border bg-background p-3 shadow-md text-sm">
       <p className="text-muted-foreground mb-1">{label}</p>
       <p className="font-semibold">
-        {formatMetricValue(payload[0].value, unit, rateMultiplier, rateSuffix)}
+        {formatMetricValue(payload[0].value, unit, rateMultiplier, rateSuffix, scoreMax)}
       </p>
     </div>
   );
@@ -242,6 +244,7 @@ export function MetricDetailClient({
 
   const rateMultiplier = data.rateMultiplier;
   const rateSuffix = data.rateSuffix;
+  const scoreMax = data.scoreMax;
 
   // Target is stored in display units; convert to raw for comparison with data values
   const rawTarget =
@@ -295,7 +298,7 @@ export function MetricDetailClient({
       />
       <Tooltip
         content={
-          <DetailTooltip unit={data.unit} rateMultiplier={rateMultiplier} rateSuffix={rateSuffix} />
+          <DetailTooltip unit={data.unit} rateMultiplier={rateMultiplier} rateSuffix={rateSuffix} scoreMax={scoreMax} />
         }
         cursor={{ strokeDasharray: "3 3" }}
       />
@@ -307,7 +310,7 @@ export function MetricDetailClient({
           strokeDasharray="6 4"
           strokeWidth={2}
           label={{
-            value: `Target: ${formatMetricValue(data.target, data.unit, null, rateSuffix)}`,
+            value: `Target: ${formatMetricValue(data.target, data.unit, null, rateSuffix, scoreMax)}`,
             position: "insideTopRight",
             fill: NMH_COLORS.orange,
             fontSize: 11,
@@ -447,7 +450,7 @@ export function MetricDetailClient({
           <div className="flex-shrink-0 text-right sm:text-left">
             <p className="text-sm text-muted-foreground mb-1">Current Value</p>
             <p className="text-4xl md:text-5xl font-bold tracking-tight">
-              {formatMetricValue(data.stats.current, data.unit, rateMultiplier, rateSuffix)}
+              {formatMetricValue(data.stats.current, data.unit, rateMultiplier, rateSuffix, scoreMax)}
             </p>
             <div className="flex items-center gap-2 mt-2 justify-end sm:justify-start">
               <div
@@ -617,6 +620,7 @@ export function MetricDetailClient({
                   target={data.target}
                   rateMultiplier={rateMultiplier}
                   rateSuffix={rateSuffix}
+                  scoreMax={scoreMax}
                   annotations={showAnnotations ? qiAnnotations : undefined}
                 />
               ) : (
@@ -642,12 +646,12 @@ export function MetricDetailClient({
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
           <StatCard
             label="Current"
-            value={formatMetricValue(data.stats.current, data.unit, rateMultiplier, rateSuffix)}
+            value={formatMetricValue(data.stats.current, data.unit, rateMultiplier, rateSuffix, scoreMax)}
             icon={<Activity className="size-4" />}
           />
           <StatCard
             label="Previous"
-            value={formatMetricValue(data.stats.previous, data.unit, rateMultiplier, rateSuffix)}
+            value={formatMetricValue(data.stats.previous, data.unit, rateMultiplier, rateSuffix, scoreMax)}
             icon={<BarChart3 className="size-4" />}
           />
           <StatCard
@@ -672,17 +676,17 @@ export function MetricDetailClient({
           />
           <StatCard
             label="Average"
-            value={formatMetricValue(data.stats.average, data.unit, rateMultiplier, rateSuffix)}
+            value={formatMetricValue(data.stats.average, data.unit, rateMultiplier, rateSuffix, scoreMax)}
             icon={<Hash className="size-4" />}
           />
           <StatCard
             label="Min"
-            value={formatMetricValue(data.stats.min, data.unit, rateMultiplier, rateSuffix)}
+            value={formatMetricValue(data.stats.min, data.unit, rateMultiplier, rateSuffix, scoreMax)}
             icon={<TrendingDown className="size-4" />}
           />
           <StatCard
             label="Max"
-            value={formatMetricValue(data.stats.max, data.unit, rateMultiplier, rateSuffix)}
+            value={formatMetricValue(data.stats.max, data.unit, rateMultiplier, rateSuffix, scoreMax)}
             icon={<TrendingUp className="size-4" />}
           />
         </div>
@@ -732,6 +736,7 @@ export function MetricDetailClient({
                           unit={data.unit}
                           rateMultiplier={rateMultiplier}
                           rateSuffix={rateSuffix}
+                          scoreMax={scoreMax}
                         />
                       }
                       cursor={{ strokeDasharray: "3 3" }}
@@ -793,7 +798,8 @@ export function MetricDetailClient({
                               child.currentValue,
                               data.unit,
                               rateMultiplier,
-                              rateSuffix
+                              rateSuffix,
+                              scoreMax
                             )}
                           </td>
                           <td className="py-3 text-right">
@@ -880,7 +886,7 @@ export function MetricDetailClient({
                 <span className="capitalize">Unit: {data.unit}</span>
                 <span className="capitalize">Chart: {data.chartType}</span>
                 {data.target !== null && (
-                  <span>Target: {formatMetricValue(data.target, data.unit, null, rateSuffix)}</span>
+                  <span>Target: {formatMetricValue(data.target, data.unit, null, rateSuffix, scoreMax)}</span>
                 )}
               </div>
             </CardContent>
@@ -1030,7 +1036,8 @@ export function MetricDetailClient({
                               div.currentValue,
                               data.unit,
                               rateMultiplier,
-                              rateSuffix
+                              rateSuffix,
+                              scoreMax
                             )}
                           </td>
                           <td className="py-3 text-right font-mono text-muted-foreground">
@@ -1205,6 +1212,7 @@ function StackedTooltip({
   unit,
   rateMultiplier,
   rateSuffix,
+  scoreMax,
 }: {
   active?: boolean;
   payload?: Array<{ name: string; value: number; color: string }>;
@@ -1212,6 +1220,7 @@ function StackedTooltip({
   unit: string;
   rateMultiplier?: number | null;
   rateSuffix?: string | null;
+  scoreMax?: number | null;
 }) {
   if (!active || !payload || payload.length === 0) return null;
 
@@ -1230,14 +1239,14 @@ function StackedTooltip({
             {p.name}
           </span>
           <span className="font-mono">
-            {formatMetricValue(p.value, unit, rateMultiplier, rateSuffix)}
+            {formatMetricValue(p.value, unit, rateMultiplier, rateSuffix, scoreMax)}
           </span>
         </div>
       ))}
       <div className="border-t mt-1.5 pt-1.5 flex justify-between font-semibold">
         <span>Total</span>
         <span className="font-mono">
-          {formatMetricValue(total, unit, rateMultiplier, rateSuffix)}
+          {formatMetricValue(total, unit, rateMultiplier, rateSuffix, scoreMax)}
         </span>
       </div>
     </div>

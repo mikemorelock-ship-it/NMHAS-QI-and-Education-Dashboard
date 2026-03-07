@@ -193,6 +193,7 @@ export default function PublicDashboardPage() {
                 desiredDirection={kpi.desiredDirection}
                 rateMultiplier={kpi.rateMultiplier}
                 rateSuffix={kpi.rateSuffix}
+                scoreMax={kpi.scoreMax}
                 viewMode={viewMode === "charts" ? "charts" : "metrics"}
                 spcData={kpi.spcData}
                 href={
@@ -230,6 +231,7 @@ export default function PublicDashboardPage() {
                   href={activeSlug ? `/division/${activeSlug}/metric/${metric.slug}` : undefined}
                   rateMultiplier={metric.rateMultiplier}
                   rateSuffix={metric.rateSuffix}
+                  scoreMax={metric.scoreMax}
                 />
               ))}
             </div>

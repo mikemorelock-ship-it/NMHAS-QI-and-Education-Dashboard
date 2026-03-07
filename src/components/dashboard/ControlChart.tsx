@@ -29,6 +29,7 @@ interface ControlChartProps {
   className?: string;
   rateMultiplier?: number | null;
   rateSuffix?: string | null;
+  scoreMax?: number | null;
   annotations?: QIAnnotation[];
   baselineStartPeriod?: string | null;
   baselineEndPeriod?: string | null;
@@ -72,6 +73,7 @@ function ControlChartTooltip({
   unit,
   rateMultiplier,
   rateSuffix,
+  scoreMax,
 }: {
   active?: boolean;
   payload?: Array<{
@@ -83,6 +85,7 @@ function ControlChartTooltip({
   unit: string;
   rateMultiplier?: number | null;
   rateSuffix?: string | null;
+  scoreMax?: number | null;
 }) {
   if (!active || !payload?.length) return null;
 
@@ -102,27 +105,27 @@ function ControlChartTooltip({
         <div className="flex justify-between gap-4">
           <span className="text-gray-500">Value:</span>
           <span className="font-mono font-medium" style={{ color: NMH_COLORS.teal }}>
-            {value != null ? formatMetricValue(value, unit, rateMultiplier, rateSuffix) : "--"}
+            {value != null ? formatMetricValue(value, unit, rateMultiplier, rateSuffix, scoreMax) : "--"}
           </span>
         </div>
         <div className="flex justify-between gap-4">
           <span className="text-gray-500">Center:</span>
           <span className="font-mono text-gray-600">
             {centerLine != null
-              ? formatMetricValue(centerLine, unit, rateMultiplier, rateSuffix)
+              ? formatMetricValue(centerLine, unit, rateMultiplier, rateSuffix, scoreMax)
               : "--"}
           </span>
         </div>
         <div className="flex justify-between gap-4">
           <span className="text-gray-500">UCL:</span>
           <span className="font-mono text-gray-600">
-            {ucl != null ? formatMetricValue(ucl, unit, rateMultiplier, rateSuffix) : "--"}
+            {ucl != null ? formatMetricValue(ucl, unit, rateMultiplier, rateSuffix, scoreMax) : "--"}
           </span>
         </div>
         <div className="flex justify-between gap-4">
           <span className="text-gray-500">LCL:</span>
           <span className="font-mono text-gray-600">
-            {lcl != null ? formatMetricValue(lcl, unit, rateMultiplier, rateSuffix) : "--"}
+            {lcl != null ? formatMetricValue(lcl, unit, rateMultiplier, rateSuffix, scoreMax) : "--"}
           </span>
         </div>
       </div>
@@ -182,6 +185,7 @@ export function ControlChart({
   className,
   rateMultiplier,
   rateSuffix,
+  scoreMax,
   annotations,
   baselineStartPeriod,
   baselineEndPeriod,
@@ -295,7 +299,7 @@ export function ControlChart({
               domain={[Math.floor(yMin - yPadding), Math.ceil(yMax + yPadding)]}
               tick={{ fontSize: 11, fill: tickColor }}
               tickLine={false}
-              tickFormatter={(v: number) => formatMetricValue(v, unit, rateMultiplier, rateSuffix)}
+              tickFormatter={(v: number) => formatMetricValue(v, unit, rateMultiplier, rateSuffix, scoreMax)}
             />
             <Tooltip
               content={
@@ -303,6 +307,7 @@ export function ControlChart({
                   unit={unit}
                   rateMultiplier={rateMultiplier}
                   rateSuffix={rateSuffix}
+                  scoreMax={scoreMax}
                 />
               }
             />
@@ -398,7 +403,7 @@ export function ControlChart({
           <span>
             CL:{" "}
             <strong style={{ color: NMH_COLORS.teal }}>
-              {formatMetricValue(spcData.centerLine, unit, rateMultiplier, rateSuffix)}
+              {formatMetricValue(spcData.centerLine, unit, rateMultiplier, rateSuffix, scoreMax)}
             </strong>
           </span>
         </span>
@@ -418,7 +423,7 @@ export function ControlChart({
             <span>
               Target:{" "}
               <strong style={{ color: NMH_COLORS.yellow }}>
-                {formatMetricValue(target, unit, null, rateSuffix)}
+                {formatMetricValue(target, unit, null, rateSuffix, scoreMax)}
               </strong>
             </span>
           </span>
@@ -460,13 +465,13 @@ export function ControlChart({
                 tick={{ fontSize: 10, fill: tickColor }}
                 tickLine={false}
                 tickFormatter={(v: number) =>
-                  formatMetricValue(v, unit, rateMultiplier, rateSuffix)
+                  formatMetricValue(v, unit, rateMultiplier, rateSuffix, scoreMax)
                 }
               />
               <Tooltip
                 formatter={
                   ((value: number | undefined, name: string | undefined) => [
-                    formatMetricValue(Number(value ?? 0), unit, rateMultiplier, rateSuffix),
+                    formatMetricValue(Number(value ?? 0), unit, rateMultiplier, rateSuffix, scoreMax),
                     name === "ucl" ? "UCL" : name === "centerLine" ? "CL" : "MR",
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
                   ]) as any
@@ -521,7 +526,7 @@ export function ControlChart({
         <span>
           Center Line:{" "}
           <strong className="text-foreground">
-            {formatMetricValue(spcData.centerLine, unit, rateMultiplier, rateSuffix)}
+            {formatMetricValue(spcData.centerLine, unit, rateMultiplier, rateSuffix, scoreMax)}
           </strong>
         </span>
         {activePoints.length > 0 && (
@@ -533,7 +538,8 @@ export function ControlChart({
                   activePoints[activePoints.length - 1].ucl,
                   unit,
                   rateMultiplier,
-                  rateSuffix
+                  rateSuffix,
+                  scoreMax
                 )}
               </strong>
             </span>
@@ -544,7 +550,8 @@ export function ControlChart({
                   activePoints[activePoints.length - 1].lcl,
                   unit,
                   rateMultiplier,
-                  rateSuffix
+                  rateSuffix,
+                  scoreMax
                 )}
               </strong>
             </span>

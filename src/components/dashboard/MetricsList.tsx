@@ -66,7 +66,8 @@ export function MetricsList({ kpis, divisionSlug }: MetricsListProps) {
                     kpi.currentValue,
                     kpi.unit,
                     kpi.rateMultiplier,
-                    kpi.rateSuffix
+                    kpi.rateSuffix,
+                    kpi.scoreMax
                   )}
                 </td>
                 <td className="px-4 py-3 text-right">
@@ -98,7 +99,7 @@ export function MetricsList({ kpis, divisionSlug }: MetricsListProps) {
                           : "bg-[#e04726]/10 text-[#e04726]"
                       )}
                     >
-                      {formatMetricValue(kpi.target, kpi.unit, null, kpi.rateSuffix)}
+                      {formatMetricValue(kpi.target, kpi.unit, null, kpi.rateSuffix, kpi.scoreMax)}
                     </span>
                   ) : (
                     <span className="text-muted-foreground text-xs">—</span>

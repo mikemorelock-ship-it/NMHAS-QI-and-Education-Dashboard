@@ -196,6 +196,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
           desiredDirection: (metric.desiredDirection ?? "up") as "up" | "down",
           rateMultiplier: metric.rateMultiplier ?? null,
           rateSuffix: metric.rateSuffix ?? null,
+          scoreMax: metric.scoreMax ?? null,
           spcData,
         };
       });
@@ -212,6 +213,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
           target: metric.target,
           rateMultiplier: metric.rateMultiplier ?? null,
           rateSuffix: metric.rateSuffix ?? null,
+          scoreMax: metric.scoreMax ?? null,
           data: entries.map((e) => ({ period: formatPeriod(e.periodStart), value: e.value })),
         };
       });
@@ -465,6 +467,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         desiredDirection: (metric.desiredDirection ?? "up") as "up" | "down",
         rateMultiplier: metric.rateMultiplier ?? null,
         rateSuffix: metric.rateSuffix ?? null,
+        scoreMax: metric.scoreMax ?? null,
         spcData,
       };
     });
@@ -490,6 +493,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         target: metric.target,
         rateMultiplier: metric.rateMultiplier ?? null,
         rateSuffix: metric.rateSuffix ?? null,
+        scoreMax: metric.scoreMax ?? null,
         data: aggregatedData,
       };
     });

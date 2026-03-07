@@ -106,6 +106,7 @@ export async function GET(request: NextRequest) {
               dataType: true,
               rateMultiplier: true,
               rateSuffix: true,
+              scoreMax: true,
               desiredDirection: true,
               spcSigmaLevel: true,
               baselineStart: true,
@@ -349,6 +350,7 @@ export async function GET(request: NextRequest) {
         desiredDirection: (metric.desiredDirection ?? "up") as "up" | "down",
         rateMultiplier: metric.rateMultiplier ?? null,
         rateSuffix: metric.rateSuffix ?? null,
+        scoreMax: metric.scoreMax ?? null,
         spcData,
       };
     }
@@ -389,6 +391,7 @@ export async function GET(request: NextRequest) {
         dataType: true,
         rateMultiplier: true,
         rateSuffix: true,
+        scoreMax: true,
         desiredDirection: true,
         spcSigmaLevel: true,
         baselineStart: true,
@@ -492,6 +495,7 @@ export async function GET(request: NextRequest) {
           desiredDirection: (metric.desiredDirection ?? "up") as "up" | "down",
           rateMultiplier: metric.rateMultiplier ?? null,
           rateSuffix: metric.rateSuffix ?? null,
+          scoreMax: metric.scoreMax ?? null,
           spcData,
         };
       });
