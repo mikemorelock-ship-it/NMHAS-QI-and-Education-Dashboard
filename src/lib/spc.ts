@@ -49,12 +49,18 @@ export interface SPCResult {
   /** Fixed-limit points using average denominator (for P-chart and U-chart only) */
   fixedPoints?: SPCPoint[];
   /**
-   * Whether variable control limits are statistically appropriate for this data.
-   * True when subgroup sizes (denominators) vary by more than ±25% of the
-   * average — the standard threshold from SPC best practice (Wheeler).
-   * Only relevant for P-chart and U-chart; always false for I-MR.
+   * Whether this chart type supports variable control limits at all.
+   * True for P-chart and U-chart (which always compute both variable and
+   * fixed limit points). Always false for I-MR.
    */
   supportsVariableLimits: boolean;
+  /**
+   * Whether variable limits are the recommended default view.
+   * True when subgroup sizes (denominators) vary by more than ±25% of the
+   * average — the standard threshold from SPC best practice (Wheeler).
+   * When false, the UI should default to fixed limits but still allow toggling.
+   */
+  recommendVariableLimits?: boolean;
 }
 
 export interface SPCOptions {
@@ -228,14 +234,15 @@ function calculatePChart(data: SPCDataPoint[], options: SPCOptions): SPCResult {
 
   detectSpecialCauses(fixedPoints);
 
-  const supportsVariableLimits = denominatorsVarySignificantly(data);
+  const recommendVariableLimits = denominatorsVarySignificantly(data);
 
   return {
     chartType: "p-chart",
     centerLine: round4(pBar),
     points,
     fixedPoints,
-    supportsVariableLimits,
+    supportsVariableLimits: true,
+    recommendVariableLimits,
   };
 }
 
@@ -292,14 +299,15 @@ function calculateUChart(data: SPCDataPoint[], options: SPCOptions): SPCResult {
 
   detectSpecialCauses(fixedPoints);
 
-  const supportsVariableLimits = denominatorsVarySignificantly(data);
+  const recommendVariableLimits = denominatorsVarySignificantly(data);
 
   return {
     chartType: "u-chart",
     centerLine: round4(uBar),
     points,
     fixedPoints,
-    supportsVariableLimits,
+    supportsVariableLimits: true,
+    recommendVariableLimits,
   };
 }
 

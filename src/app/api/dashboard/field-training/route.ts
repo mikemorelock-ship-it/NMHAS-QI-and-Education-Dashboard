@@ -18,8 +18,12 @@ export async function GET(request: NextRequest) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const dorWhere: Record<string, any> = {};
 
-    // Date filter from parseDateRangeFilter
-    const dateFilter = parseDateRangeFilter(range);
+    // Find the latest DOR date to anchor relative date filters
+    const latestDor = await prisma.dailyEvaluation.findFirst({
+      orderBy: { date: "desc" },
+      select: { date: true },
+    });
+    const dateFilter = parseDateRangeFilter(range, latestDor?.date ?? undefined);
     if (dateFilter.gte || dateFilter.lte) {
       dorWhere.date = {};
       if (dateFilter.gte) dorWhere.date.gte = dateFilter.gte;

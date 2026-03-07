@@ -450,18 +450,19 @@ describe("sigma levels", () => {
 // ---------------------------------------------------------------------------
 
 describe("variable vs fixed control limits", () => {
-  it("P-chart with equal denominators: supportsVariableLimits is false", () => {
+  it("P-chart with equal denominators: supports toggle, recommends fixed", () => {
     const data: SPCDataPoint[] = [
       { period: "P1", value: 90, numerator: 90, denominator: 100 },
       { period: "P2", value: 92, numerator: 92, denominator: 100 },
       { period: "P3", value: 88, numerator: 88, denominator: 100 },
     ];
     const result = calculateSPC("proportion", data);
-    expect(result.supportsVariableLimits).toBe(false);
+    expect(result.supportsVariableLimits).toBe(true);
+    expect(result.recommendVariableLimits).toBe(false);
     expect(result.fixedPoints).toBeDefined();
   });
 
-  it("P-chart with varying denominators (>25%): supportsVariableLimits is true", () => {
+  it("P-chart with varying denominators (>25%): recommends variable", () => {
     const data: SPCDataPoint[] = [
       { period: "P1", value: 90, numerator: 45, denominator: 50 },
       { period: "P2", value: 92, numerator: 184, denominator: 200 },
@@ -469,9 +470,10 @@ describe("variable vs fixed control limits", () => {
     ];
     const result = calculateSPC("proportion", data);
     expect(result.supportsVariableLimits).toBe(true);
+    expect(result.recommendVariableLimits).toBe(true);
   });
 
-  it("U-chart with varying denominators: supportsVariableLimits is true", () => {
+  it("U-chart with varying denominators: recommends variable", () => {
     const data: SPCDataPoint[] = [
       { period: "P1", value: 0.05, numerator: 5, denominator: 100 },
       { period: "P2", value: 0.1, numerator: 20, denominator: 200 },
@@ -479,6 +481,7 @@ describe("variable vs fixed control limits", () => {
     ];
     const result = calculateSPC("rate", data);
     expect(result.supportsVariableLimits).toBe(true);
+    expect(result.recommendVariableLimits).toBe(true);
   });
 
   it("I-MR: supportsVariableLimits is always false", () => {

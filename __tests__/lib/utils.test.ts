@@ -208,25 +208,62 @@ describe("parseDateRangeFilter", () => {
     expect(parseDateRangeFilter("unknown")).toEqual({});
   });
 
-  it("returns a gte date for '1mo' preset", () => {
+  it("returns a gte date for '1mo' preset (no anchor, falls back to now)", () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2025-06-15T12:00:00Z"));
 
     const result = parseDateRangeFilter("1mo");
     expect(result.gte).toBeDefined();
     expect(result.gte).toBeInstanceOf(Date);
-    // Should be around May 1, 2025 (start of month, 1 month back)
+    // Should be May 1, 2025 (start of month, 1 month back from June 1)
     expect(result.gte!.getMonth()).toBe(4); // May = 4 (0-indexed)
   });
 
-  it("returns a gte date for '3mo' preset", () => {
+  it("returns a gte date for '3mo' preset (no anchor, falls back to now)", () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2025-06-15T12:00:00Z"));
 
     const result = parseDateRangeFilter("3mo");
     expect(result.gte).toBeDefined();
-    // Should be around March 1, 2025
+    // Should be March 1, 2025
     expect(result.gte!.getMonth()).toBe(2); // March = 2
+  });
+
+  it("uses anchor date for relative filters instead of now", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-03-15T12:00:00Z"));
+
+    // Anchor = Dec 2025 (last data point)
+    const anchor = new Date("2025-12-15T00:00:00");
+
+    const result6mo = parseDateRangeFilter("6mo", anchor);
+    expect(result6mo.gte).toBeDefined();
+    // 6 months back from Dec 1 = June 1, 2025
+    expect(result6mo.gte!.getFullYear()).toBe(2025);
+    expect(result6mo.gte!.getMonth()).toBe(5); // June = 5
+
+    const result3mo = parseDateRangeFilter("3mo", anchor);
+    expect(result3mo.gte).toBeDefined();
+    // 3 months back from Dec 1 = Sep 1, 2025
+    expect(result3mo.gte!.getMonth()).toBe(8); // Sep = 8
+
+    const result1yr = parseDateRangeFilter("1yr", anchor);
+    expect(result1yr.gte).toBeDefined();
+    // 1 year back from Dec 2025 = Dec 1, 2024
+    expect(result1yr.gte!.getFullYear()).toBe(2024);
+    expect(result1yr.gte!.getMonth()).toBe(11); // Dec = 11
+  });
+
+  it("anchor does not affect calendar-based filters like ytd", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-03-15T12:00:00Z"));
+
+    const anchor = new Date("2025-12-15T00:00:00");
+    const result = parseDateRangeFilter("ytd", anchor);
+    expect(result.gte).toBeDefined();
+    // YTD should still use current year (2026), not anchor year
+    expect(result.gte!.getFullYear()).toBe(2026);
+    expect(result.gte!.getMonth()).toBe(0); // January
   });
 
   it("returns a gte date for 'ytd' preset", () => {
@@ -240,14 +277,15 @@ describe("parseDateRangeFilter", () => {
     expect(result.gte!.getDate()).toBe(1);
   });
 
-  it("returns a gte date for '1yr' preset", () => {
+  it("returns a gte date for '1yr' preset (no anchor, falls back to now)", () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2025-06-15T12:00:00Z"));
 
     const result = parseDateRangeFilter("1yr");
     expect(result.gte).toBeDefined();
-    // Should be around June 1, 2024
+    // Should be June 2024 (1 year back from June 2025)
     expect(result.gte!.getFullYear()).toBe(2024);
+    expect(result.gte!.getMonth()).toBe(5); // June = 5
   });
 
   it("parses custom range with gte and lte", () => {

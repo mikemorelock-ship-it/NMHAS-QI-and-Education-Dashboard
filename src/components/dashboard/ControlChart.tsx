@@ -180,7 +180,7 @@ export function ControlChart({
   baselineEndPeriod,
 }: ControlChartProps) {
   const [limitMode, setLimitMode] = useState<"fixed" | "variable">(
-    spcData.supportsVariableLimits ? "variable" : "fixed"
+    spcData.recommendVariableLimits ? "variable" : "fixed"
   );
 
   if (!spcData || spcData.points.length === 0) {
