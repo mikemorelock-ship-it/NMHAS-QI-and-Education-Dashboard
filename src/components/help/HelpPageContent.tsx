@@ -213,7 +213,6 @@ function ReleaseGroup({
   onToggle: () => void;
   lastSeenDate: string | null;
 }) {
-
   const featureCount = entries.filter((e) => e.category === "feature").length;
   const improvementCount = entries.filter((e) => e.category === "improvement").length;
   const fixCount = entries.filter((e) => e.category === "fix").length;
