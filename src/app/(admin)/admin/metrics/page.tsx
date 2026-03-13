@@ -12,7 +12,7 @@ export default async function MetricsPage() {
     notFound();
   }
 
-  const [metrics, departments, divisions, regions, associations] = await Promise.all([
+  const [metrics, departments, divisions, regions, associations, latestEntries] = await Promise.all([
     prisma.metricDefinition.findMany({
       orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
       include: {
@@ -42,7 +42,20 @@ export default async function MetricsPage() {
         regionId: true,
       },
     }),
+    prisma.metricEntry.groupBy({
+      by: ["metricDefinitionId"],
+      _max: { periodStart: true },
+    }),
   ]);
+
+  const latestPeriodMap = new Map<string, Date | null>(
+    latestEntries.map(
+      (e: { metricDefinitionId: string; _max: { periodStart: Date | null } }) => [
+        e.metricDefinitionId,
+        e._max.periodStart,
+      ]
+    )
+  );
 
   const metricsData = metrics.map((m) => ({
     id: m.id,
@@ -76,6 +89,7 @@ export default async function MetricsPage() {
     isActive: m.isActive,
     entriesCount: m._count.metricEntries,
     childrenCount: m._count.children,
+    latestPeriodStart: latestPeriodMap.get(m.id)?.toISOString() ?? null,
   }));
 
   // Build a map of metricId -> associations for the client

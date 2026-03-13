@@ -76,7 +76,9 @@ import {
   ArrowUpDown,
   ArrowUp,
   ArrowDown,
+  Clock,
 } from "lucide-react";
+import { isMetricUpdateDue } from "@/lib/metric-update-status";
 import {
   METRIC_UNITS,
   CHART_TYPES,
@@ -129,6 +131,7 @@ interface MetricRow {
   isActive: boolean;
   entriesCount: number;
   childrenCount: number;
+  latestPeriodStart: string | null;
 }
 
 interface DepartmentOption {
@@ -943,6 +946,19 @@ function SortableMetricRow({
                 {childCount} sub
               </Badge>
             )}
+            {metric.isActive &&
+              isMetricUpdateDue(
+                metric.periodType,
+                metric.latestPeriodStart ? new Date(metric.latestPeriodStart) : null
+              ) && (
+                <Badge
+                  variant="outline"
+                  className="text-[10px] px-1.5 py-0 border-[#fcb526] text-[#fcb526] gap-0.5"
+                >
+                  <Clock className="size-3" />
+                  Update due
+                </Badge>
+              )}
           </div>
           {metric.category && (
             <p
