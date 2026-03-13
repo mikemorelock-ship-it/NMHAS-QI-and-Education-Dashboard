@@ -12,6 +12,7 @@ import {
 import type { PrefillEntry } from "@/actions/entries";
 import type { TemplateLookupData } from "@/actions/upload";
 import { UploadClient } from "@/app/(admin)/admin/upload/upload-client";
+import { DataEntryAssistant } from "@/components/data-entry-assistant/DataEntryAssistant";
 import { formatPeriod, formatMetricValue } from "@/lib/utils";
 import { PaginationControls } from "@/components/PaginationControls";
 import { PERIOD_TYPES } from "@/lib/constants";
@@ -59,6 +60,7 @@ import {
   ArrowUp,
   ArrowDown,
   ArrowUpDown,
+  Sparkles,
 } from "lucide-react";
 
 // ---------------------------------------------------------------------------
@@ -161,6 +163,7 @@ export function DataEntryClient({
   totalEntryCount,
   pagination,
   uploadLookup,
+  aiEnabled,
 }: {
   metrics: MetricOption[];
   divisions: DivisionOption[];
@@ -178,6 +181,7 @@ export function DataEntryClient({
     hasPreviousPage: boolean;
   };
   uploadLookup?: TemplateLookupData | null;
+  aiEnabled?: boolean;
 }) {
   const router = useRouter();
 
@@ -881,6 +885,12 @@ export function DataEntryClient({
               Upload CSV
             </TabsTrigger>
           )}
+          {aiEnabled && (
+            <TabsTrigger value="ai-assistant">
+              <Sparkles className="h-4 w-4 mr-1.5" />
+              AI Assistant
+            </TabsTrigger>
+          )}
         </TabsList>
 
         {/* ================================================================ */}
@@ -1482,6 +1492,39 @@ export function DataEntryClient({
         {uploadLookup && (
           <TabsContent value="upload" className="space-y-6">
             <UploadClient lookup={uploadLookup} />
+          </TabsContent>
+        )}
+
+        {/* ================================================================ */}
+        {/* AI Assistant Tab                                                  */}
+        {/* ================================================================ */}
+        {aiEnabled && (
+          <TabsContent value="ai-assistant" className="space-y-6">
+            <DataEntryAssistant
+              context={{
+                metrics: metrics.map((m) => ({
+                  id: m.id,
+                  name: m.name,
+                  departmentId: m.departmentId,
+                  dataType: m.dataType,
+                  periodType: m.periodType,
+                  unit: m.unit,
+                  numeratorLabel: m.numeratorLabel,
+                  denominatorLabel: m.denominatorLabel,
+                  rateMultiplier: m.rateMultiplier,
+                  rateSuffix: m.rateSuffix,
+                })),
+                divisions: divisions.map((d) => ({
+                  id: d.id,
+                  name: d.name,
+                })),
+                regions: regions.map((r) => ({
+                  id: r.id,
+                  name: r.name,
+                  divisionId: r.divisionId,
+                })),
+              }}
+            />
           </TabsContent>
         )}
       </Tabs>
