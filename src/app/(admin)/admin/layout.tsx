@@ -5,6 +5,7 @@ import { AdminSidebar } from "@/components/admin/AdminSidebar";
 import { SessionTimeoutWarning } from "@/components/SessionTimeoutWarning";
 import { IdleTimeout } from "@/components/IdleTimeout";
 import { prisma } from "@/lib/db";
+import { isMetricUpdateDue } from "@/lib/metric-update-status";
 import type { UserRole } from "@/lib/permissions";
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -20,6 +21,32 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       where: { status: "pending" },
     });
   }
+
+  // Count metrics that are due for updated data
+  const [activeMetrics, latestEntries] = await Promise.all([
+    prisma.metricDefinition.findMany({
+      where: { isActive: true },
+      select: { id: true, periodType: true },
+    }),
+    prisma.metricEntry.groupBy({
+      by: ["metricDefinitionId"],
+      _max: { periodStart: true },
+    }),
+  ]);
+
+  const latestPeriodMap = new Map<string, Date | null>(
+    latestEntries.map(
+      (e: { metricDefinitionId: string; _max: { periodStart: Date | null } }) => [
+        e.metricDefinitionId,
+        e._max.periodStart,
+      ]
+    )
+  );
+
+  const metricsUpdateDueCount = activeMetrics.filter(
+    (m: { id: string; periodType: string }) =>
+      isMetricUpdateDue(m.periodType, latestPeriodMap.get(m.id) ?? null)
+  ).length;
 
   // Compute session expiry from JWT iat claim (24h sessions)
   let expiresAt = Date.now() + 24 * 60 * 60 * 1000; // fallback
@@ -49,6 +76,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         userRole={session.role as UserRole}
         userName={`${session.firstName} ${session.lastName}`}
         pendingApprovals={pendingCount}
+        metricsUpdateDueCount={metricsUpdateDueCount}
       />
       <main id="main-content" className="flex-1 p-6 lg:p-8 bg-muted/30 overflow-auto">
         {children}
