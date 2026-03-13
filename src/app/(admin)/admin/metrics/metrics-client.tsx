@@ -956,7 +956,7 @@ function SortableMetricRow({
                   className="text-[10px] px-1.5 py-0 border-[#fcb526] text-[#fcb526] gap-0.5"
                 >
                   <Clock className="size-3" />
-                  Update due
+                  Update Due
                 </Badge>
               )}
           </div>
