@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect } from "react";
 import Markdown from "react-markdown";
 import {
   MessageSquare,
@@ -147,23 +147,19 @@ export function QICoachPanel({ context }: QICoachPanelProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const prevMessageCountRef = useRef(0);
 
   const suggestedQuestions = getSuggestedQuestions(context);
 
-  const scrollToBottom = useCallback(() => {
-    const container = messagesContainerRef.current;
-    if (container) {
-      container.scrollTo({
-        top: container.scrollHeight,
-        behavior: "smooth",
-      });
-    }
-  }, []);
-
+  // Only scroll when a new message is actually added (not on every render)
   useEffect(() => {
-    scrollToBottom();
-  }, [messages, scrollToBottom]);
+    if (messages.length > prevMessageCountRef.current) {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+    prevMessageCountRef.current = messages.length;
+  }, [messages]);
 
   async function handleSend(text?: string) {
     const messageText = text ?? input.trim();
@@ -332,6 +328,7 @@ export function QICoachPanel({ context }: QICoachPanelProps) {
                     )}
                   </>
                 )}
+                <div ref={messagesEndRef} />
               </div>
 
               {/* Input area */}

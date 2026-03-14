@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect } from "react";
 import Markdown from "react-markdown";
 import {
   Send,
@@ -189,22 +189,19 @@ export function DataEntryAssistant({ context }: DataEntryAssistantProps) {
     messagesSnapshot: DisplayMessage[];
   } | null>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const prevMessageCountRef = useRef(0);
 
-  const scrollToBottom = useCallback(() => {
-    const container = messagesContainerRef.current;
-    if (container) {
-      container.scrollTo({
-        top: container.scrollHeight,
-        behavior: "smooth",
-      });
-    }
-  }, []);
-
+  // Only scroll when a new message is actually added (not on every render)
   useEffect(() => {
-    scrollToBottom();
-  }, [messages, scrollToBottom]);
+    if (messages.length > prevMessageCountRef.current) {
+      // Use scrollIntoView with "nearest" to avoid moving the outer page
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+    prevMessageCountRef.current = messages.length;
+  }, [messages]);
 
   // Document file extensions
   const DOCUMENT_EXTENSIONS = new Set(["csv", "xlsx", "xls", "pdf"]);
@@ -518,6 +515,7 @@ export function DataEntryAssistant({ context }: DataEntryAssistantProps) {
             )}
           </>
         )}
+        <div ref={messagesEndRef} />
       </div>
 
       {/* Pending attachments preview */}
