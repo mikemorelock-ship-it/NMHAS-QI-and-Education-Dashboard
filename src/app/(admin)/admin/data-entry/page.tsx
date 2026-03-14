@@ -52,7 +52,7 @@ export default async function DataEntryPage({
       prisma.division.findMany({
         where: { isActive: true },
         orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
-        select: { id: true, name: true },
+        select: { id: true, name: true, departmentId: true },
       }),
       prisma.region.findMany({
         where: { isActive: true },
@@ -113,6 +113,21 @@ export default async function DataEntryPage({
     if (a.regionId) {
       associationsMap[a.metricDefinitionId].regionIds.push(a.regionId);
     }
+  }
+
+  // Fallback: for metrics with no explicit associations, derive them from
+  // the metric's departmentId — include all divisions (and their regions)
+  // that belong to the same department.
+  for (const metric of metrics) {
+    if (associationsMap[metric.id]) continue; // already has explicit associations
+
+    const deptDivisions = divisions.filter((d) => d.departmentId === metric.departmentId);
+    if (deptDivisions.length === 0) continue;
+
+    const divisionIds = deptDivisions.map((d) => d.id);
+    const regionIds = regions.filter((r) => divisionIds.includes(r.divisionId)).map((r) => r.id);
+
+    associationsMap[metric.id] = { divisionIds, regionIds };
   }
 
   const entriesData = recentEntries.map((e) => ({
