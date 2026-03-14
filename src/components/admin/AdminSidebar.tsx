@@ -206,9 +206,15 @@ interface AdminSidebarProps {
   userRole: AdminRole;
   userName: string;
   pendingApprovals?: number;
+  metricsUpdateDueCount?: number;
 }
 
-export function AdminSidebar({ userRole, userName, pendingApprovals = 0 }: AdminSidebarProps) {
+export function AdminSidebar({
+  userRole,
+  userName,
+  pendingApprovals = 0,
+  metricsUpdateDueCount = 0,
+}: AdminSidebarProps) {
   const pathname = usePathname();
 
   // Derive unseen changelog count — recalculates on navigation so it clears
@@ -268,6 +274,11 @@ export function AdminSidebar({ userRole, userName, pendingApprovals = 0 }: Admin
       >
         <item.icon className="h-4 w-4" aria-hidden="true" />
         {item.label}
+        {item.href === "/admin/metrics" && metricsUpdateDueCount > 0 && (
+          <Badge className="ml-auto bg-[#fcb526] text-white text-xs px-1.5 py-0.5 min-w-[20px] text-center">
+            {metricsUpdateDueCount}
+          </Badge>
+        )}
         {item.href === "/admin/users" && pendingApprovals > 0 && (
           <Badge className="ml-auto bg-nmh-orange text-white text-xs px-1.5 py-0.5 min-w-[20px] text-center">
             {pendingApprovals}
