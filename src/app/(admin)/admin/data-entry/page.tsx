@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { DataEntryClient } from "./data-entry-client";
 import { parsePagination } from "@/lib/pagination";
 import { getTemplateLookupData } from "@/actions/upload";
+import { isAiConfigured } from "@/lib/ai";
 
 export const dynamic = "force-dynamic";
 
@@ -27,6 +28,8 @@ export default async function DataEntryPage({
   // Parse pagination params (default 50 entries per page for data entry)
   const { page, pageSize } = parsePagination(params, { pageSize: 50 });
   const skip = (page - 1) * pageSize;
+
+  const aiEnabled = isAiConfigured();
 
   const [metrics, divisions, regions, recentEntries, associations, totalEntryCount, uploadLookup] =
     await Promise.all([
@@ -146,6 +149,7 @@ export default async function DataEntryPage({
       totalEntryCount={totalEntryCount}
       pagination={paginationMeta}
       uploadLookup={uploadLookup}
+      aiEnabled={aiEnabled}
     />
   );
 }

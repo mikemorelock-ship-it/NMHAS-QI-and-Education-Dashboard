@@ -48,6 +48,12 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: path.resolve(__dirname),
   },
+  // Allow larger server action payloads (base64 images for AI Data Entry Assistant)
+  experimental: {
+    serverActions: {
+      bodySizeLimit: "10mb",
+    },
+  },
   // Prevent bundler from trying to resolve native addons (used only in local dev)
   serverExternalPackages: ["better-sqlite3", "@prisma/adapter-better-sqlite3", "pdf-parse"],
   headers: async () => [
