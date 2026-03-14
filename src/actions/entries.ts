@@ -122,7 +122,7 @@ export async function createEntry(formData: FormData): Promise<ActionResult> {
     // Validate that the metric exists and auto-resolve departmentId
     const metricDef = await prisma.metricDefinition.findUnique({
       where: { id: data.metricDefinitionId },
-      select: { departmentId: true, name: true, dataType: true },
+      select: { departmentId: true, name: true, dataType: true, rateMultiplier: true },
     });
     if (!metricDef) {
       return { success: false, error: "Selected metric does not exist." };
@@ -130,7 +130,7 @@ export async function createEntry(formData: FormData): Promise<ActionResult> {
     // Auto-resolve departmentId from the metric definition (hidden FK)
     data.departmentId = metricDef.departmentId;
 
-    // Auto-compute value from numerator/denominator for proportion metrics
+    // Auto-compute value from numerator/denominator for proportion/rate metrics
     const num = data.numerator;
     const den = data.denominator;
     if (num != null && den != null && den > 0) {
@@ -139,6 +139,14 @@ export async function createEntry(formData: FormData): Promise<ActionResult> {
       } else if (metricDef.dataType === "rate") {
         data.value = num / den; // raw rate
       }
+    } else if (
+      metricDef.dataType === "rate" &&
+      metricDef.rateMultiplier &&
+      metricDef.rateMultiplier > 0
+    ) {
+      // Value was provided without N/D — assume it's in display units
+      // (e.g., "5.5 per 100K miles"). Convert to raw rate.
+      data.value = data.value / metricDef.rateMultiplier;
     }
 
     // Parse period start using noon UTC to avoid timezone off-by-one
@@ -238,7 +246,7 @@ export async function updateEntry(id: string, formData: FormData): Promise<Actio
     // Look up metric to check dataType for auto-compute
     const metricDef = await prisma.metricDefinition.findUnique({
       where: { id: data.metricDefinitionId },
-      select: { dataType: true },
+      select: { dataType: true, rateMultiplier: true },
     });
 
     const num = data.numerator;
@@ -249,6 +257,14 @@ export async function updateEntry(id: string, formData: FormData): Promise<Actio
       } else if (metricDef.dataType === "rate") {
         data.value = num / den;
       }
+    } else if (
+      metricDef &&
+      metricDef.dataType === "rate" &&
+      metricDef.rateMultiplier &&
+      metricDef.rateMultiplier > 0
+    ) {
+      // Value without N/D — assume display units, convert to raw
+      data.value = data.value / metricDef.rateMultiplier;
     }
 
     // Parse period start using noon UTC to avoid timezone off-by-one
@@ -396,9 +412,10 @@ export async function bulkCreateEntries(
     const metricIds = [...new Set(validatedEntries.map((e) => e.metricDefinitionId))];
     const metricDefs = await prisma.metricDefinition.findMany({
       where: { id: { in: metricIds } },
-      select: { id: true, dataType: true },
+      select: { id: true, dataType: true, rateMultiplier: true },
     });
     const metricDataTypes = new Map(metricDefs.map((m) => [m.id, m.dataType]));
+    const metricRateMultipliers = new Map(metricDefs.map((m) => [m.id, m.rateMultiplier]));
 
     // Split entries into updates (prefilled rows) and creates (new rows)
     const operations = validatedEntries.map((entry) => {
@@ -414,6 +431,14 @@ export async function bulkCreateEntries(
           computedValue = (num / den) * 100;
         } else if (dataType === "rate") {
           computedValue = num / den;
+        }
+      } else {
+        // No N/D data — for rate metrics, assume value is in display units
+        // (e.g., "5.5 per 100K") and convert to raw rate
+        const dataType = metricDataTypes.get(entry.metricDefinitionId);
+        const multiplier = metricRateMultipliers.get(entry.metricDefinitionId);
+        if (dataType === "rate" && multiplier && multiplier > 0) {
+          computedValue = computedValue / multiplier;
         }
       }
 
