@@ -79,6 +79,16 @@ export default async function DataEntryPage({
         },
       }),
       prisma.metricAssociation.findMany({
+        where: {
+          AND: [
+            {
+              OR: [{ divisionId: null }, { division: { isActive: true } }],
+            },
+            {
+              OR: [{ regionId: null }, { region: { isActive: true } }],
+            },
+          ],
+        },
         select: {
           metricDefinitionId: true,
           divisionId: true,
