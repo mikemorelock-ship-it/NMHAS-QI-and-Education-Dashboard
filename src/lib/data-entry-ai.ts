@@ -146,26 +146,67 @@ If you cannot extract any data or need clarification, respond with just text (no
 // ---------------------------------------------------------------------------
 
 const JSON_ENTRIES_REGEX = /```json-entries\s*\n([\s\S]*?)\n```/;
+const JSON_ENTRIES_OPEN_REGEX = /```json-entries\s*\n([\s\S]*)$/;
+
+/**
+ * Attempt to recover a valid JSON array from a truncated response.
+ * Tries closing open brackets/braces to salvage complete entries.
+ */
+function recoverTruncatedJson(partial: string): unknown[] | null {
+  // Strip any trailing incomplete object (after last })
+  const lastBrace = partial.lastIndexOf("}");
+  if (lastBrace === -1) return null;
+
+  let trimmed = partial.slice(0, lastBrace + 1);
+  // Close the array if it's open
+  if (!trimmed.trimEnd().endsWith("]")) {
+    trimmed = trimmed + "\n]";
+  }
+
+  try {
+    const parsed = JSON.parse(trimmed);
+    return Array.isArray(parsed) ? parsed : null;
+  } catch {
+    return null;
+  }
+}
 
 export function parseAssistantResponse(text: string, context: DataEntryContext): ParsedResponse {
   const match = text.match(JSON_ENTRIES_REGEX);
 
-  if (!match) {
-    // No JSON block — this is a clarification or conversational response
-    return { explanation: text, entries: [] };
-  }
-
-  const explanation = text.slice(0, match.index).trim();
+  let explanation: string;
   let rawEntries: unknown[];
 
-  try {
-    rawEntries = JSON.parse(match[1]);
-  } catch {
-    return {
-      explanation:
-        explanation || "I found some data but had trouble formatting it. Could you try again?",
-      entries: [],
-    };
+  if (match) {
+    explanation = text.slice(0, match.index).trim();
+    try {
+      rawEntries = JSON.parse(match[1]);
+    } catch {
+      return {
+        explanation:
+          explanation || "I found some data but had trouble formatting it. Could you try again?",
+        entries: [],
+      };
+    }
+  } else {
+    // Try to recover from a truncated response (no closing ```)
+    const openMatch = text.match(JSON_ENTRIES_OPEN_REGEX);
+    if (!openMatch) {
+      // No JSON block at all — conversational response
+      return { explanation: text, entries: [] };
+    }
+
+    explanation = text.slice(0, openMatch.index).trim();
+    const recovered = recoverTruncatedJson(openMatch[1]);
+    if (!recovered || recovered.length === 0) {
+      return {
+        explanation:
+          explanation ||
+          "The response was cut short. Please try again — I may need to process fewer entries at once.",
+        entries: [],
+      };
+    }
+    rawEntries = recovered;
   }
 
   if (!Array.isArray(rawEntries)) {

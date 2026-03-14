@@ -131,7 +131,7 @@ export async function processDataEntryMessage(
 
     const response = await client.messages.create({
       model: "claude-sonnet-4-20250514",
-      max_tokens: 4096,
+      max_tokens: 16384,
       system: systemPrompt,
       messages: apiMessages,
     });
@@ -142,10 +142,16 @@ export async function processDataEntryMessage(
     }
 
     const parsed = parseAssistantResponse(textContent.text, context);
+    const wasTruncated = response.stop_reason === "max_tokens";
 
     return {
       success: true,
-      reply: parsed.explanation,
+      reply: wasTruncated
+        ? parsed.explanation +
+          (parsed.entries.length > 0
+            ? `\n\n⚠️ The response was cut short — I recovered ${parsed.entries.length} entries but there may be more. You can ask me to continue with the remaining data.`
+            : "")
+        : parsed.explanation,
       proposedEntries: parsed.entries,
     };
   } catch (err) {
