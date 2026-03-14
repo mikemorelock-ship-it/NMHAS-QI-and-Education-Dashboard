@@ -17,9 +17,9 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { processDataEntryMessage, type AssistantMessage } from "@/actions/data-entry-assistant";
 import { parseDocument } from "@/actions/parse-document";
-import type { DataEntryContext } from "@/lib/data-entry-ai";
-import type { ProposedEntry } from "@/lib/data-entry-ai";
+import type { DataEntryContext, ProposedEntry, UnmatchedEntity } from "@/lib/data-entry-ai";
 import { ProposedEntriesReview } from "./ProposedEntriesReview";
+import { UnmatchedEntityDialog } from "./UnmatchedEntityDialog";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -83,11 +83,9 @@ function ImageThumbnail({ src, onRemove }: { src: string; onRemove?: () => void 
 
 function MessageBubble({
   message,
-  context,
   onSaved,
 }: {
   message: DisplayMessage;
-  context: DataEntryContext;
   onSaved: (msgIndex: number, count: number) => void;
   msgIndex: number;
 }) {
@@ -175,6 +173,8 @@ function MessageBubble({
 // ---------------------------------------------------------------------------
 
 export function DataEntryAssistant({ context }: DataEntryAssistantProps) {
+  // Local copy of context that gets updated when new entities are created inline
+  const [localContext, setLocalContext] = useState<DataEntryContext>(context);
   const [messages, setMessages] = useState<DisplayMessage[]>([]);
   const [input, setInput] = useState("");
   const [pendingImages, setPendingImages] = useState<string[]>([]);
@@ -182,6 +182,12 @@ export function DataEntryAssistant({ context }: DataEntryAssistantProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [isParsingFile, setIsParsingFile] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [pendingResolution, setPendingResolution] = useState<{
+    entries: ProposedEntry[];
+    unmatched: UnmatchedEntity[];
+    reply: string;
+    messagesSnapshot: DisplayMessage[];
+  } | null>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -347,22 +353,62 @@ export function DataEntryAssistant({ context }: DataEntryAssistantProps) {
       proposedEntries: m.proposedEntries,
     }));
 
-    const result = await processDataEntryMessage(actionMessages, context);
+    const result = await processDataEntryMessage(actionMessages, localContext);
 
     if (result.success) {
-      setMessages([
-        ...newMessages,
-        {
-          role: "assistant",
-          content: result.reply,
-          proposedEntries: result.proposedEntries.length > 0 ? result.proposedEntries : undefined,
-        },
-      ]);
+      if (result.unmatchedEntities.length > 0 && result.proposedEntries.length > 0) {
+        // Show resolution dialog before adding entries to the conversation
+        setPendingResolution({
+          entries: result.proposedEntries,
+          unmatched: result.unmatchedEntities,
+          reply: result.reply,
+          messagesSnapshot: newMessages,
+        });
+      } else {
+        setMessages([
+          ...newMessages,
+          {
+            role: "assistant",
+            content: result.reply,
+            proposedEntries: result.proposedEntries.length > 0 ? result.proposedEntries : undefined,
+          },
+        ]);
+      }
     } else {
       setError(result.error);
     }
 
     setIsLoading(false);
+  }
+
+  // Handle resolution of unmatched entities
+  function handleResolved(resolvedEntries: ProposedEntry[], updatedContext: DataEntryContext) {
+    if (!pendingResolution) return;
+    setLocalContext(updatedContext);
+    setMessages([
+      ...pendingResolution.messagesSnapshot,
+      {
+        role: "assistant",
+        content: pendingResolution.reply,
+        proposedEntries: resolvedEntries.length > 0 ? resolvedEntries : undefined,
+      },
+    ]);
+    setPendingResolution(null);
+  }
+
+  function handleResolutionCancel() {
+    if (!pendingResolution) return;
+    // Add entries as-is (unresolved names will show as dept-level)
+    setMessages([
+      ...pendingResolution.messagesSnapshot,
+      {
+        role: "assistant",
+        content: pendingResolution.reply,
+        proposedEntries:
+          pendingResolution.entries.length > 0 ? pendingResolution.entries : undefined,
+      },
+    ]);
+    setPendingResolution(null);
   }
 
   // Handle keyboard shortcuts
@@ -380,6 +426,7 @@ export function DataEntryAssistant({ context }: DataEntryAssistantProps) {
     setInput("");
     setPendingImages([]);
     setPendingDocuments([]);
+    setPendingResolution(null);
   }
 
   // Handle save callback from ProposedEntriesReview
@@ -454,13 +501,7 @@ export function DataEntryAssistant({ context }: DataEntryAssistantProps) {
         ) : (
           <>
             {messages.map((msg, i) => (
-              <MessageBubble
-                key={i}
-                message={msg}
-                context={context}
-                onSaved={handleEntrySaved}
-                msgIndex={i}
-              />
+              <MessageBubble key={i} message={msg} onSaved={handleEntrySaved} msgIndex={i} />
             ))}
             {isLoading && (
               <div className="flex justify-start">
@@ -571,6 +612,18 @@ export function DataEntryAssistant({ context }: DataEntryAssistantProps) {
           Powered by Claude AI. Always review proposed entries before saving.
         </p>
       </div>
+
+      {/* Unmatched entity resolution dialog */}
+      {pendingResolution && (
+        <UnmatchedEntityDialog
+          open={true}
+          unmatched={pendingResolution.unmatched}
+          entries={pendingResolution.entries}
+          context={localContext}
+          onResolved={handleResolved}
+          onCancel={handleResolutionCancel}
+        />
+      )}
     </div>
   );
 }

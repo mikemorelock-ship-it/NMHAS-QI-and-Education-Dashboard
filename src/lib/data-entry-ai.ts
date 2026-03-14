@@ -57,9 +57,19 @@ export interface ProposedEntry {
   confidence: "high" | "medium" | "low";
 }
 
+export interface UnmatchedEntity {
+  /** The raw name string from the AI (e.g., "St. Cloud", "Metro ALS") */
+  originalName: string;
+  /** Whether this is an unmatched division or region */
+  entityType: "division" | "region";
+  /** Indices into the entries array that reference this unmatched name */
+  affectedEntryIndices: number[];
+}
+
 export interface ParsedResponse {
   explanation: string;
   entries: ProposedEntry[];
+  unmatchedEntities: UnmatchedEntity[];
 }
 
 // ---------------------------------------------------------------------------
@@ -186,6 +196,7 @@ export function parseAssistantResponse(text: string, context: DataEntryContext):
         explanation:
           explanation || "I found some data but had trouble formatting it. Could you try again?",
         entries: [],
+        unmatchedEntities: [],
       };
     }
   } else {
@@ -193,7 +204,7 @@ export function parseAssistantResponse(text: string, context: DataEntryContext):
     const openMatch = text.match(JSON_ENTRIES_OPEN_REGEX);
     if (!openMatch) {
       // No JSON block at all — conversational response
-      return { explanation: text, entries: [] };
+      return { explanation: text, entries: [], unmatchedEntities: [] };
     }
 
     explanation = text.slice(0, openMatch.index).trim();
@@ -204,13 +215,14 @@ export function parseAssistantResponse(text: string, context: DataEntryContext):
           explanation ||
           "The response was cut short. Please try again — I may need to process fewer entries at once.",
         entries: [],
+        unmatchedEntities: [],
       };
     }
     rawEntries = recovered;
   }
 
   if (!Array.isArray(rawEntries)) {
-    return { explanation: explanation || text, entries: [] };
+    return { explanation: explanation || text, entries: [], unmatchedEntities: [] };
   }
 
   // Build lookup sets for validation
@@ -218,6 +230,17 @@ export function parseAssistantResponse(text: string, context: DataEntryContext):
   const divisionIds = new Set(context.divisions.map((d) => d.id));
   const regionIds = new Set(context.regions.map((r) => r.id));
   const metricMap = new Map(context.metrics.map((m) => [m.id, m]));
+
+  // Build case-insensitive name-to-ID maps for auto-resolution
+  const divisionNameMap = new Map(
+    context.divisions.map((d) => [d.name.toLowerCase().trim(), d.id])
+  );
+  const regionNameMap = new Map(context.regions.map((r) => [r.name.toLowerCase().trim(), r.id]));
+  const divisionIdToName = new Map(context.divisions.map((d) => [d.id, d.name]));
+  const regionIdToName = new Map(context.regions.map((r) => [r.id, r.name]));
+
+  // Track unmatched entities (deduped by entityType + lowercased name)
+  const unmatchedMap = new Map<string, UnmatchedEntity>();
 
   const entries: ProposedEntry[] = [];
 
@@ -229,14 +252,62 @@ export function parseAssistantResponse(text: string, context: DataEntryContext):
     if (!metricIds.has(metricId)) continue; // skip invalid metric IDs
 
     const metric = metricMap.get(metricId)!;
+    const entryIndex = entries.length;
 
-    // Validate division/region IDs if provided
-    const divisionId =
-      entry.divisionId && divisionIds.has(String(entry.divisionId))
-        ? String(entry.divisionId)
-        : null;
-    const regionId =
-      entry.regionId && regionIds.has(String(entry.regionId)) ? String(entry.regionId) : null;
+    // Validate and auto-resolve division ID
+    let divisionId: string | null = null;
+    let divisionName: string | null = entry.divisionName ? String(entry.divisionName) : null;
+
+    if (entry.divisionId && divisionIds.has(String(entry.divisionId))) {
+      // ID is valid
+      divisionId = String(entry.divisionId);
+      divisionName = divisionName ?? divisionIdToName.get(divisionId) ?? null;
+    } else if (divisionName) {
+      // ID is invalid or missing — try auto-resolve by name
+      const resolved = divisionNameMap.get(divisionName.toLowerCase().trim());
+      if (resolved) {
+        divisionId = resolved;
+      } else {
+        // Track as unmatched
+        const key = `division::${divisionName.toLowerCase().trim()}`;
+        const existing = unmatchedMap.get(key);
+        if (existing) {
+          existing.affectedEntryIndices.push(entryIndex);
+        } else {
+          unmatchedMap.set(key, {
+            originalName: divisionName,
+            entityType: "division",
+            affectedEntryIndices: [entryIndex],
+          });
+        }
+      }
+    }
+
+    // Validate and auto-resolve region ID
+    let regionId: string | null = null;
+    let regionName: string | null = entry.regionName ? String(entry.regionName) : null;
+
+    if (entry.regionId && regionIds.has(String(entry.regionId))) {
+      regionId = String(entry.regionId);
+      regionName = regionName ?? regionIdToName.get(regionId) ?? null;
+    } else if (regionName) {
+      const resolved = regionNameMap.get(regionName.toLowerCase().trim());
+      if (resolved) {
+        regionId = resolved;
+      } else {
+        const key = `region::${regionName.toLowerCase().trim()}`;
+        const existing = unmatchedMap.get(key);
+        if (existing) {
+          existing.affectedEntryIndices.push(entryIndex);
+        } else {
+          unmatchedMap.set(key, {
+            originalName: regionName,
+            entityType: "region",
+            affectedEntryIndices: [entryIndex],
+          });
+        }
+      }
+    }
 
     const confidence = ["high", "medium", "low"].includes(String(entry.confidence ?? ""))
       ? (String(entry.confidence) as "high" | "medium" | "low")
@@ -247,9 +318,9 @@ export function parseAssistantResponse(text: string, context: DataEntryContext):
       metricName: String(entry.metricName ?? metric.name),
       departmentId: metric.departmentId,
       divisionId,
-      divisionName: entry.divisionName ? String(entry.divisionName) : null,
+      divisionName,
       regionId,
-      regionName: entry.regionName ? String(entry.regionName) : null,
+      regionName,
       periodType: String(entry.periodType ?? metric.periodType),
       periodStart: String(entry.periodStart ?? ""),
       value: Number(entry.value ?? 0),
@@ -265,5 +336,6 @@ export function parseAssistantResponse(text: string, context: DataEntryContext):
       explanation ||
       `I found ${entries.length} metric ${entries.length === 1 ? "entry" : "entries"} to enter.`,
     entries,
+    unmatchedEntities: Array.from(unmatchedMap.values()),
   };
 }
