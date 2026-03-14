@@ -1720,7 +1720,7 @@ export function DataEntryClient({
                       className="flex items-center hover:text-foreground transition-colors"
                       onClick={() => toggleSort("createdAt")}
                     >
-                      Entered <SortIcon col="createdAt" />
+                      Updated <SortIcon col="createdAt" />
                     </button>
                   </TableHead>
                   <TableHead>
