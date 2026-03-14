@@ -83,6 +83,7 @@ interface MetricOption {
 interface DivisionOption {
   id: string;
   name: string;
+  departmentId: string;
 }
 
 interface RegionOption {
@@ -193,7 +194,57 @@ export function DataEntryClient({
   const [periodStart, setPeriodStart] = useState<string>("");
   const [filterDivision, setFilterDivision] = useState<string>("");
   const [filterRegion, setFilterRegion] = useState<string>("");
-  const [singleRows, setSingleRows] = useState<SingleEntryRow[]>([]);
+  const [singleRows, setSingleRows] = useState<SingleEntryRow[]>(() => {
+    // Initialize rows for prefilled metric
+    if (!prefill?.metricId) return [];
+    const assoc = associationsMap[prefill.metricId];
+    if (!assoc) return [];
+    const dMap = new Map(divisions.map((d) => [d.id, d.name]));
+    const rMap = new Map(regions.map((r) => [r.id, r]));
+    const rows: SingleEntryRow[] = [];
+    if (assoc.regionIds.length > 0) {
+      for (const regionId of assoc.regionIds) {
+        const region = rMap.get(regionId);
+        if (!region) continue;
+        rows.push({
+          key: `r-${regionId}`,
+          divisionId: region.divisionId,
+          divisionName: dMap.get(region.divisionId) ?? "",
+          regionId,
+          regionName: region.name,
+          value: "",
+          numerator: "",
+          denominator: "",
+          notes: "",
+        });
+      }
+    }
+    if (assoc.divisionIds.length > 0) {
+      const divisionsWithRegions = new Set(
+        assoc.regionIds.map((rid) => rMap.get(rid)?.divisionId).filter(Boolean)
+      );
+      for (const divisionId of assoc.divisionIds) {
+        if (divisionsWithRegions.has(divisionId)) continue;
+        rows.push({
+          key: `d-${divisionId}`,
+          divisionId,
+          divisionName: dMap.get(divisionId) ?? "",
+          regionId: null,
+          regionName: "",
+          value: "",
+          numerator: "",
+          denominator: "",
+          notes: "",
+        });
+      }
+    }
+    rows.sort((a, b) => {
+      const divCmp = a.divisionName.localeCompare(b.divisionName);
+      if (divCmp !== 0) return divCmp;
+      return a.regionName.localeCompare(b.regionName);
+    });
+    return rows;
+  });
   const [isPending, startTransition] = useTransition();
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
