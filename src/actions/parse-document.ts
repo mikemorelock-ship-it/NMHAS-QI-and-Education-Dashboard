@@ -71,28 +71,32 @@ async function parsePdf(buffer: Buffer): Promise<string> {
 }
 
 function parseExcel(buffer: Buffer): string {
-  const workbook = XLSX.read(buffer, { type: "buffer" });
+  const workbook = XLSX.read(buffer, { type: "buffer", cellDates: true });
   const sheets: string[] = [];
 
   for (const sheetName of workbook.SheetNames) {
     const sheet = workbook.Sheets[sheetName];
-    const data = XLSX.utils.sheet_to_csv(sheet, { blankrows: false });
+    if (!sheet["!ref"]) continue; // skip truly empty sheets
 
-    if (!data.trim()) continue;
-
-    // Parse the CSV output into a readable table
-    const result = Papa.parse(data, { header: true, skipEmptyLines: true });
-    const rows = result.data as Record<string, unknown>[];
+    // Use raw row-based output (no header assumption) so we don't lose
+    // data when the first row isn't a clean header (merged cells, title
+    // rows, metadata above the table, etc.)
+    const rows = XLSX.utils.sheet_to_json<string[]>(sheet, {
+      header: 1, // array-of-arrays, no header inference
+      blankrows: false,
+      defval: "",
+    });
 
     if (rows.length === 0) continue;
 
-    const headers = Object.keys(rows[0]);
+    // Find the widest row to normalise column count
+    const colCount = Math.max(...rows.map((r) => r.length));
+
     const lines = [`## Sheet: ${sheetName}`, ""];
-    lines.push(headers.join(" | "));
-    lines.push(headers.map(() => "---").join(" | "));
 
     for (const row of rows.slice(0, 500)) {
-      lines.push(headers.map((h) => String(row[h] ?? "")).join(" | "));
+      const cells = Array.from({ length: colCount }, (_, i) => String(row[i] ?? ""));
+      lines.push(cells.join(" | "));
     }
 
     if (rows.length > 500) {
