@@ -212,9 +212,13 @@ export function DataEntryAssistant({ context }: DataEntryAssistantProps) {
   // Handle file selection (images + documents)
   async function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const files = e.target.files;
-    if (!files) return;
+    if (!files || files.length === 0) return;
 
-    for (const file of Array.from(files)) {
+    // Snapshot the file list before any async work (the input resets after)
+    const fileList = Array.from(files);
+    e.target.value = "";
+
+    for (const file of fileList) {
       if (file.size > 10 * 1024 * 1024) {
         setError("File must be under 10MB.");
         continue;
@@ -241,6 +245,8 @@ export function DataEntryAssistant({ context }: DataEntryAssistantProps) {
           } else {
             setError(result.error);
           }
+        } catch {
+          setError(`Failed to process "${file.name}". Please try again.`);
         } finally {
           setIsParsingFile(false);
         }
@@ -252,11 +258,12 @@ export function DataEntryAssistant({ context }: DataEntryAssistantProps) {
           }
         };
         reader.readAsDataURL(file);
+      } else {
+        setError(
+          `Unsupported file type: "${file.name}". Supported: images, PDF, Excel (.xlsx/.xls), CSV.`
+        );
       }
     }
-
-    // Reset the input so the same file can be selected again
-    e.target.value = "";
   }
 
   // Handle paste (for clipboard screenshots)
