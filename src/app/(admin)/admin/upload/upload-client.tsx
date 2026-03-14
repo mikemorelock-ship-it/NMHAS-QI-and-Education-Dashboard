@@ -505,65 +505,122 @@ export function UploadClient({ lookup }: { lookup: TemplateLookupData }) {
   // File handling
   // -------------------------------------------------------------------------
 
-  const handleFile = useCallback((file: File) => {
-    setParseError(null);
+  const handleFile = useCallback(
+    (file: File) => {
+      setParseError(null);
 
-    if (file.size > 5 * 1024 * 1024) {
-      setParseError("File too large. Maximum size is 5 MB.");
-      return;
-    }
+      if (file.size > 5 * 1024 * 1024) {
+        setParseError("File too large. Maximum size is 5 MB.");
+        return;
+      }
 
-    const ext = file.name.split(".").pop()?.toLowerCase();
-    if (!["csv", "tsv", "txt"].includes(ext ?? "")) {
-      setParseError("Unsupported file type. Please upload a .csv, .tsv, or .txt file.");
-      return;
-    }
+      const ext = file.name.split(".").pop()?.toLowerCase();
+      if (!["csv", "tsv", "txt"].includes(ext ?? "")) {
+        setParseError("Unsupported file type. Please upload a .csv, .tsv, or .txt file.");
+        return;
+      }
 
-    setFileName(file.name);
-    setFileSize(file.size);
+      setFileName(file.name);
+      setFileSize(file.size);
 
-    Papa.parse(file, {
-      header: false,
-      skipEmptyLines: true,
-      complete: (results) => {
-        const data = results.data as string[][];
-        if (data.length < 2) {
-          setParseError("File appears empty or has only headers. Need at least one data row.");
-          return;
-        }
+      Papa.parse(file, {
+        header: false,
+        skipEmptyLines: true,
+        complete: (results) => {
+          const data = results.data as string[][];
+          if (data.length < 2) {
+            setParseError("File appears empty or has only headers. Need at least one data row.");
+            return;
+          }
 
-        const headers = data[0];
-        const rows = data.slice(1);
+          const headers = data[0];
+          const rows = data.slice(1);
 
-        if (rows.length > 10_000) {
-          setParseError(`Too many rows (${rows.length}). Maximum is 10,000 per upload.`);
-          return;
-        }
+          if (rows.length > 10_000) {
+            setParseError(`Too many rows (${rows.length}). Maximum is 10,000 per upload.`);
+            return;
+          }
 
-        setRawHeaders(headers);
-        setRawRows(rows);
+          setRawHeaders(headers);
+          setRawRows(rows);
 
-        // Auto-detect column mappings
-        const autoMapping: ColumnMapping = {
-          metric: autoDetectColumn(headers, "metric"),
-          period: autoDetectColumn(headers, "period"),
-          value: autoDetectColumn(headers, "value"),
-          numerator: autoDetectColumn(headers, "numerator"),
-          denominator: autoDetectColumn(headers, "denominator"),
-          department: autoDetectColumn(headers, "department"),
-          division: autoDetectColumn(headers, "division"),
-          region: autoDetectColumn(headers, "region"),
-          notes: autoDetectColumn(headers, "notes"),
-        };
-        setMapping(autoMapping);
+          // Auto-detect column mappings
+          const autoMapping: ColumnMapping = {
+            metric: autoDetectColumn(headers, "metric"),
+            period: autoDetectColumn(headers, "period"),
+            value: autoDetectColumn(headers, "value"),
+            numerator: autoDetectColumn(headers, "numerator"),
+            denominator: autoDetectColumn(headers, "denominator"),
+            department: autoDetectColumn(headers, "department"),
+            division: autoDetectColumn(headers, "division"),
+            region: autoDetectColumn(headers, "region"),
+            notes: autoDetectColumn(headers, "notes"),
+          };
 
-        setStep("preview");
-      },
-      error: (err) => {
-        setParseError(`Failed to parse file: ${err.message}`);
-      },
-    });
-  }, []);
+          // If numerator/denominator weren't auto-detected by generic hints,
+          // try matching against metric definitions' custom labels (e.g.,
+          // "Avoidable Crashes" for numerator, "Miles Driven" for denominator).
+          // This handles CSVs generated from templates that use custom labels.
+          if (!autoMapping.numerator || !autoMapping.denominator) {
+            const lowerHeaders = headers.map((h) => h.toLowerCase().trim());
+
+            // Identify which metrics appear in the CSV to narrow label matching
+            const metricColIdx = headers.indexOf(autoMapping.metric);
+            let candidateMetrics = lookup.metrics;
+
+            if (metricColIdx >= 0) {
+              const uniqueMetricNames = new Set(
+                rows.map((r) => r[metricColIdx]?.trim()).filter(Boolean)
+              );
+              if (uniqueMetricNames.size > 0) {
+                const matched = lookup.metrics.filter((m) =>
+                  Array.from(uniqueMetricNames).some(
+                    (name) => name.toLowerCase() === m.name.toLowerCase()
+                  )
+                );
+                if (matched.length > 0) candidateMetrics = matched;
+              }
+            }
+
+            // Collect numerator/denominator labels from candidate metrics
+            const numLabels = new Set<string>();
+            const denLabels = new Set<string>();
+            for (const m of candidateMetrics) {
+              if (m.numeratorLabel) numLabels.add(m.numeratorLabel.toLowerCase().trim());
+              if (m.denominatorLabel) denLabels.add(m.denominatorLabel.toLowerCase().trim());
+            }
+
+            if (!autoMapping.numerator) {
+              for (const label of numLabels) {
+                const idx = lowerHeaders.findIndex((h) => h === label || h.includes(label));
+                if (idx !== -1) {
+                  autoMapping.numerator = headers[idx];
+                  break;
+                }
+              }
+            }
+            if (!autoMapping.denominator) {
+              for (const label of denLabels) {
+                const idx = lowerHeaders.findIndex((h) => h === label || h.includes(label));
+                if (idx !== -1) {
+                  autoMapping.denominator = headers[idx];
+                  break;
+                }
+              }
+            }
+          }
+
+          setMapping(autoMapping);
+
+          setStep("preview");
+        },
+        error: (err) => {
+          setParseError(`Failed to parse file: ${err.message}`);
+        },
+      });
+    },
+    [lookup.metrics]
+  );
 
   const handleDrop = useCallback(
     (e: React.DragEvent) => {
@@ -663,14 +720,12 @@ export function UploadClient({ lookup }: { lookup: TemplateLookupData }) {
           continue;
         }
 
-        // Calculate value from components
-        if (metricDef?.dataType === "rate" && metricDef.rateMultiplier) {
-          value = (numerator / denominator) * metricDef.rateMultiplier;
-        } else if (metricDef?.dataType === "proportion") {
-          // Proportion: convert to percentage (matching manual entry behavior)
+        // Calculate value from components — store as raw rate (display
+        // multiplier is applied later by formatMetricValue)
+        if (metricDef?.dataType === "proportion") {
           value = (numerator / denominator) * 100;
         } else {
-          // Rate without multiplier: raw ratio
+          // Rate (with or without multiplier) and other types: raw ratio
           value = numerator / denominator;
         }
       } else {
@@ -692,6 +747,16 @@ export function UploadClient({ lookup }: { lookup: TemplateLookupData }) {
             });
           }
           continue;
+        }
+
+        // Value without N/D for rate metrics is assumed to be in display
+        // units (e.g., "5.5" meaning 5.5 per 100K). Convert to raw rate.
+        if (
+          metricDef?.dataType === "rate" &&
+          metricDef.rateMultiplier &&
+          metricDef.rateMultiplier > 0
+        ) {
+          value = value / metricDef.rateMultiplier;
         }
       }
 
