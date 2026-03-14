@@ -7,7 +7,9 @@ import {
   parseAssistantResponse,
   type DataEntryContext,
   type ProposedEntry,
+  type UnmatchedEntity,
 } from "@/lib/data-entry-ai";
+import { prisma } from "@/lib/db";
 import type Anthropic from "@anthropic-ai/sdk";
 type ImageMediaType = "image/jpeg" | "image/png" | "image/gif" | "image/webp";
 
@@ -29,6 +31,7 @@ type AssistantResult =
       success: true;
       reply: string;
       proposedEntries: ProposedEntry[];
+      unmatchedEntities: UnmatchedEntity[];
     }
   | { success: false; error: string };
 
@@ -131,7 +134,7 @@ export async function processDataEntryMessage(
 
     const response = await client.messages.create({
       model: "claude-sonnet-4-20250514",
-      max_tokens: 4096,
+      max_tokens: 16384,
       system: systemPrompt,
       messages: apiMessages,
     });
@@ -142,11 +145,18 @@ export async function processDataEntryMessage(
     }
 
     const parsed = parseAssistantResponse(textContent.text, context);
+    const wasTruncated = response.stop_reason === "max_tokens";
 
     return {
       success: true,
-      reply: parsed.explanation,
+      reply: wasTruncated
+        ? parsed.explanation +
+          (parsed.entries.length > 0
+            ? `\n\n⚠️ The response was cut short — I recovered ${parsed.entries.length} entries but there may be more. You can ask me to continue with the remaining data.`
+            : "")
+        : parsed.explanation,
       proposedEntries: parsed.entries,
+      unmatchedEntities: parsed.unmatchedEntities,
     };
   } catch (err) {
     console.error("[Data Entry Assistant] Error:", err);
@@ -154,5 +164,64 @@ export async function processDataEntryMessage(
       success: false,
       error: "Failed to get a response from the Data Entry Assistant. Please try again.",
     };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Inline entity creation
+// ---------------------------------------------------------------------------
+
+export async function createRegionInline(
+  name: string,
+  divisionId: string
+): Promise<
+  | { success: true; region: { id: string; name: string; divisionId: string } }
+  | { success: false; error: string }
+> {
+  let session;
+  try {
+    session = await requireAdmin("manage_departments");
+  } catch {
+    return { success: false, error: "Insufficient permissions." };
+  }
+
+  if (!name.trim()) {
+    return { success: false, error: "Region name is required." };
+  }
+
+  try {
+    const division = await prisma.division.findUnique({
+      where: { id: divisionId },
+      select: { id: true, name: true },
+    });
+    if (!division) {
+      return { success: false, error: "Selected division does not exist." };
+    }
+
+    const region = await prisma.region.create({
+      data: {
+        name: name.trim(),
+        divisionId,
+      },
+    });
+
+    await prisma.auditLog.create({
+      data: {
+        action: "CREATE",
+        entity: "Region",
+        entityId: region.id,
+        details: `Created region "${name.trim()}" in division "${division.name}" (via Data Entry Assistant)`,
+        actorId: session.userId,
+        actorType: "admin",
+      },
+    });
+
+    return {
+      success: true,
+      region: { id: region.id, name: region.name, divisionId: region.divisionId },
+    };
+  } catch (err) {
+    console.error("[createRegionInline] Error:", err);
+    return { success: false, error: "Failed to create region." };
   }
 }

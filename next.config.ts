@@ -55,7 +55,7 @@ const nextConfig: NextConfig = {
     },
   },
   // Prevent bundler from trying to resolve native addons (used only in local dev)
-  serverExternalPackages: ["better-sqlite3", "@prisma/adapter-better-sqlite3", "pdf-parse"],
+  serverExternalPackages: ["better-sqlite3", "@prisma/adapter-better-sqlite3", "pdf-parse", "xlsx"],
   headers: async () => [
     {
       // Apply security headers to all routes

@@ -62,7 +62,7 @@ export default async function DataEntryPage({
       prisma.metricEntry.findMany({
         skip,
         take: pageSize,
-        orderBy: { createdAt: "desc" },
+        orderBy: { updatedAt: "desc" },
         include: {
           metricDefinition: {
             select: {
@@ -124,7 +124,7 @@ export default async function DataEntryPage({
     numerator: e.numerator,
     denominator: e.denominator,
     notes: e.notes,
-    createdAt: e.createdAt.toISOString(),
+    createdAt: e.updatedAt.toISOString(),
     createdByName: e.createdBy ? `${e.createdBy.firstName} ${e.createdBy.lastName}` : null,
   }));
 

@@ -392,13 +392,35 @@ export async function bulkCreateEntries(
   }
 
   try {
+    // Look up metric dataTypes so we can auto-compute value from numerator/denominator
+    const metricIds = [...new Set(validatedEntries.map((e) => e.metricDefinitionId))];
+    const metricDefs = await prisma.metricDefinition.findMany({
+      where: { id: { in: metricIds } },
+      select: { id: true, dataType: true },
+    });
+    const metricDataTypes = new Map(metricDefs.map((m) => [m.id, m.dataType]));
+
     // Split entries into updates (prefilled rows) and creates (new rows)
     const operations = validatedEntries.map((entry) => {
       const periodDate = parsePeriodDate(entry.periodStart) ?? new Date(entry.periodStart);
+
+      // Auto-compute value from numerator/denominator for proportion/rate metrics
+      let computedValue = entry.value;
+      const num = entry.numerator ?? null;
+      const den = entry.denominator ?? null;
+      if (num != null && den != null && den > 0) {
+        const dataType = metricDataTypes.get(entry.metricDefinitionId);
+        if (dataType === "proportion") {
+          computedValue = (num / den) * 100;
+        } else if (dataType === "rate") {
+          computedValue = num / den;
+        }
+      }
+
       const data = {
-        value: entry.value,
-        numerator: entry.numerator ?? null,
-        denominator: entry.denominator ?? null,
+        value: computedValue,
+        numerator: num,
+        denominator: den,
         notes: entry.notes ?? null,
       };
 
@@ -498,6 +520,92 @@ export async function bulkDeleteEntries(ids: string[]): Promise<ActionResult> {
   } catch (err) {
     console.error("bulkDeleteEntries error:", err);
     return { success: false, error: "Failed to delete entries." };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Repair entries with stale value field (value=0 but numerator/denominator set)
+// ---------------------------------------------------------------------------
+
+export async function repairEntryValues(): Promise<ActionResult> {
+  let session;
+  try {
+    session = await requireAdmin("enter_metric_data");
+  } catch {
+    return { success: false, error: "Insufficient permissions" };
+  }
+
+  try {
+    // Find proportion/rate metrics
+    const metrics = await prisma.metricDefinition.findMany({
+      where: { dataType: { in: ["proportion", "rate"] } },
+      select: { id: true, dataType: true },
+    });
+    const metricDataTypes = new Map(metrics.map((m) => [m.id, m.dataType]));
+    const metricIds = metrics.map((m) => m.id);
+
+    // Find entries with numerator/denominator where value might be wrong
+    const entries = await prisma.metricEntry.findMany({
+      where: {
+        metricDefinitionId: { in: metricIds },
+        numerator: { not: null },
+        denominator: { not: null },
+      },
+      select: {
+        id: true,
+        metricDefinitionId: true,
+        value: true,
+        numerator: true,
+        denominator: true,
+      },
+    });
+
+    let repaired = 0;
+    const operations = [];
+
+    for (const entry of entries) {
+      const num = entry.numerator!;
+      const den = entry.denominator!;
+      if (den <= 0) continue;
+
+      const dataType = metricDataTypes.get(entry.metricDefinitionId);
+      const correctValue = dataType === "proportion" ? (num / den) * 100 : num / den;
+
+      // Only update if the stored value is wrong (compare with tolerance)
+      if (Math.abs(entry.value - correctValue) > 0.001) {
+        operations.push(
+          prisma.metricEntry.update({
+            where: { id: entry.id },
+            data: { value: correctValue },
+          })
+        );
+        repaired++;
+      }
+    }
+
+    if (operations.length > 0) {
+      await prisma.$transaction(operations);
+    }
+
+    await prisma.auditLog.create({
+      data: {
+        action: "REPAIR_VALUES",
+        entity: "MetricEntry",
+        entityId: "bulk",
+        details: `Repaired ${repaired} entries with incorrect computed values`,
+        actorId: session.userId,
+        actorType: "admin",
+      },
+    });
+
+    revalidatePath("/admin/data-entry");
+    revalidatePath("/admin");
+    revalidatePath("/");
+
+    return { success: true, count: repaired };
+  } catch (err) {
+    console.error("repairEntryValues error:", err);
+    return { success: false, error: "Failed to repair entries." };
   }
 }
 

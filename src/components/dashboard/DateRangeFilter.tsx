@@ -23,6 +23,7 @@ interface DateRangeFilterProps {
 // ---------------------------------------------------------------------------
 
 const PRESETS = [
+  { label: "Current Mo", value: "curr-month" },
   { label: "1 Mo", value: "1mo" },
   { label: "3 Mo", value: "3mo" },
   { label: "6 Mo", value: "6mo" },

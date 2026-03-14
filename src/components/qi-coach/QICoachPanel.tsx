@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect } from "react";
 import Markdown from "react-markdown";
 import {
   MessageSquare,
@@ -146,18 +146,20 @@ export function QICoachPanel({ context }: QICoachPanelProps) {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const prevMessageCountRef = useRef(0);
 
   const suggestedQuestions = getSuggestedQuestions(context);
 
-  const scrollToBottom = useCallback(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, []);
-
+  // Only scroll when a new message is actually added (not on every render)
   useEffect(() => {
-    scrollToBottom();
-  }, [messages, scrollToBottom]);
+    if (messages.length > prevMessageCountRef.current) {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+    prevMessageCountRef.current = messages.length;
+  }, [messages]);
 
   async function handleSend(text?: string) {
     const messageText = text ?? input.trim();
@@ -275,7 +277,10 @@ export function QICoachPanel({ context }: QICoachPanelProps) {
           {activeTab === "chat" && (
             <>
               {/* Messages area */}
-              <div className="flex-1 overflow-y-auto p-3 space-y-3 min-h-[200px] max-h-[380px]">
+              <div
+                ref={messagesContainerRef}
+                className="flex-1 overflow-y-auto p-3 space-y-3 min-h-[200px] max-h-[380px]"
+              >
                 {messages.length === 0 ? (
                   <div className="space-y-4 py-2">
                     <div className="text-center space-y-2">

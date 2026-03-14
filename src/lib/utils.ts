@@ -154,6 +154,8 @@ export function parseDateRangeFilter(
       return { gte: subMonths(startOfMonth(ref), 6) };
     case "1yr":
       return { gte: new Date(ref.getFullYear() - 1, ref.getMonth(), 1) };
+    case "curr-month":
+      return { gte: startOfMonth(now), lte: endOfMonth(now) };
     case "ytd":
       return { gte: new Date(now.getFullYear(), 0, 1) };
     case "prev-week": {

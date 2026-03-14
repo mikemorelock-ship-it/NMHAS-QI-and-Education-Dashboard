@@ -8,6 +8,7 @@ import {
   updateEntry,
   deleteEntry,
   fetchEntriesForPeriod,
+  repairEntryValues,
 } from "@/actions/entries";
 import type { PrefillEntry } from "@/actions/entries";
 import type { TemplateLookupData } from "@/actions/upload";
@@ -61,6 +62,7 @@ import {
   ArrowDown,
   ArrowUpDown,
   Sparkles,
+  Wrench,
 } from "lucide-react";
 
 // ---------------------------------------------------------------------------
@@ -885,12 +887,10 @@ export function DataEntryClient({
               Upload CSV
             </TabsTrigger>
           )}
-          {aiEnabled && (
-            <TabsTrigger value="ai-assistant">
-              <Sparkles className="h-4 w-4 mr-1.5" />
-              AI Assistant
-            </TabsTrigger>
-          )}
+          <TabsTrigger value="ai-assistant">
+            <Sparkles className="h-4 w-4 mr-1.5" />
+            AI Assistant
+          </TabsTrigger>
         </TabsList>
 
         {/* ================================================================ */}
@@ -1498,8 +1498,8 @@ export function DataEntryClient({
         {/* ================================================================ */}
         {/* AI Assistant Tab                                                  */}
         {/* ================================================================ */}
-        {aiEnabled && (
-          <TabsContent value="ai-assistant" className="space-y-6">
+        <TabsContent value="ai-assistant" className="space-y-6">
+          {aiEnabled ? (
             <DataEntryAssistant
               context={{
                 metrics: metrics.map((m) => ({
@@ -1525,8 +1525,20 @@ export function DataEntryClient({
                 })),
               }}
             />
-          </TabsContent>
-        )}
+          ) : (
+            <Card>
+              <CardContent className="py-10 text-center text-muted-foreground">
+                <Sparkles className="mx-auto h-8 w-8 mb-3 opacity-50" />
+                <p className="font-medium">AI Assistant is not configured</p>
+                <p className="text-sm mt-1">
+                  Set the{" "}
+                  <code className="bg-muted px-1.5 py-0.5 rounded text-xs">ANTHROPIC_API_KEY</code>{" "}
+                  environment variable and redeploy to enable this feature.
+                </p>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
       </Tabs>
 
       {/* ================================================================ */}
@@ -1536,6 +1548,25 @@ export function DataEntryClient({
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle className="text-nmh-gray">Recent Entries</CardTitle>
+            <div className="flex items-center gap-3 text-sm text-muted-foreground">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 text-xs text-muted-foreground"
+                onClick={async () => {
+                  const result = await repairEntryValues();
+                  if (result.success) {
+                    router.refresh();
+                    alert(`Repaired ${result.count ?? 0} entry values.`);
+                  } else {
+                    alert(result.error ?? "Repair failed.");
+                  }
+                }}
+              >
+                <Wrench className="h-3.5 w-3.5 mr-1" />
+                Repair Values
+              </Button>
+            </div>
             <div className="flex items-center gap-3 text-sm text-muted-foreground">
               <span>
                 Showing {displayedEntries.length}
@@ -1710,7 +1741,7 @@ export function DataEntryClient({
                       className="flex items-center hover:text-foreground transition-colors"
                       onClick={() => toggleSort("createdAt")}
                     >
-                      Entered <SortIcon col="createdAt" />
+                      Updated <SortIcon col="createdAt" />
                     </button>
                   </TableHead>
                   <TableHead>
