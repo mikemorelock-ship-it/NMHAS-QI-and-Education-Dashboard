@@ -392,13 +392,35 @@ export async function bulkCreateEntries(
   }
 
   try {
+    // Look up metric dataTypes so we can auto-compute value from numerator/denominator
+    const metricIds = [...new Set(validatedEntries.map((e) => e.metricDefinitionId))];
+    const metricDefs = await prisma.metricDefinition.findMany({
+      where: { id: { in: metricIds } },
+      select: { id: true, dataType: true },
+    });
+    const metricDataTypes = new Map(metricDefs.map((m) => [m.id, m.dataType]));
+
     // Split entries into updates (prefilled rows) and creates (new rows)
     const operations = validatedEntries.map((entry) => {
       const periodDate = parsePeriodDate(entry.periodStart) ?? new Date(entry.periodStart);
+
+      // Auto-compute value from numerator/denominator for proportion/rate metrics
+      let computedValue = entry.value;
+      const num = entry.numerator ?? null;
+      const den = entry.denominator ?? null;
+      if (num != null && den != null && den > 0) {
+        const dataType = metricDataTypes.get(entry.metricDefinitionId);
+        if (dataType === "proportion") {
+          computedValue = (num / den) * 100;
+        } else if (dataType === "rate") {
+          computedValue = num / den;
+        }
+      }
+
       const data = {
-        value: entry.value,
-        numerator: entry.numerator ?? null,
-        denominator: entry.denominator ?? null,
+        value: computedValue,
+        numerator: num,
+        denominator: den,
         notes: entry.notes ?? null,
       };
 

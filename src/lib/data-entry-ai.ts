@@ -181,6 +181,26 @@ function recoverTruncatedJson(partial: string): unknown[] | null {
   }
 }
 
+/**
+ * Auto-compute value from numerator/denominator for proportion and rate metrics.
+ * Falls back to the raw value if numerator/denominator are not available.
+ */
+function computeEntryValue(
+  rawValue: number,
+  numerator: number | null,
+  denominator: number | null,
+  dataType: string
+): number {
+  if (numerator != null && denominator != null && denominator > 0) {
+    if (dataType === "proportion") {
+      return (numerator / denominator) * 100;
+    } else if (dataType === "rate") {
+      return numerator / denominator;
+    }
+  }
+  return rawValue;
+}
+
 export function parseAssistantResponse(text: string, context: DataEntryContext): ParsedResponse {
   const match = text.match(JSON_ENTRIES_REGEX);
 
@@ -323,7 +343,12 @@ export function parseAssistantResponse(text: string, context: DataEntryContext):
       regionName,
       periodType: String(entry.periodType ?? metric.periodType),
       periodStart: String(entry.periodStart ?? ""),
-      value: Number(entry.value ?? 0),
+      value: computeEntryValue(
+        Number(entry.value ?? 0),
+        entry.numerator != null ? Number(entry.numerator) : null,
+        entry.denominator != null ? Number(entry.denominator) : null,
+        metric.dataType
+      ),
       numerator: entry.numerator != null ? Number(entry.numerator) : null,
       denominator: entry.denominator != null ? Number(entry.denominator) : null,
       notes: entry.notes ? String(entry.notes) : null,
