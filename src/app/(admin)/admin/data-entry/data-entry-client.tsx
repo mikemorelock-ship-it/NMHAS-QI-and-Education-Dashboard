@@ -885,12 +885,10 @@ export function DataEntryClient({
               Upload CSV
             </TabsTrigger>
           )}
-          {aiEnabled && (
-            <TabsTrigger value="ai-assistant">
-              <Sparkles className="h-4 w-4 mr-1.5" />
-              AI Assistant
-            </TabsTrigger>
-          )}
+          <TabsTrigger value="ai-assistant">
+            <Sparkles className="h-4 w-4 mr-1.5" />
+            AI Assistant
+          </TabsTrigger>
         </TabsList>
 
         {/* ================================================================ */}
@@ -1498,8 +1496,8 @@ export function DataEntryClient({
         {/* ================================================================ */}
         {/* AI Assistant Tab                                                  */}
         {/* ================================================================ */}
-        {aiEnabled && (
-          <TabsContent value="ai-assistant" className="space-y-6">
+        <TabsContent value="ai-assistant" className="space-y-6">
+          {aiEnabled ? (
             <DataEntryAssistant
               context={{
                 metrics: metrics.map((m) => ({
@@ -1525,8 +1523,20 @@ export function DataEntryClient({
                 })),
               }}
             />
-          </TabsContent>
-        )}
+          ) : (
+            <Card>
+              <CardContent className="py-10 text-center text-muted-foreground">
+                <Sparkles className="mx-auto h-8 w-8 mb-3 opacity-50" />
+                <p className="font-medium">AI Assistant is not configured</p>
+                <p className="text-sm mt-1">
+                  Set the{" "}
+                  <code className="bg-muted px-1.5 py-0.5 rounded text-xs">ANTHROPIC_API_KEY</code>{" "}
+                  environment variable and redeploy to enable this feature.
+                </p>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
       </Tabs>
 
       {/* ================================================================ */}
