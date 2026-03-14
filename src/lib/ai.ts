@@ -11,7 +11,8 @@ let _resolvedKey: string | null = null;
  * from overriding it with the .env value. Fall back to reading .env directly.
  */
 function resolveApiKey(): string {
-  if (_resolvedKey !== null) return _resolvedKey;
+  // Return cached key if we already found a valid one
+  if (_resolvedKey !== null && _resolvedKey.length > 0) return _resolvedKey;
 
   const envVal = process.env.ANTHROPIC_API_KEY;
   if (envVal && envVal.length > 0) {
@@ -32,8 +33,8 @@ function resolveApiKey(): string {
     // .env file not found — that's fine
   }
 
-  _resolvedKey = "";
-  return _resolvedKey;
+  // Don't cache empty result — allow re-check on next request
+  return "";
 }
 
 export function getAnthropicClient(): Anthropic {
