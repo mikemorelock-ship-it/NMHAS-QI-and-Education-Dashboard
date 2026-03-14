@@ -182,12 +182,18 @@ export function DataEntryAssistant({ context }: DataEntryAssistantProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [isParsingFile, setIsParsingFile] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const scrollToBottom = useCallback(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    const container = messagesContainerRef.current;
+    if (container) {
+      container.scrollTo({
+        top: container.scrollHeight,
+        behavior: "smooth",
+      });
+    }
   }, []);
 
   useEffect(() => {
@@ -417,7 +423,7 @@ export function DataEntryAssistant({ context }: DataEntryAssistantProps) {
       </div>
 
       {/* Messages area */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-3">
+      <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-4 space-y-3">
         {messages.length === 0 ? (
           <div className="space-y-4 py-4">
             <div className="text-center space-y-2">
@@ -471,7 +477,6 @@ export function DataEntryAssistant({ context }: DataEntryAssistantProps) {
             )}
           </>
         )}
-        <div ref={messagesEndRef} />
       </div>
 
       {/* Pending attachments preview */}
