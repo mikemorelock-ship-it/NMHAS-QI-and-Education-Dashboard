@@ -111,10 +111,11 @@ export function buildDataEntrySystemPrompt(context: DataEntryContext): string {
 4. Always return proposed entries inside a fenced JSON code block labeled \`\`\`json-entries.
 5. Before the JSON block, include a brief explanation of what you found.
 6. For proportion metrics, provide numerator and denominator — the system will compute the value automatically.
-7. For rate metrics, provide numerator and denominator — the system will compute the value automatically.
+7. For rate metrics, provide numerator (raw count) and denominator (raw exposure). For example, for "Crashes per 100,000 Miles", numerator = actual crash count, denominator = actual miles driven. If you only have the computed rate (e.g., "5.5 per 100K miles"), put 5.5 in the "value" field and leave numerator/denominator as null — the system will convert it to the correct raw rate.
 8. For continuous metrics, provide the value directly.
 9. Period format: use "YYYY-MM" for monthly periods, "YYYY-MM-DD" for daily/weekly periods.
 10. Include a "confidence" field for each entry: "high" if clearly readable, "medium" if partially unclear, "low" if you had to guess.
+11. IMPORTANT: For rate metrics, the "value" field should be in DISPLAY units (the human-readable number, e.g., 5.5 for "5.5 per 100K miles"). The system will automatically convert it to raw units for storage. Do NOT divide the value by the rate multiplier yourself.
 
 ## Available Metrics
 ${metricsList}
@@ -184,12 +185,18 @@ function recoverTruncatedJson(partial: string): unknown[] | null {
 /**
  * Auto-compute value from numerator/denominator for proportion and rate metrics.
  * Falls back to the raw value if numerator/denominator are not available.
+ *
+ * For rate metrics without numerator/denominator, the AI typically provides the
+ * value in display units (e.g., 5.5 meaning "5.5 per 100K miles"). We need to
+ * convert this to the raw rate by dividing by the rateMultiplier so it isn't
+ * multiplied again at display time.
  */
 function computeEntryValue(
   rawValue: number,
   numerator: number | null,
   denominator: number | null,
-  dataType: string
+  dataType: string,
+  rateMultiplier?: number | null
 ): number {
   if (numerator != null && denominator != null && denominator > 0) {
     if (dataType === "proportion") {
@@ -197,6 +204,12 @@ function computeEntryValue(
     } else if (dataType === "rate") {
       return numerator / denominator;
     }
+  }
+  // For rate metrics without N/D data, the value is assumed to be in display
+  // units (post-multiplier). Convert to raw units so formatMetricValue can
+  // apply the multiplier correctly at display time.
+  if (dataType === "rate" && rateMultiplier && rateMultiplier > 0) {
+    return rawValue / rateMultiplier;
   }
   return rawValue;
 }
@@ -347,7 +360,8 @@ export function parseAssistantResponse(text: string, context: DataEntryContext):
         Number(entry.value ?? 0),
         entry.numerator != null ? Number(entry.numerator) : null,
         entry.denominator != null ? Number(entry.denominator) : null,
-        metric.dataType
+        metric.dataType,
+        metric.rateMultiplier
       ),
       numerator: entry.numerator != null ? Number(entry.numerator) : null,
       denominator: entry.denominator != null ? Number(entry.denominator) : null,

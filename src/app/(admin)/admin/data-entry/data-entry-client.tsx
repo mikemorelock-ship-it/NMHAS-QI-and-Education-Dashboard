@@ -8,7 +8,6 @@ import {
   updateEntry,
   deleteEntry,
   fetchEntriesForPeriod,
-  repairEntryValues,
 } from "@/actions/entries";
 import type { PrefillEntry } from "@/actions/entries";
 import type { TemplateLookupData } from "@/actions/upload";
@@ -62,7 +61,6 @@ import {
   ArrowDown,
   ArrowUpDown,
   Sparkles,
-  Wrench,
 } from "lucide-react";
 
 // ---------------------------------------------------------------------------
@@ -1548,25 +1546,6 @@ export function DataEntryClient({
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle className="text-nmh-gray">Recent Entries</CardTitle>
-            <div className="flex items-center gap-3 text-sm text-muted-foreground">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 text-xs text-muted-foreground"
-                onClick={async () => {
-                  const result = await repairEntryValues();
-                  if (result.success) {
-                    router.refresh();
-                    alert(`Repaired ${result.count ?? 0} entry values.`);
-                  } else {
-                    alert(result.error ?? "Repair failed.");
-                  }
-                }}
-              >
-                <Wrench className="h-3.5 w-3.5 mr-1" />
-                Repair Values
-              </Button>
-            </div>
             <div className="flex items-center gap-3 text-sm text-muted-foreground">
               <span>
                 Showing {displayedEntries.length}
