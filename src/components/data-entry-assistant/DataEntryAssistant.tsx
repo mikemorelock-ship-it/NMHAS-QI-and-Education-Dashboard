@@ -180,6 +180,7 @@ export function DataEntryAssistant({ context }: DataEntryAssistantProps) {
   const [pendingImages, setPendingImages] = useState<string[]>([]);
   const [pendingDocuments, setPendingDocuments] = useState<DocumentAttachment[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isParsingFile, setIsParsingFile] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -222,21 +223,26 @@ export function DataEntryAssistant({ context }: DataEntryAssistantProps) {
       if (isDocumentFile(file)) {
         // Parse document server-side
         setError(null);
+        setIsParsingFile(true);
         const formData = new FormData();
         formData.append("file", file);
 
-        const result = await parseDocument(formData);
-        if (result.success) {
-          setPendingDocuments((prev) => [
-            ...prev,
-            {
-              fileName: result.fileName,
-              fileType: result.fileType,
-              extractedText: result.text,
-            },
-          ]);
-        } else {
-          setError(result.error);
+        try {
+          const result = await parseDocument(formData);
+          if (result.success) {
+            setPendingDocuments((prev) => [
+              ...prev,
+              {
+                fileName: result.fileName,
+                fileType: result.fileType,
+                extractedText: result.text,
+              },
+            ]);
+          } else {
+            setError(result.error);
+          }
+        } finally {
+          setIsParsingFile(false);
         }
       } else if (file.type.startsWith("image/")) {
         const reader = new FileReader();
@@ -462,7 +468,7 @@ export function DataEntryAssistant({ context }: DataEntryAssistantProps) {
       </div>
 
       {/* Pending attachments preview */}
-      {(pendingImages.length > 0 || pendingDocuments.length > 0) && (
+      {(pendingImages.length > 0 || pendingDocuments.length > 0 || isParsingFile) && (
         <div className="px-4 py-2 border-t bg-muted/30 flex gap-2 flex-wrap items-center">
           {pendingImages.map((img, i) => (
             <ImageThumbnail key={`img-${i}`} src={img} onRemove={() => removePendingImage(i)} />
@@ -489,6 +495,12 @@ export function DataEntryAssistant({ context }: DataEntryAssistantProps) {
               </button>
             </div>
           ))}
+          {isParsingFile && (
+            <div className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              Processing file…
+            </div>
+          )}
         </div>
       )}
 
@@ -510,7 +522,7 @@ export function DataEntryAssistant({ context }: DataEntryAssistantProps) {
             variant="ghost"
             size="sm"
             onClick={() => fileInputRef.current?.click()}
-            disabled={isLoading}
+            disabled={isLoading || isParsingFile}
             title="Upload an image, PDF, Excel, or CSV file"
             className="shrink-0"
           >
