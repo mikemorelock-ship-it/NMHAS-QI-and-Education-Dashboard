@@ -35,17 +35,14 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   ]);
 
   const latestPeriodMap = new Map<string, Date | null>(
-    latestEntries.map(
-      (e: { metricDefinitionId: string; _max: { periodStart: Date | null } }) => [
-        e.metricDefinitionId,
-        e._max.periodStart,
-      ]
-    )
+    latestEntries.map((e: { metricDefinitionId: string; _max: { periodStart: Date | null } }) => [
+      e.metricDefinitionId,
+      e._max.periodStart,
+    ])
   );
 
-  const metricsUpdateDueCount = activeMetrics.filter(
-    (m: { id: string; periodType: string }) =>
-      isMetricUpdateDue(m.periodType, latestPeriodMap.get(m.id) ?? null)
+  const metricsUpdateDueCount = activeMetrics.filter((m: { id: string; periodType: string }) =>
+    isMetricUpdateDue(m.periodType, latestPeriodMap.get(m.id) ?? null)
   ).length;
 
   // Compute session expiry from JWT iat claim (24h sessions)

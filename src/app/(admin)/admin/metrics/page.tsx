@@ -12,49 +12,49 @@ export default async function MetricsPage() {
     notFound();
   }
 
-  const [metrics, departments, divisions, regions, associations, latestEntries] = await Promise.all([
-    prisma.metricDefinition.findMany({
-      orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
-      include: {
-        department: { select: { id: true, name: true } },
-        parent: { select: { id: true, name: true } },
-        _count: { select: { metricEntries: true, children: true } },
-      },
-    }),
-    prisma.department.findMany({
-      orderBy: { name: "asc" },
-      select: { id: true, name: true },
-    }),
-    prisma.division.findMany({
-      where: { isActive: true },
-      orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
-      select: { id: true, name: true },
-    }),
-    prisma.region.findMany({
-      where: { isActive: true },
-      orderBy: [{ name: "asc" }],
-      select: { id: true, name: true, divisionId: true },
-    }),
-    prisma.metricAssociation.findMany({
-      select: {
-        metricDefinitionId: true,
-        divisionId: true,
-        regionId: true,
-      },
-    }),
-    prisma.metricEntry.groupBy({
-      by: ["metricDefinitionId"],
-      _max: { periodStart: true },
-    }),
-  ]);
+  const [metrics, departments, divisions, regions, associations, latestEntries] = await Promise.all(
+    [
+      prisma.metricDefinition.findMany({
+        orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
+        include: {
+          department: { select: { id: true, name: true } },
+          parent: { select: { id: true, name: true } },
+          _count: { select: { metricEntries: true, children: true } },
+        },
+      }),
+      prisma.department.findMany({
+        orderBy: { name: "asc" },
+        select: { id: true, name: true },
+      }),
+      prisma.division.findMany({
+        where: { isActive: true },
+        orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
+        select: { id: true, name: true },
+      }),
+      prisma.region.findMany({
+        where: { isActive: true },
+        orderBy: [{ name: "asc" }],
+        select: { id: true, name: true, divisionId: true },
+      }),
+      prisma.metricAssociation.findMany({
+        select: {
+          metricDefinitionId: true,
+          divisionId: true,
+          regionId: true,
+        },
+      }),
+      prisma.metricEntry.groupBy({
+        by: ["metricDefinitionId"],
+        _max: { periodStart: true },
+      }),
+    ]
+  );
 
   const latestPeriodMap = new Map<string, Date | null>(
-    latestEntries.map(
-      (e: { metricDefinitionId: string; _max: { periodStart: Date | null } }) => [
-        e.metricDefinitionId,
-        e._max.periodStart,
-      ]
-    )
+    latestEntries.map((e: { metricDefinitionId: string; _max: { periodStart: Date | null } }) => [
+      e.metricDefinitionId,
+      e._max.periodStart,
+    ])
   );
 
   const metricsData = metrics.map((m) => ({
