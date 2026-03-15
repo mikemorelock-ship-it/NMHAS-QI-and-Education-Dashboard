@@ -389,7 +389,13 @@ export function UploadClient({ lookup }: { lookup: TemplateLookupData }) {
           }
 
           if (filteredRegionIds.length > 0) {
-            for (const regionId of filteredRegionIds) {
+            // Sort region IDs by region name so they appear in natural order
+            const sortedRegionIds = [...filteredRegionIds].sort((a, b) => {
+              const nameA = lookup.regions.find((r) => r.id === a)?.name ?? "";
+              const nameB = lookup.regions.find((r) => r.id === b)?.name ?? "";
+              return nameA.localeCompare(nameB, undefined, { numeric: true });
+            });
+            for (const regionId of sortedRegionIds) {
               const region = lookup.regions.find((r) => r.id === regionId);
               const division = region
                 ? lookup.divisions.find((d) => d.id === region.divisionId)
