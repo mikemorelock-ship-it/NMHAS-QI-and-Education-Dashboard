@@ -1694,6 +1694,8 @@ async function main() {
     args: ["quality-improvement"],
   });
   if (deptResult.rows.length === 0) {
+    const allDepts = await db.execute("SELECT id, name, slug FROM Department");
+    console.log("Available departments:", allDepts.rows);
     throw new Error('Department with slug "quality-improvement" not found');
   }
   const departmentId = String(deptResult.rows[0].id);
@@ -1704,21 +1706,27 @@ async function main() {
     sql: "SELECT id FROM Category WHERE slug = ?",
     args: ["clinical-quality"],
   });
+  let clinicalCategoryId = null;
+  let safetyCategoryId = null;
   if (clinicalCatResult.rows.length === 0) {
-    throw new Error('Category with slug "clinical-quality" not found');
+    const allCats = await db.execute("SELECT id, name, slug FROM Category");
+    console.log("Available categories:", allCats.rows);
+    console.warn('WARNING: Category "clinical-quality" not found. Metrics will have no category.');
+  } else {
+    clinicalCategoryId = String(clinicalCatResult.rows[0].id);
+    console.log(`Clinical Quality category ID: ${clinicalCategoryId}`);
   }
-  const clinicalCategoryId = String(clinicalCatResult.rows[0].id);
-  console.log(`Clinical Quality category ID: ${clinicalCategoryId}`);
 
   const safetyCatResult = await db.execute({
     sql: "SELECT id FROM Category WHERE slug = ?",
     args: ["patient-safety"],
   });
   if (safetyCatResult.rows.length === 0) {
-    throw new Error('Category with slug "patient-safety" not found');
+    console.warn('WARNING: Category "patient-safety" not found. Safety metrics will have no category.');
+  } else {
+    safetyCategoryId = String(safetyCatResult.rows[0].id);
+    console.log(`Patient Safety category ID: ${safetyCategoryId}`);
   }
-  const safetyCategoryId = String(safetyCatResult.rows[0].id);
-  console.log(`Patient Safety category ID: ${safetyCategoryId}`);
 
   // 3. Insert metrics, skipping duplicates
   let inserted = 0;
