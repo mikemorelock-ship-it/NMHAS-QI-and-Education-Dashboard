@@ -31,7 +31,7 @@ console.log("Using database:", dbUrl);
 
 let adapter;
 if (dbUrl.startsWith("libsql://") || dbUrl.startsWith("https://")) {
-  const { PrismaLibSql } = await import("@prisma/adapter-libsql/web");
+  const { PrismaLibSql } = await import("@prisma/adapter-libsql");
   adapter = new PrismaLibSql({
     url: dbUrl,
     authToken: process.env.TURSO_AUTH_TOKEN,
