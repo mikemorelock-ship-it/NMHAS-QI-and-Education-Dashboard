@@ -9,7 +9,7 @@
  * Requires: npm install (to get @libsql/client from package.json)
  */
 
-const { createClient } = require("@libsql/client");
+const { createClient } = require("@libsql/client/web");
 const crypto = require("node:crypto");
 
 const db = createClient({
