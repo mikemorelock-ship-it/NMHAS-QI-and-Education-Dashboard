@@ -93,6 +93,8 @@ import {
   DESIRED_DIRECTIONS,
   DESIRED_DIRECTION_LABELS,
   defaultDesiredDirection,
+  METRIC_SOURCES,
+  METRIC_SOURCE_LABELS,
 } from "@/lib/constants";
 
 // ---------------------------------------------------------------------------
@@ -124,6 +126,7 @@ interface MetricRow {
   rateSuffix: string | null;
   scoreMax: number | null;
   desiredDirection: string;
+  source: string;
   sortOrder: number;
   description: string | null;
   dataDefinition: string | null;
@@ -177,6 +180,7 @@ export function MetricsClient({
   const [filterKpi, setFilterKpi] = useState<string>("all");
   const [filterCategory, setFilterCategory] = useState<string>("all");
   const [filterDivision, setFilterDivision] = useState<string>("all");
+  const [filterSource, setFilterSource] = useState<string>("all");
   const [collapsedParents, setCollapsedParents] = useState<Set<string>>(new Set());
   const [sortKey, setSortKey] = useState<string | null>(null);
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
@@ -256,6 +260,9 @@ export function MetricsClient({
       const divs = metricDivisionMap.get(m.id);
       return divs?.has(filterDivision) ?? false;
     });
+  }
+  if (filterSource !== "all") {
+    filtered = filtered.filter((m) => m.source === filterSource);
   }
 
   // Build hierarchical list
@@ -529,6 +536,28 @@ export function MetricsClient({
             </Badge>
           )}
         </Button>
+      </div>
+      <div className="flex items-center gap-1 mb-2">
+        <Label className="text-sm text-muted-foreground whitespace-nowrap mr-1">Source:</Label>
+        <Button
+          variant={filterSource === "all" ? "default" : "ghost"}
+          size="sm"
+          className={filterSource === "all" ? "bg-nmh-teal hover:bg-nmh-teal/90" : ""}
+          onClick={() => setFilterSource("all")}
+        >
+          All
+        </Button>
+        {METRIC_SOURCES.map((src) => (
+          <Button
+            key={src}
+            variant={filterSource === src ? "default" : "ghost"}
+            size="sm"
+            className={filterSource === src ? "bg-nmh-teal hover:bg-nmh-teal/90" : ""}
+            onClick={() => setFilterSource(src)}
+          >
+            {METRIC_SOURCE_LABELS[src]}
+          </Button>
+        ))}
       </div>
       <div className="flex items-center gap-4 flex-wrap">
         <div className="flex items-center gap-2">
@@ -939,6 +968,14 @@ function SortableMetricRow({
                 className="text-[10px] px-1.5 py-0 border-muted-foreground/40 text-muted-foreground"
               >
                 Archived
+              </Badge>
+            )}
+            {metric.source && metric.source !== "internal" && (
+              <Badge
+                variant="outline"
+                className="text-[10px] px-1.5 py-0 border-nmh-teal text-nmh-teal"
+              >
+                {METRIC_SOURCE_LABELS[metric.source] || metric.source}
               </Badge>
             )}
             {hasChildren && (
@@ -1483,7 +1520,23 @@ function MetricFormFields({
           />
         </div>
       )}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-3 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="source">Source</Label>
+          <Select name="source" defaultValue={defaultValues?.source ?? "internal"}>
+            <SelectTrigger className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {METRIC_SOURCES.map((s) => (
+                <SelectItem key={s} value={s}>
+                  {METRIC_SOURCE_LABELS[s]}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <p className="text-xs text-muted-foreground">Origin of this metric standard.</p>
+        </div>
         <div className="space-y-2">
           <Label htmlFor="category">Category</Label>
           <Input

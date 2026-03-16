@@ -38,6 +38,7 @@ const MetricDefinitionSchema = z.object({
   rateSuffix: z.string().max(100).optional().nullable(),
   scoreMax: z.coerce.number().positive().optional().nullable(),
   desiredDirection: z.enum(["up", "down"]).default("up"),
+  source: z.enum(["internal", "nemsqa", "gamut", "mn-capm"]).default("internal"),
 });
 
 // ---------------------------------------------------------------------------
@@ -81,6 +82,7 @@ function parseMetricFormData(formData: FormData) {
     rateSuffix: raw.rateSuffix || null,
     scoreMax: raw.scoreMax ? parseFloat(raw.scoreMax) : null,
     desiredDirection: raw.desiredDirection || "up",
+    source: raw.source || "internal",
   });
 }
 
@@ -166,6 +168,7 @@ export async function createMetricDefinition(
         rateSuffix: data.rateSuffix ?? null,
         scoreMax: data.scoreMax ?? null,
         desiredDirection: data.desiredDirection,
+        source: data.source,
       },
     });
 
@@ -291,6 +294,7 @@ export async function updateMetricDefinition(
         rateSuffix: data.rateSuffix ?? null,
         scoreMax: data.scoreMax ?? null,
         desiredDirection: data.desiredDirection,
+        source: data.source,
       },
     });
 
@@ -305,6 +309,7 @@ export async function updateMetricDefinition(
         unit: current.unit,
         chartType: current.chartType,
         periodType: current.periodType,
+        source: current.source,
       },
       {
         name: data.name,
@@ -316,6 +321,7 @@ export async function updateMetricDefinition(
         unit: data.unit,
         chartType: data.chartType,
         periodType: data.periodType,
+        source: data.source,
       }
     );
 

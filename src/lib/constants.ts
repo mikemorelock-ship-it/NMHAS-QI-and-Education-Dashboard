@@ -60,6 +60,15 @@ export const DESIRED_DIRECTION_LABELS: Record<string, string> = {
   down: "Lower is Better",
 };
 
+export const METRIC_SOURCES = ["internal", "nemsqa", "gamut", "mn-capm"] as const;
+
+export const METRIC_SOURCE_LABELS: Record<string, string> = {
+  internal: "Internal",
+  nemsqa: "NEMSQA",
+  gamut: "GAMUT",
+  "mn-capm": "MN CAPM",
+};
+
 /** Infer a sensible default desiredDirection from the metric unit */
 export function defaultDesiredDirection(unit: string): "up" | "down" {
   if (unit === "duration") return "down";
