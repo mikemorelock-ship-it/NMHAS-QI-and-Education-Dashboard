@@ -2581,7 +2581,7 @@ async function main() {
     },
   });
 
-  console.log("  Created 73 standardized metric definitions (21 NEMSQA + 43 GAMUT + 9 MN CAPM).\n");
+  console.log("  Created 75 standardized metric definitions (21 NEMSQA + 45 GAMUT + 9 MN CAPM).\n");
 
   // =========================================================================
   // 7. Metric Associations (which metrics appear under which divisions/regions)
