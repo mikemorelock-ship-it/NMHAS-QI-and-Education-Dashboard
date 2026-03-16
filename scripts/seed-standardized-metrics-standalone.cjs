@@ -1691,7 +1691,7 @@ async function main() {
   // 1. Look up department ID for "quality-improvement"
   const deptResult = await db.execute({
     sql: "SELECT id FROM Department WHERE slug = ?",
-    args: ["quality-improvement"],
+    args: ["default-organization"],
   });
   if (deptResult.rows.length === 0) {
     const allDepts = await db.execute("SELECT id, name, slug FROM Department");
