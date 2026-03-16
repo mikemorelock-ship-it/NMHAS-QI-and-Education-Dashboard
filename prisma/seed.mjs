@@ -290,6 +290,7 @@ async function main() {
       aggregationType: "average",
       dataType: "continuous",
       desiredDirection: "down",
+      source: "internal",
       sortOrder: 1,
       isActive: true,
     },
@@ -311,6 +312,7 @@ async function main() {
       aggregationType: "sum",
       dataType: "continuous",
       desiredDirection: "up",
+      source: "internal",
       sortOrder: 2,
       isActive: true,
     },
@@ -332,6 +334,7 @@ async function main() {
       aggregationType: "average",
       dataType: "proportion",
       desiredDirection: "up",
+      source: "internal",
       sortOrder: 3,
       isActive: true,
     },
@@ -353,6 +356,7 @@ async function main() {
       aggregationType: "average",
       dataType: "proportion",
       desiredDirection: "up",
+      source: "internal",
       sortOrder: 4,
       isActive: true,
     },
@@ -375,6 +379,7 @@ async function main() {
       aggregationType: "average",
       dataType: "proportion",
       desiredDirection: "up",
+      source: "internal",
       sortOrder: 5,
       isActive: true,
     },
@@ -396,6 +401,7 @@ async function main() {
       aggregationType: "sum",
       dataType: "continuous",
       desiredDirection: "down",
+      source: "internal",
       sortOrder: 6,
       isActive: true,
     },
@@ -417,6 +423,7 @@ async function main() {
       aggregationType: "average",
       dataType: "proportion",
       desiredDirection: "up",
+      source: "internal",
       sortOrder: 7,
       isActive: true,
     },
@@ -439,6 +446,7 @@ async function main() {
       aggregationType: "average",
       dataType: "proportion",
       desiredDirection: "up",
+      source: "internal",
       sortOrder: 8,
       isActive: true,
     },
@@ -460,6 +468,7 @@ async function main() {
       aggregationType: "average",
       dataType: "continuous",
       desiredDirection: "up",
+      source: "internal",
       sortOrder: 9,
       isActive: true,
     },
@@ -482,6 +491,7 @@ async function main() {
       aggregationType: "average",
       dataType: "proportion",
       desiredDirection: "up",
+      source: "internal",
       sortOrder: 10,
       isActive: true,
     },
@@ -504,6 +514,7 @@ async function main() {
       aggregationType: "average",
       dataType: "continuous",
       desiredDirection: "down",
+      source: "internal",
       sortOrder: 11,
       isActive: true,
     },
@@ -525,12 +536,1194 @@ async function main() {
       aggregationType: "sum",
       dataType: "continuous",
       desiredDirection: "up",
+      source: "internal",
       sortOrder: 12,
       isActive: true,
     },
   });
 
   console.log("  Created 12 metric definitions (10 KPIs + 2 regular metrics).\n");
+
+  // =========================================================================
+  // 6b. Standardized Metric Definitions (NEMSQA, GAMUT, MN CAPM)
+  // =========================================================================
+  console.log("Creating standardized metric definitions...");
+
+  // --- NEMSQA Metrics ---
+  await prisma.metricDefinition.create({
+    data: {
+      name: "First-Pass Intubation Success Rate",
+      slug: "first-pass-intubation-success-rate",
+      departmentId: deptQuality.id,
+      categoryId: catClinical.id,
+      categoryLegacy: "Clinical Quality",
+      description:
+        "Percentage of EMS responses with successful advanced airway placement on first attempt without hypotension or hypoxia in the peri-intubation period (NEMSQA Airway-01).",
+      dataDefinition:
+        "Numerator: Successful first-attempt intubations without peri-intubation hypotension (SBP<90) or hypoxia (SpO2<90). Denominator: All advanced airway attempts from 911 requests.",
+      unit: "percentage",
+      chartType: "line",
+      periodType: "monthly",
+      isKpi: true,
+      target: 80,
+      aggregationType: "average",
+      dataType: "proportion",
+      desiredDirection: "up",
+      source: "nemsqa",
+      numeratorLabel: "Successful First Attempts",
+      denominatorLabel: "Total Intubation Attempts",
+      sortOrder: 20,
+      isActive: true,
+    },
+  });
+
+  await prisma.metricDefinition.create({
+    data: {
+      name: "Stroke Assessment Documentation",
+      slug: "stroke-assessment-documentation",
+      departmentId: deptQuality.id,
+      categoryId: catClinical.id,
+      categoryLegacy: "Clinical Quality",
+      description:
+        "Percentage of suspected stroke patients with a documented, validated stroke screening assessment such as Cincinnati Prehospital Stroke Scale (NEMSQA Stroke-01).",
+      dataDefinition:
+        "Numerator: Stroke patients with documented stroke scale assessment. Denominator: All patients with suspected stroke from 911 requests.",
+      unit: "percentage",
+      chartType: "line",
+      periodType: "monthly",
+      isKpi: true,
+      target: 95,
+      aggregationType: "average",
+      dataType: "proportion",
+      desiredDirection: "up",
+      source: "nemsqa",
+      numeratorLabel: "Assessments Documented",
+      denominatorLabel: "Total Suspected Stroke Patients",
+      sortOrder: 21,
+      isActive: true,
+    },
+  });
+
+  await prisma.metricDefinition.create({
+    data: {
+      name: "Hypoglycemia Treatment",
+      slug: "hypoglycemia-treatment",
+      departmentId: deptQuality.id,
+      categoryId: catClinical.id,
+      categoryLegacy: "Clinical Quality",
+      description:
+        "Percentage of EMS responses for symptomatic hypoglycemia patients who receive treatment to correct hypoglycemia (NEMSQA Hypoglycemia-01).",
+      dataDefinition:
+        "Numerator: Symptomatic hypoglycemia patients receiving glucose-correcting treatment. Denominator: All symptomatic hypoglycemia patients from 911 requests.",
+      unit: "percentage",
+      chartType: "line",
+      periodType: "monthly",
+      isKpi: true,
+      target: 95,
+      aggregationType: "average",
+      dataType: "proportion",
+      desiredDirection: "up",
+      source: "nemsqa",
+      numeratorLabel: "Patients Treated",
+      denominatorLabel: "Total Hypoglycemia Patients",
+      sortOrder: 22,
+      isActive: true,
+    },
+  });
+
+  await prisma.metricDefinition.create({
+    data: {
+      name: "Asthma Beta Agonist Administration",
+      slug: "asthma-beta-agonist-administration",
+      departmentId: deptQuality.id,
+      categoryId: catClinical.id,
+      categoryLegacy: "Clinical Quality",
+      description:
+        "Percentage of EMS responses for asthma/bronchospasm patients who receive an aerosolized beta agonist (NEMSQA Asthma-01).",
+      dataDefinition:
+        "Numerator: Asthma/bronchospasm patients receiving aerosolized beta agonist. Denominator: All asthma/bronchospasm patients from 911 requests.",
+      unit: "percentage",
+      chartType: "line",
+      periodType: "monthly",
+      isKpi: true,
+      target: 90,
+      aggregationType: "average",
+      dataType: "proportion",
+      desiredDirection: "up",
+      source: "nemsqa",
+      numeratorLabel: "Patients Receiving Beta Agonist",
+      denominatorLabel: "Total Asthma/Bronchospasm Patients",
+      sortOrder: 23,
+      isActive: true,
+    },
+  });
+
+  await prisma.metricDefinition.create({
+    data: {
+      name: "Waveform Capnography Confirmation",
+      slug: "waveform-capnography-confirmation",
+      departmentId: deptQuality.id,
+      categoryId: catClinical.id,
+      categoryLegacy: "Clinical Quality",
+      description:
+        "Percentage of successful advanced airway procedures in which waveform capnography is used for placement confirmation and ongoing monitoring (NEMSQA Airway-18).",
+      dataDefinition:
+        "Numerator: Advanced airway procedures with waveform capnography used for confirmation and monitoring. Denominator: All successful advanced airway procedures from 911 requests.",
+      unit: "percentage",
+      chartType: "line",
+      periodType: "monthly",
+      isKpi: true,
+      target: 95,
+      aggregationType: "average",
+      dataType: "proportion",
+      desiredDirection: "up",
+      source: "nemsqa",
+      numeratorLabel: "Confirmed with Capnography",
+      denominatorLabel: "Total Successful Airway Procedures",
+      sortOrder: 24,
+      isActive: true,
+    },
+  });
+
+  await prisma.metricDefinition.create({
+    data: {
+      name: "Trauma Triage to Trauma Center",
+      slug: "trauma-triage-to-trauma-center",
+      departmentId: deptQuality.id,
+      categoryId: catClinical.id,
+      categoryLegacy: "Clinical Quality",
+      description:
+        "Percentage of patients meeting ACS Field Triage criteria who are transported to an appropriate trauma center (NEMSQA Trauma-04).",
+      dataDefinition:
+        "Numerator: Patients meeting field triage criteria transported to a designated trauma center. Denominator: All patients meeting ACS field triage criteria.",
+      unit: "percentage",
+      chartType: "line",
+      periodType: "monthly",
+      isKpi: true,
+      target: 90,
+      aggregationType: "average",
+      dataType: "proportion",
+      desiredDirection: "up",
+      source: "nemsqa",
+      numeratorLabel: "Transported to Trauma Center",
+      denominatorLabel: "Total Meeting Triage Criteria",
+      sortOrder: 25,
+      isActive: true,
+    },
+  });
+
+  await prisma.metricDefinition.create({
+    data: {
+      name: "Pre-Oxygenation Before Intubation",
+      slug: "pre-oxygenation-before-intubation",
+      departmentId: deptQuality.id,
+      categoryId: catClinical.id,
+      categoryLegacy: "Clinical Quality",
+      description:
+        "Percentage of intubation procedures from a 911 request in which adequate patient oxygen levels were achieved prior to intubation (NEMSQA Airway-05).",
+      dataDefinition:
+        "Numerator: Intubation procedures with SpO2 ≥93% documented prior to first attempt. Denominator: All intubation procedures from 911 requests.",
+      unit: "percentage",
+      chartType: "line",
+      periodType: "monthly",
+      isKpi: true,
+      target: 85,
+      aggregationType: "average",
+      dataType: "proportion",
+      desiredDirection: "up",
+      source: "nemsqa",
+      numeratorLabel: "Adequately Pre-Oxygenated",
+      denominatorLabel: "Total Intubation Procedures",
+      sortOrder: 26,
+      isActive: true,
+    },
+  });
+
+  await prisma.metricDefinition.create({
+    data: {
+      name: "Respiratory Distress Assessment",
+      slug: "respiratory-distress-assessment",
+      departmentId: deptQuality.id,
+      categoryId: catClinical.id,
+      categoryLegacy: "Clinical Quality",
+      description:
+        "Percentage of EMS responses from a 911 request for respiratory distress patients with a documented respiratory assessment including respiratory rate and SpO2 (NEMSQA Respiratory-01).",
+      dataDefinition:
+        "Numerator: Respiratory distress patients with documented respiratory rate AND pulse oximetry. Denominator: All respiratory distress patients from 911 requests.",
+      unit: "percentage",
+      chartType: "line",
+      periodType: "monthly",
+      isKpi: true,
+      target: 95,
+      aggregationType: "average",
+      dataType: "proportion",
+      desiredDirection: "up",
+      source: "nemsqa",
+      numeratorLabel: "Assessment Documented",
+      denominatorLabel: "Total Respiratory Distress Patients",
+      sortOrder: 27,
+      isActive: true,
+    },
+  });
+
+  await prisma.metricDefinition.create({
+    data: {
+      name: "Oxygen Therapy for Hypoxic Patients",
+      slug: "oxygen-therapy-hypoxic-patients",
+      departmentId: deptQuality.id,
+      categoryId: catClinical.id,
+      categoryLegacy: "Clinical Quality",
+      description:
+        "Percentage of hypoxic patients from a 911 request who receive supplemental oxygen therapy (NEMSQA Respiratory-02).",
+      dataDefinition:
+        "Numerator: Hypoxic patients (SpO2 <94%) receiving supplemental oxygen. Denominator: All hypoxic patients from 911 requests.",
+      unit: "percentage",
+      chartType: "line",
+      periodType: "monthly",
+      isKpi: true,
+      target: 95,
+      aggregationType: "average",
+      dataType: "proportion",
+      desiredDirection: "up",
+      source: "nemsqa",
+      numeratorLabel: "Oxygen Administered",
+      denominatorLabel: "Total Hypoxic Patients",
+      sortOrder: 28,
+      isActive: true,
+    },
+  });
+
+  await prisma.metricDefinition.create({
+    data: {
+      name: "Pediatric Weight-Based Medication Documentation",
+      slug: "pediatric-weight-based-medication-doc",
+      departmentId: deptQuality.id,
+      categoryId: catClinical.id,
+      categoryLegacy: "Clinical Quality",
+      description:
+        "Percentage of pediatric patients receiving weight-based medications with documented weight in kilograms or length-based weight estimation (NEMSQA Pediatrics-03b).",
+      dataDefinition:
+        "Numerator: Pediatric patients with documented weight (kg) or length-based weight who received medication. Denominator: All pediatric patients receiving weight-based medications.",
+      unit: "percentage",
+      chartType: "line",
+      periodType: "monthly",
+      isKpi: true,
+      target: 80,
+      aggregationType: "average",
+      dataType: "proportion",
+      desiredDirection: "up",
+      source: "nemsqa",
+      numeratorLabel: "Weight Documented",
+      denominatorLabel: "Total Pediatric Medication Patients",
+      sortOrder: 29,
+      isActive: true,
+    },
+  });
+
+  await prisma.metricDefinition.create({
+    data: {
+      name: "Non-Use of Lights/Sirens (Response)",
+      slug: "non-use-lights-sirens-response",
+      departmentId: deptQuality.id,
+      categoryId: catPatientSafety.id,
+      categoryLegacy: "Patient Safety",
+      description:
+        "Percentage of EMS responses originating from a 911 request in which lights and sirens were NOT used during response to scene (NEMSQA Safety-01). National performance ~11%.",
+      dataDefinition:
+        "Numerator: 911 responses where lights and sirens were not used during response. Denominator: All 911 responses.",
+      unit: "percentage",
+      chartType: "line",
+      periodType: "monthly",
+      isKpi: true,
+      target: 15,
+      aggregationType: "average",
+      dataType: "proportion",
+      desiredDirection: "up",
+      source: "nemsqa",
+      numeratorLabel: "Without L&S",
+      denominatorLabel: "Total 911 Responses",
+      sortOrder: 30,
+      isActive: true,
+    },
+  });
+
+  await prisma.metricDefinition.create({
+    data: {
+      name: "Non-Use of Lights/Sirens (Transport)",
+      slug: "non-use-lights-sirens-transport",
+      departmentId: deptQuality.id,
+      categoryId: catPatientSafety.id,
+      categoryLegacy: "Patient Safety",
+      description:
+        "Percentage of EMS patient transports originating from a 911 request during which lights and sirens were NOT used during transport (NEMSQA Safety-02). National performance ~52%.",
+      dataDefinition:
+        "Numerator: 911 transports where lights and sirens were not used during transport phase. Denominator: All 911 patient transports.",
+      unit: "percentage",
+      chartType: "line",
+      periodType: "monthly",
+      isKpi: true,
+      target: 55,
+      aggregationType: "average",
+      dataType: "proportion",
+      desiredDirection: "up",
+      source: "nemsqa",
+      numeratorLabel: "Without L&S",
+      denominatorLabel: "Total 911 Transports",
+      sortOrder: 31,
+      isActive: true,
+    },
+  });
+
+  await prisma.metricDefinition.create({
+    data: {
+      name: "Pediatric Restraint Use During Transport",
+      slug: "pediatric-restraint-use-transport",
+      departmentId: deptQuality.id,
+      categoryId: catPatientSafety.id,
+      categoryLegacy: "Patient Safety",
+      description:
+        "Percentage of pediatric patients transported with age-appropriate restraint devices (NEMSQA Safety-04).",
+      dataDefinition:
+        "Numerator: Pediatric patients transported with appropriate restraint device documented. Denominator: All pediatric patient transports.",
+      unit: "percentage",
+      chartType: "line",
+      periodType: "monthly",
+      isKpi: true,
+      target: 90,
+      aggregationType: "average",
+      dataType: "proportion",
+      desiredDirection: "up",
+      source: "nemsqa",
+      numeratorLabel: "Properly Restrained",
+      denominatorLabel: "Total Pediatric Transports",
+      sortOrder: 32,
+      isActive: true,
+    },
+  });
+
+  await prisma.metricDefinition.create({
+    data: {
+      name: "Benzodiazepine for Status Epilepticus",
+      slug: "benzodiazepine-status-epilepticus",
+      departmentId: deptQuality.id,
+      categoryId: catClinical.id,
+      categoryLegacy: "Clinical Quality",
+      description:
+        "Percentage of status epilepticus patients from a 911 request who receive a benzodiazepine (NEMSQA Seizure-02).",
+      dataDefinition:
+        "Numerator: Status epilepticus patients receiving benzodiazepine. Denominator: All status epilepticus patients from 911 requests.",
+      unit: "percentage",
+      chartType: "line",
+      periodType: "monthly",
+      isKpi: true,
+      target: 90,
+      aggregationType: "average",
+      dataType: "proportion",
+      desiredDirection: "up",
+      source: "nemsqa",
+      numeratorLabel: "Benzodiazepine Administered",
+      denominatorLabel: "Total Status Epilepticus Patients",
+      sortOrder: 33,
+      isActive: true,
+    },
+  });
+
+  await prisma.metricDefinition.create({
+    data: {
+      name: "12-Lead ECG for Syncope Patients",
+      slug: "12-lead-ecg-syncope",
+      departmentId: deptQuality.id,
+      categoryId: catClinical.id,
+      categoryLegacy: "Clinical Quality",
+      description:
+        "Percentage of syncope patients from a 911 request who receive a 12-lead ECG (NEMSQA Syncope-01).",
+      dataDefinition:
+        "Numerator: Syncope patients with 12-lead ECG performed. Denominator: All syncope patients from 911 requests.",
+      unit: "percentage",
+      chartType: "line",
+      periodType: "monthly",
+      isKpi: true,
+      target: 85,
+      aggregationType: "average",
+      dataType: "proportion",
+      desiredDirection: "up",
+      source: "nemsqa",
+      numeratorLabel: "ECG Performed",
+      denominatorLabel: "Total Syncope Patients",
+      sortOrder: 34,
+      isActive: true,
+    },
+  });
+
+  await prisma.metricDefinition.create({
+    data: {
+      name: "TBI Vital Parameter Monitoring",
+      slug: "tbi-vital-parameter-monitoring",
+      departmentId: deptQuality.id,
+      categoryId: catClinical.id,
+      categoryLegacy: "Clinical Quality",
+      description:
+        "Percentage of traumatic brain injury patients with documented monitoring of oxygen saturation, blood pressure, and end-tidal CO₂ (for ventilated patients) as part of the EPIC care bundle (NEMSQA TBI-01).",
+      dataDefinition:
+        "Numerator: TBI patients with documented SpO2, BP, and EtCO2 (if ventilated). Denominator: All TBI patients from 911 requests.",
+      unit: "percentage",
+      chartType: "line",
+      periodType: "monthly",
+      isKpi: true,
+      target: 85,
+      aggregationType: "average",
+      dataType: "proportion",
+      desiredDirection: "up",
+      source: "nemsqa",
+      numeratorLabel: "Parameters Monitored",
+      denominatorLabel: "Total TBI Patients",
+      sortOrder: 35,
+      isActive: true,
+    },
+  });
+
+  await prisma.metricDefinition.create({
+    data: {
+      name: "Trauma Pain Assessment",
+      slug: "nemsqa-trauma-pain-assessment",
+      departmentId: deptQuality.id,
+      categoryId: catClinical.id,
+      categoryLegacy: "Clinical Quality",
+      description:
+        "Percentage of injured patients from a 911 request assessed for pain using a validated pain scale (NEMSQA Trauma-01). National performance ~42%.",
+      dataDefinition:
+        "Numerator: Injury patients with documented pain assessment. Denominator: All injury patients from 911 requests.",
+      unit: "percentage",
+      chartType: "line",
+      periodType: "monthly",
+      isKpi: true,
+      target: 75,
+      aggregationType: "average",
+      dataType: "proportion",
+      desiredDirection: "up",
+      source: "nemsqa",
+      numeratorLabel: "Pain Assessed",
+      denominatorLabel: "Total Injury Patients",
+      sortOrder: 36,
+      isActive: true,
+    },
+  });
+
+  await prisma.metricDefinition.create({
+    data: {
+      name: "Pain Management Effectiveness",
+      slug: "pain-management-effectiveness",
+      departmentId: deptQuality.id,
+      categoryId: catClinical.id,
+      categoryLegacy: "Clinical Quality",
+      description:
+        "Percentage of injured patients from a 911 request with documented pain score improvement during the EMS encounter (NEMSQA Trauma-03).",
+      dataDefinition:
+        "Numerator: Injury patients with improved pain score from initial to final assessment. Denominator: All injury patients with initial pain score documented from 911 requests.",
+      unit: "percentage",
+      chartType: "line",
+      periodType: "monthly",
+      isKpi: true,
+      target: 60,
+      aggregationType: "average",
+      dataType: "proportion",
+      desiredDirection: "up",
+      source: "nemsqa",
+      numeratorLabel: "Pain Improved",
+      denominatorLabel: "Total Patients with Pain Score",
+      sortOrder: 37,
+      isActive: true,
+    },
+  });
+
+  await prisma.metricDefinition.create({
+    data: {
+      name: "Trauma Complete Vital Signs",
+      slug: "trauma-complete-vital-signs",
+      departmentId: deptQuality.id,
+      categoryId: catClinical.id,
+      categoryLegacy: "Clinical Quality",
+      description:
+        "Percentage of trauma patients with documented Glasgow Coma Scale score and complete vital signs set (NEMSQA Trauma-08). Adults ~93%, pediatrics ~85%.",
+      dataDefinition:
+        "Numerator: Trauma patients with documented GCS and complete vital signs (BP, HR, RR). Denominator: All trauma patients from 911 requests.",
+      unit: "percentage",
+      chartType: "line",
+      periodType: "monthly",
+      isKpi: true,
+      target: 90,
+      aggregationType: "average",
+      dataType: "proportion",
+      desiredDirection: "up",
+      source: "nemsqa",
+      numeratorLabel: "Complete Vitals Documented",
+      denominatorLabel: "Total Trauma Patients",
+      sortOrder: 38,
+      isActive: true,
+    },
+  });
+
+  await prisma.metricDefinition.create({
+    data: {
+      name: "Pre-Arrival Trauma Alert",
+      slug: "pre-arrival-trauma-alert",
+      departmentId: deptQuality.id,
+      categoryId: catClinical.id,
+      categoryLegacy: "Clinical Quality",
+      description:
+        "Percentage of EMS transports from a 911 request for patients meeting Step 1 or Step 2 field triage criteria with a documented pre-arrival trauma alert (NEMSQA Trauma-14).",
+      dataDefinition:
+        "Numerator: Transports meeting field triage criteria with pre-arrival trauma alert documented. Denominator: All transports meeting Step 1/Step 2 field triage criteria.",
+      unit: "percentage",
+      chartType: "line",
+      periodType: "monthly",
+      isKpi: true,
+      target: 85,
+      aggregationType: "average",
+      dataType: "proportion",
+      desiredDirection: "up",
+      source: "nemsqa",
+      numeratorLabel: "Alert Activated",
+      denominatorLabel: "Total Meeting Triage Criteria",
+      sortOrder: 39,
+      isActive: true,
+    },
+  });
+
+  await prisma.metricDefinition.create({
+    data: {
+      name: "Non-Transport Vital Signs Documentation",
+      slug: "non-transport-vital-signs-documentation",
+      departmentId: deptQuality.id,
+      categoryId: catPatientSafety.id,
+      categoryLegacy: "Patient Safety",
+      description:
+        "Percentage of EMS responses from a 911 request for non-transported patients with documented vital signs (NEMSQA TTR-01).",
+      dataDefinition:
+        "Numerator: Non-transported patients with documented vital signs. Denominator: All non-transported patients from 911 requests.",
+      unit: "percentage",
+      chartType: "line",
+      periodType: "monthly",
+      isKpi: true,
+      target: 85,
+      aggregationType: "average",
+      dataType: "proportion",
+      desiredDirection: "up",
+      source: "nemsqa",
+      numeratorLabel: "Vitals Documented",
+      denominatorLabel: "Total Non-Transported Patients",
+      sortOrder: 40,
+      isActive: true,
+    },
+  });
+
+  // --- GAMUT Metrics ---
+  await prisma.metricDefinition.create({
+    data: {
+      name: "Plateau Pressure Documentation",
+      slug: "plateau-pressure-documentation",
+      departmentId: deptQuality.id,
+      categoryId: catClinical.id,
+      categoryLegacy: "Clinical Quality",
+      description:
+        "Percentage of mechanically ventilated patients with documented plateau pressure measurement and goal of Pplat < 30 mmHg (GAMUT measure).",
+      dataDefinition:
+        "Numerator: Mechanically ventilated patients with documented plateau pressure. Denominator: All mechanically ventilated patients during transport.",
+      unit: "percentage",
+      chartType: "line",
+      periodType: "monthly",
+      isKpi: true,
+      target: 95,
+      aggregationType: "average",
+      dataType: "proportion",
+      desiredDirection: "up",
+      source: "gamut",
+      numeratorLabel: "Documented",
+      denominatorLabel: "Total Ventilated Patients",
+      sortOrder: 50,
+      isActive: true,
+    },
+  });
+
+  await prisma.metricDefinition.create({
+    data: {
+      name: "Blood Glucose in Altered Mental Status",
+      slug: "blood-glucose-altered-mental-status",
+      departmentId: deptQuality.id,
+      categoryId: catClinical.id,
+      categoryLegacy: "Clinical Quality",
+      description:
+        "Percentage of patients with altered mental status who receive blood glucose measurement (GAMUT measure).",
+      dataDefinition:
+        "Numerator: AMS patients with documented blood glucose measurement. Denominator: All patients presenting with altered mental status.",
+      unit: "percentage",
+      chartType: "line",
+      periodType: "monthly",
+      isKpi: true,
+      target: 95,
+      aggregationType: "average",
+      dataType: "proportion",
+      desiredDirection: "up",
+      source: "gamut",
+      numeratorLabel: "Glucose Measured",
+      denominatorLabel: "Total AMS Patients",
+      sortOrder: 51,
+      isActive: true,
+    },
+  });
+
+  await prisma.metricDefinition.create({
+    data: {
+      name: "Ventilator Tidal Volume Compliance",
+      slug: "ventilator-tidal-volume-compliance",
+      departmentId: deptQuality.id,
+      categoryId: catClinical.id,
+      categoryLegacy: "Clinical Quality",
+      description:
+        "Percentage of mechanically ventilated patients with tidal volume set within lung-protective range of 6-8 mL/kg ideal body weight (GAMUT measure).",
+      dataDefinition:
+        "Numerator: Ventilated patients with tidal volume 6-8 mL/kg IBW. Denominator: All mechanically ventilated patients during transport.",
+      unit: "percentage",
+      chartType: "line",
+      periodType: "monthly",
+      isKpi: true,
+      target: 90,
+      aggregationType: "average",
+      dataType: "proportion",
+      desiredDirection: "up",
+      source: "gamut",
+      numeratorLabel: "Compliant",
+      denominatorLabel: "Total Ventilated Patients",
+      sortOrder: 52,
+      isActive: true,
+    },
+  });
+
+  await prisma.metricDefinition.create({
+    data: {
+      name: "First-Attempt Intubation Success (DASH-1A)",
+      slug: "first-attempt-intubation-dash-1a",
+      departmentId: deptQuality.id,
+      categoryId: catClinical.id,
+      categoryLegacy: "Clinical Quality",
+      description:
+        "Percentage of intubation procedures achieving definitive airway on first attempt without hypoxia (SpO2 <90%) or hypotension (SBP <90 mmHg) — the DASH-1A metric (GAMUT measure).",
+      dataDefinition:
+        "Numerator: Intubation procedures successful on first attempt without peri-intubation hypoxia or hypotension. Denominator: All intubation procedures during transport.",
+      unit: "percentage",
+      chartType: "line",
+      periodType: "monthly",
+      isKpi: true,
+      target: 80,
+      aggregationType: "average",
+      dataType: "proportion",
+      desiredDirection: "up",
+      source: "gamut",
+      numeratorLabel: "DASH-1A Success",
+      denominatorLabel: "Total Intubation Procedures",
+      sortOrder: 53,
+      isActive: true,
+    },
+  });
+
+  await prisma.metricDefinition.create({
+    data: {
+      name: "Waveform Capnography Usage",
+      slug: "gamut-waveform-capnography-usage",
+      departmentId: deptQuality.id,
+      categoryId: catClinical.id,
+      categoryLegacy: "Clinical Quality",
+      description:
+        "Percentage of patients with advanced airway who have continuous waveform capnography monitoring documented during transport (GAMUT measure).",
+      dataDefinition:
+        "Numerator: Advanced airway patients with waveform capnography documented. Denominator: All patients with advanced airway during transport.",
+      unit: "percentage",
+      chartType: "line",
+      periodType: "monthly",
+      isKpi: true,
+      target: 95,
+      aggregationType: "average",
+      dataType: "proportion",
+      desiredDirection: "up",
+      source: "gamut",
+      numeratorLabel: "Capnography Used",
+      denominatorLabel: "Total Advanced Airway Patients",
+      sortOrder: 54,
+      isActive: true,
+    },
+  });
+
+  await prisma.metricDefinition.create({
+    data: {
+      name: "Mechanical Ventilation Utilization",
+      slug: "mechanical-ventilation-utilization",
+      departmentId: deptQuality.id,
+      categoryId: catClinical.id,
+      categoryLegacy: "Clinical Quality",
+      description:
+        "Percentage of patients with an advanced airway who are placed on mechanical ventilation during transport (GAMUT measure).",
+      dataDefinition:
+        "Numerator: Advanced airway patients placed on mechanical ventilation. Denominator: All patients with advanced airway during transport.",
+      unit: "percentage",
+      chartType: "line",
+      periodType: "monthly",
+      isKpi: true,
+      target: 85,
+      aggregationType: "average",
+      dataType: "proportion",
+      desiredDirection: "up",
+      source: "gamut",
+      numeratorLabel: "On Ventilator",
+      denominatorLabel: "Total Advanced Airway Patients",
+      sortOrder: 55,
+      isActive: true,
+    },
+  });
+
+  await prisma.metricDefinition.create({
+    data: {
+      name: "Unplanned Device Dislodgement Rate",
+      slug: "unplanned-device-dislodgement-rate",
+      departmentId: deptQuality.id,
+      categoryId: catPatientSafety.id,
+      categoryLegacy: "Patient Safety",
+      description:
+        "Rate of unplanned therapeutic device dislodgements (endotracheal tubes, IV lines, chest tubes, etc.) per 1,000 transports (GAMUT measure).",
+      dataDefinition:
+        "Numerator: Number of unplanned device dislodgement events. Denominator: Total number of transports. Expressed as rate per 1,000 transports.",
+      unit: "rate",
+      chartType: "bar",
+      periodType: "monthly",
+      isKpi: true,
+      target: 5,
+      aggregationType: "sum",
+      dataType: "rate",
+      desiredDirection: "down",
+      source: "gamut",
+      numeratorLabel: "Dislodgement Events",
+      denominatorLabel: "Total Transports",
+      rateMultiplier: 1000,
+      rateSuffix: "per 1,000 transports",
+      sortOrder: 56,
+      isActive: true,
+    },
+  });
+
+  await prisma.metricDefinition.create({
+    data: {
+      name: "Patient Injury During Transport Rate",
+      slug: "patient-injury-during-transport-rate",
+      departmentId: deptQuality.id,
+      categoryId: catPatientSafety.id,
+      categoryLegacy: "Patient Safety",
+      description:
+        "Rate of patient injuries occurring during transport per 10,000 transports (GAMUT measure).",
+      dataDefinition:
+        "Numerator: Number of patient injury events during transport. Denominator: Total number of transports. Expressed as rate per 10,000 transports.",
+      unit: "rate",
+      chartType: "bar",
+      periodType: "monthly",
+      isKpi: true,
+      target: 1,
+      aggregationType: "sum",
+      dataType: "rate",
+      desiredDirection: "down",
+      source: "gamut",
+      numeratorLabel: "Patient Injury Events",
+      denominatorLabel: "Total Transports",
+      rateMultiplier: 10000,
+      rateSuffix: "per 10,000 transports",
+      sortOrder: 57,
+      isActive: true,
+    },
+  });
+
+  await prisma.metricDefinition.create({
+    data: {
+      name: "Crew Injury During Transport Rate",
+      slug: "crew-injury-during-transport-rate",
+      departmentId: deptQuality.id,
+      categoryId: catPatientSafety.id,
+      categoryLegacy: "Patient Safety",
+      description:
+        "Rate of crew injuries occurring during transport per 10,000 transports (GAMUT measure).",
+      dataDefinition:
+        "Numerator: Number of crew injury events during transport. Denominator: Total number of transports. Expressed as rate per 10,000 transports.",
+      unit: "rate",
+      chartType: "bar",
+      periodType: "monthly",
+      isKpi: true,
+      target: 1,
+      aggregationType: "sum",
+      dataType: "rate",
+      desiredDirection: "down",
+      source: "gamut",
+      numeratorLabel: "Crew Injury Events",
+      denominatorLabel: "Total Transports",
+      rateMultiplier: 10000,
+      rateSuffix: "per 10,000 transports",
+      sortOrder: 58,
+      isActive: true,
+    },
+  });
+
+  await prisma.metricDefinition.create({
+    data: {
+      name: "Medical Equipment Failure Rate",
+      slug: "medical-equipment-failure-rate",
+      departmentId: deptQuality.id,
+      categoryId: catPatientSafety.id,
+      categoryLegacy: "Patient Safety",
+      description:
+        "Rate of medical equipment failures occurring during transport per 10,000 transports (GAMUT measure).",
+      dataDefinition:
+        "Numerator: Number of equipment failure events during transport. Denominator: Total number of transports. Expressed as rate per 10,000 transports.",
+      unit: "rate",
+      chartType: "bar",
+      periodType: "monthly",
+      isKpi: true,
+      target: 2,
+      aggregationType: "sum",
+      dataType: "rate",
+      desiredDirection: "down",
+      source: "gamut",
+      numeratorLabel: "Equipment Failure Events",
+      denominatorLabel: "Total Transports",
+      rateMultiplier: 10000,
+      rateSuffix: "per 10,000 transports",
+      sortOrder: 59,
+      isActive: true,
+    },
+  });
+
+  await prisma.metricDefinition.create({
+    data: {
+      name: "CPR During Transport Rate",
+      slug: "cpr-during-transport-rate",
+      departmentId: deptQuality.id,
+      categoryId: catClinical.id,
+      categoryLegacy: "Clinical Quality",
+      description:
+        "Rate of cardiopulmonary resuscitation performed during interfacility transport per 10,000 transports (GAMUT measure).",
+      dataDefinition:
+        "Numerator: Number of transports in which CPR was performed. Denominator: Total number of transports. Expressed as rate per 10,000 transports.",
+      unit: "rate",
+      chartType: "bar",
+      periodType: "monthly",
+      isKpi: false,
+      target: null,
+      aggregationType: "sum",
+      dataType: "rate",
+      desiredDirection: "down",
+      source: "gamut",
+      numeratorLabel: "CPR Events",
+      denominatorLabel: "Total Transports",
+      rateMultiplier: 10000,
+      rateSuffix: "per 10,000 transports",
+      sortOrder: 60,
+      isActive: true,
+    },
+  });
+
+  await prisma.metricDefinition.create({
+    data: {
+      name: "Neonatal Normothermia on Admission",
+      slug: "neonatal-normothermia-on-admission",
+      departmentId: deptQuality.id,
+      categoryId: catClinical.id,
+      categoryLegacy: "Clinical Quality",
+      description:
+        "Percentage of neonatal patients who are normothermic (36.5-37.5°C) upon admission to receiving facility after transport (GAMUT measure).",
+      dataDefinition:
+        "Numerator: Neonates with temperature 36.5-37.5°C on receiving facility admission. Denominator: All neonatal transports.",
+      unit: "percentage",
+      chartType: "line",
+      periodType: "monthly",
+      isKpi: true,
+      target: 85,
+      aggregationType: "average",
+      dataType: "proportion",
+      desiredDirection: "up",
+      source: "gamut",
+      numeratorLabel: "Normothermic",
+      denominatorLabel: "Total Neonatal Transports",
+      sortOrder: 61,
+      isActive: true,
+    },
+  });
+
+  await prisma.metricDefinition.create({
+    data: {
+      name: "Tracheal Tube Placement Confirmation",
+      slug: "tracheal-tube-placement-confirmation",
+      departmentId: deptQuality.id,
+      categoryId: catClinical.id,
+      categoryLegacy: "Clinical Quality",
+      description:
+        "Percentage of tracheal tube placements with documented confirmation of correct placement using capnography or other verification method (GAMUT measure).",
+      dataDefinition:
+        "Numerator: Tracheal tube placements with documented confirmation. Denominator: All tracheal tube placements during transport.",
+      unit: "percentage",
+      chartType: "line",
+      periodType: "monthly",
+      isKpi: true,
+      target: 100,
+      aggregationType: "average",
+      dataType: "proportion",
+      desiredDirection: "up",
+      source: "gamut",
+      numeratorLabel: "Placement Confirmed",
+      denominatorLabel: "Total Tube Placements",
+      sortOrder: 62,
+      isActive: true,
+    },
+  });
+
+  // --- MN CAPM (Minnesota Clinical Advisory Performance Measures) ---
+  await prisma.metricDefinition.create({
+    data: {
+      name: "Stroke Scene Time ≤20 min",
+      slug: "stroke-scene-time-20-min",
+      departmentId: deptQuality.id,
+      categoryId: catClinical.id,
+      categoryLegacy: "Clinical Quality",
+      description:
+        "Percentage of suspected stroke patients transported from the scene within 20 minutes of ground ambulance arrival (MN CAPM Measure 1). National benchmark ~73%.",
+      dataDefinition:
+        "Numerator: Suspected stroke patients with on-scene time ≤20 minutes. Denominator: All suspected stroke patients transported by ground ambulance.",
+      unit: "percentage",
+      chartType: "line",
+      periodType: "monthly",
+      isKpi: true,
+      target: 73,
+      aggregationType: "average",
+      dataType: "proportion",
+      desiredDirection: "up",
+      source: "mn-capm",
+      numeratorLabel: "Within 20 min",
+      denominatorLabel: "Total Stroke Transports",
+      sortOrder: 70,
+      isActive: true,
+    },
+  });
+
+  await prisma.metricDefinition.create({
+    data: {
+      name: "STEMI Scene Time ≤20 min",
+      slug: "stemi-scene-time-20-min",
+      departmentId: deptQuality.id,
+      categoryId: catClinical.id,
+      categoryLegacy: "Clinical Quality",
+      description:
+        "Percentage of suspected STEMI patients transported from the scene within 20 minutes of ground ambulance arrival (MN CAPM Measure 2).",
+      dataDefinition:
+        "Numerator: Suspected STEMI patients with on-scene time ≤20 minutes. Denominator: All suspected STEMI patients transported by ground ambulance.",
+      unit: "percentage",
+      chartType: "line",
+      periodType: "monthly",
+      isKpi: true,
+      target: 70,
+      aggregationType: "average",
+      dataType: "proportion",
+      desiredDirection: "up",
+      source: "mn-capm",
+      numeratorLabel: "Within 20 min",
+      denominatorLabel: "Total STEMI Transports",
+      sortOrder: 71,
+      isActive: true,
+    },
+  });
+
+  await prisma.metricDefinition.create({
+    data: {
+      name: "Glucose Assessment (Stroke)",
+      slug: "glucose-assessment-stroke",
+      departmentId: deptQuality.id,
+      categoryId: catClinical.id,
+      categoryLegacy: "Clinical Quality",
+      description:
+        "Percentage of suspected stroke patients with a documented glucose assessment (MN CAPM Measure 3). State performance has been trending upward.",
+      dataDefinition:
+        "Numerator: Suspected stroke patients with documented glucose assessment. Denominator: All suspected stroke patients.",
+      unit: "percentage",
+      chartType: "line",
+      periodType: "monthly",
+      isKpi: true,
+      target: 90,
+      aggregationType: "average",
+      dataType: "proportion",
+      desiredDirection: "up",
+      source: "mn-capm",
+      numeratorLabel: "Glucose Assessed",
+      denominatorLabel: "Total Suspected Stroke Patients",
+      sortOrder: 72,
+      isActive: true,
+    },
+  });
+
+  await prisma.metricDefinition.create({
+    data: {
+      name: "Stroke Scale Documentation",
+      slug: "stroke-scale-documentation",
+      departmentId: deptQuality.id,
+      categoryId: catClinical.id,
+      categoryLegacy: "Clinical Quality",
+      description:
+        "Percentage of suspected stroke patients with a documented stroke scale assessment (MN CAPM Measure 4). State performance is consistent with national performance.",
+      dataDefinition:
+        "Numerator: Suspected stroke patients with documented stroke scale assessment. Denominator: All suspected stroke patients.",
+      unit: "percentage",
+      chartType: "line",
+      periodType: "monthly",
+      isKpi: true,
+      target: 90,
+      aggregationType: "average",
+      dataType: "proportion",
+      desiredDirection: "up",
+      source: "mn-capm",
+      numeratorLabel: "Assessment Documented",
+      denominatorLabel: "Total Suspected Stroke Patients",
+      sortOrder: 73,
+      isActive: true,
+    },
+  });
+
+  await prisma.metricDefinition.create({
+    data: {
+      name: "12-Lead EKG (Chest Pain >35yo)",
+      slug: "12-lead-ekg-chest-pain",
+      departmentId: deptQuality.id,
+      categoryId: catClinical.id,
+      categoryLegacy: "Clinical Quality",
+      description:
+        "Percentage of chest pain patients over 35 years of age who receive a prehospital 12-lead electrocardiogram (MN CAPM Measure 5).",
+      dataDefinition:
+        "Numerator: Chest pain patients >35yo receiving a 12-lead EKG. Denominator: All chest pain patients >35yo from 911 requests.",
+      unit: "percentage",
+      chartType: "line",
+      periodType: "monthly",
+      isKpi: true,
+      target: 85,
+      aggregationType: "average",
+      dataType: "proportion",
+      desiredDirection: "up",
+      source: "mn-capm",
+      numeratorLabel: "EKG Performed",
+      denominatorLabel: "Total Chest Pain Patients >35yo",
+      sortOrder: 74,
+      isActive: true,
+    },
+  });
+
+  await prisma.metricDefinition.create({
+    data: {
+      name: "Pediatric Weight Documentation",
+      slug: "pediatric-weight-documentation",
+      departmentId: deptQuality.id,
+      categoryId: catClinical.id,
+      categoryLegacy: "Clinical Quality",
+      description:
+        "Percentage of pediatric patients with a documented weight when there is a documented medication administration (MN CAPM Measure 6). State performance trending upward.",
+      dataDefinition:
+        "Numerator: Pediatric patients with documented weight and medication administration. Denominator: All pediatric patients with documented medication administration.",
+      unit: "percentage",
+      chartType: "line",
+      periodType: "monthly",
+      isKpi: true,
+      target: 80,
+      aggregationType: "average",
+      dataType: "proportion",
+      desiredDirection: "up",
+      source: "mn-capm",
+      numeratorLabel: "Weight Documented",
+      denominatorLabel: "Total Pediatric Medication Administrations",
+      sortOrder: 75,
+      isActive: true,
+    },
+  });
+
+  await prisma.metricDefinition.create({
+    data: {
+      name: "Respiratory Assessment Documentation",
+      slug: "respiratory-assessment-documentation",
+      departmentId: deptQuality.id,
+      categoryId: catClinical.id,
+      categoryLegacy: "Clinical Quality",
+      description:
+        "Percentage of patients with a respiratory complaint who have a fully documented respiratory assessment including respiratory rate and pulse oximetry (MN CAPM Measure 7). State performance exceeds national performance.",
+      dataDefinition:
+        "Numerator: Respiratory patients with documented respiratory rate AND SpO2. Denominator: All patients with respiratory complaints.",
+      unit: "percentage",
+      chartType: "line",
+      periodType: "monthly",
+      isKpi: true,
+      target: 90,
+      aggregationType: "average",
+      dataType: "proportion",
+      desiredDirection: "up",
+      source: "mn-capm",
+      numeratorLabel: "Assessment Complete",
+      denominatorLabel: "Total Respiratory Patients",
+      sortOrder: 76,
+      isActive: true,
+    },
+  });
+
+  await prisma.metricDefinition.create({
+    data: {
+      name: "Trauma Pain Assessment",
+      slug: "trauma-pain-assessment",
+      departmentId: deptQuality.id,
+      categoryId: catClinical.id,
+      categoryLegacy: "Clinical Quality",
+      description:
+        "Percentage of trauma patients with a documented pain assessment (MN CAPM Measure 8).",
+      dataDefinition:
+        "Numerator: Trauma patients with documented pain assessment. Denominator: All trauma patients.",
+      unit: "percentage",
+      chartType: "line",
+      periodType: "monthly",
+      isKpi: true,
+      target: 85,
+      aggregationType: "average",
+      dataType: "proportion",
+      desiredDirection: "up",
+      source: "mn-capm",
+      numeratorLabel: "Pain Assessed",
+      denominatorLabel: "Total Trauma Patients",
+      sortOrder: 77,
+      isActive: true,
+    },
+  });
+
+  await prisma.metricDefinition.create({
+    data: {
+      name: "Beta Agonist for Bronchospasm",
+      slug: "beta-agonist-bronchospasm",
+      departmentId: deptQuality.id,
+      categoryId: catClinical.id,
+      categoryLegacy: "Clinical Quality",
+      description:
+        "Percentage of patients identified as having a bronchospasm who receive a beta agonist treatment (MN CAPM Measure 9). State performance is consistent with national performance.",
+      dataDefinition:
+        "Numerator: Bronchospasm patients receiving beta agonist. Denominator: All patients identified with bronchospasm.",
+      unit: "percentage",
+      chartType: "line",
+      periodType: "monthly",
+      isKpi: true,
+      target: 90,
+      aggregationType: "average",
+      dataType: "proportion",
+      desiredDirection: "up",
+      source: "mn-capm",
+      numeratorLabel: "Beta Agonist Administered",
+      denominatorLabel: "Total Bronchospasm Patients",
+      sortOrder: 78,
+      isActive: true,
+    },
+  });
+
+  console.log("  Created 43 standardized metric definitions (21 NEMSQA + 13 GAMUT + 9 MN CAPM).\n");
 
   // =========================================================================
   // 7. Metric Associations (which metrics appear under which divisions/regions)

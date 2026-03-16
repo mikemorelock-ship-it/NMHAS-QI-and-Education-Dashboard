@@ -100,6 +100,7 @@ model MetricDefinition {
   rateSuffix         String?                         // e.g. "per 1,000 transports"
   scoreMax           Float?                           // max value for "score" unit (e.g. 10, 100) — null = plain number
   desiredDirection   String   @default("up")          // "up" | "down" — which trend direction is good
+  source             String   @default("internal")    // "internal" | "nemsqa" | "gamut" | "mn-capm"
   isActive        Boolean  @default(true)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
@@ -122,6 +123,7 @@ model MetricDefinition {
   @@unique([departmentId, slug])
   @@index([parentId])
   @@index([categoryId])
+  @@index([source])
 }
 
 model MetricAnnotation {

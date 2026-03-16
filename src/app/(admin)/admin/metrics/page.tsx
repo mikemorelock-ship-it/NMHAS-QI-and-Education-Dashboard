@@ -82,6 +82,7 @@ export default async function MetricsPage() {
     rateSuffix: m.rateSuffix ?? null,
     scoreMax: m.scoreMax ?? null,
     desiredDirection: m.desiredDirection,
+    source: m.source,
     sortOrder: m.sortOrder,
     description: m.description,
     dataDefinition: m.dataDefinition,
