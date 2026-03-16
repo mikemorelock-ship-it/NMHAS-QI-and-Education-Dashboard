@@ -1180,7 +1180,7 @@ async function main() {
       categoryId: catClinical.id,
       categoryLegacy: "Clinical Quality",
       description:
-        "Percentage of mechanically ventilated patients with tidal volume set within lung-protective range of 6-8 mL/kg ideal body weight (GAMUT measure).",
+        "Percentage of mechanically ventilated patients with tidal volume set within lung-protective range of 6-8 mL/kg ideal body weight. Lung-protective ventilation is a widely recognized best practice tracked by many GAMUT member programs.",
       dataDefinition:
         "Numerator: Ventilated patients with tidal volume 6-8 mL/kg IBW. Denominator: All mechanically ventilated patients during transport.",
       unit: "percentage",
@@ -1479,6 +1479,864 @@ async function main() {
     },
   });
 
+  // --- GAMUT: Advanced Airway Management (additional) ---
+  await prisma.metricDefinition.create({
+    data: {
+      name: "First-Pass Intubation Success Rate",
+      slug: "gamut-first-pass-intubation-success",
+      departmentId: deptQuality.id,
+      categoryId: catClinical.id,
+      categoryLegacy: "Clinical Quality",
+      description:
+        "Percentage of ETT placements achieving successful intubation on the first attempt by the transport team (GAMUT INTT). Age-specific breakdowns available: neonatal (INTN), pediatric (INTP), adult (INTA).",
+      dataDefinition:
+        "Numerator: Patient contacts with successful ETT placement during 1st intubation attempt by transport team. Denominator: All patient contacts with ETT attempted by transport team.",
+      unit: "percentage",
+      chartType: "line",
+      periodType: "monthly",
+      isKpi: true,
+      target: 85,
+      aggregationType: "average",
+      dataType: "proportion",
+      desiredDirection: "up",
+      source: "gamut",
+      numeratorLabel: "1st Attempt Success",
+      denominatorLabel: "Total ETT Attempts",
+      sortOrder: 63,
+      isActive: true,
+    },
+  });
+
+  await prisma.metricDefinition.create({
+    data: {
+      name: "RSI Protocol Compliance",
+      slug: "gamut-rsi-protocol-compliance",
+      departmentId: deptQuality.id,
+      categoryId: catClinical.id,
+      categoryLegacy: "Clinical Quality",
+      description:
+        "Percentage of patients receiving advanced airway management who met RSI protocol inclusion criteria and had ALL indicated elements of the transport team's RSI protocol completed (GAMUT RSI).",
+      dataDefinition:
+        "Numerator: Patient contacts where all indicated RSI protocol elements were completed. Denominator: Patient contacts that received advanced airway management and met RSI protocol inclusion criteria.",
+      unit: "percentage",
+      chartType: "line",
+      periodType: "monthly",
+      isKpi: true,
+      target: 95,
+      aggregationType: "average",
+      dataType: "proportion",
+      desiredDirection: "up",
+      source: "gamut",
+      numeratorLabel: "RSI Compliant",
+      denominatorLabel: "Total RSI-Eligible",
+      sortOrder: 64,
+      isActive: true,
+    },
+  });
+
+  await prisma.metricDefinition.create({
+    data: {
+      name: "Pediatric Cuffed ETT Sizing Compliance",
+      slug: "gamut-pediatric-cuffed-ett-sizing",
+      departmentId: deptQuality.id,
+      categoryId: catClinical.id,
+      categoryLegacy: "Clinical Quality",
+      description:
+        "Percentage of pediatric patients (29 days to 17 years) intubated by the transport team who received an appropriately sized cuffed endotracheal tube (GAMUT TTSIZ). Uncuffed tubes are not counted in numerator.",
+      dataDefinition:
+        "Numerator: Pediatric patients (29d-17y) with appropriately sized cuffed ETT placed by transport team. Denominator: All pediatric patients (29d-17y) with ETT placed by transport team.",
+      unit: "percentage",
+      chartType: "line",
+      periodType: "monthly",
+      isKpi: false,
+      target: 90,
+      aggregationType: "average",
+      dataType: "proportion",
+      desiredDirection: "up",
+      source: "gamut",
+      numeratorLabel: "Appropriately Sized Cuffed ETT",
+      denominatorLabel: "Total Pediatric Intubations",
+      sortOrder: 65,
+      isActive: true,
+    },
+  });
+
+  await prisma.metricDefinition.create({
+    data: {
+      name: "SGA as Primary Airway Rate",
+      slug: "gamut-sga-primary-airway-rate",
+      departmentId: deptQuality.id,
+      categoryId: catClinical.id,
+      categoryLegacy: "Clinical Quality",
+      description:
+        "Percentage of patients with supraglottic airway (SGA) where SGA was used as a primary invasive airway device rather than rescue from failed intubation (GAMUT SGA). Age-specific: neonatal (SGAN), pediatric (SGAP), adult (SGAA).",
+      dataDefinition:
+        "Numerator: Patient contacts where SGA was used as primary invasive airway (excludes rescue from failed intubation). Denominator: All patient contacts with SGA at any point during transport team contact.",
+      unit: "percentage",
+      chartType: "line",
+      periodType: "monthly",
+      isKpi: false,
+      target: null,
+      aggregationType: "average",
+      dataType: "proportion",
+      desiredDirection: "down",
+      source: "gamut",
+      numeratorLabel: "SGA as Primary",
+      denominatorLabel: "Total SGA Patients",
+      sortOrder: 66,
+      isActive: true,
+    },
+  });
+
+  // --- GAMUT: Non-Invasive Ventilation ---
+  await prisma.metricDefinition.create({
+    data: {
+      name: "NPPV Failure Rate",
+      slug: "gamut-nppv-failure-rate",
+      departmentId: deptQuality.id,
+      categoryId: catClinical.id,
+      categoryLegacy: "Clinical Quality",
+      description:
+        "Percentage of patients on non-invasive positive pressure ventilation (NPPV) initiated or continued by transport team where NPPV was discontinued during transport to place an advanced airway (GAMUT NPPV). Age-specific: neonatal (NPPVN), pediatric (NPPVP), adult (NPPVA). NPPV started as bedside trial and converted prior to transport is excluded.",
+      dataDefinition:
+        "Numerator: Patient contacts where NPPV was discontinued during transport for advanced airway placement. Denominator: All patient contacts with NPPV initiated or continued by transport team.",
+      unit: "percentage",
+      chartType: "line",
+      periodType: "monthly",
+      isKpi: false,
+      target: null,
+      aggregationType: "average",
+      dataType: "proportion",
+      desiredDirection: "down",
+      source: "gamut",
+      numeratorLabel: "NPPV Failures",
+      denominatorLabel: "Total NPPV Patients",
+      sortOrder: 67,
+      isActive: true,
+    },
+  });
+
+  // --- GAMUT: Blood/Blood Products ---
+  await prisma.metricDefinition.create({
+    data: {
+      name: "Transfusion Reaction Rate",
+      slug: "gamut-transfusion-reaction-rate",
+      departmentId: deptQuality.id,
+      categoryId: catPatientSafety.id,
+      categoryLegacy: "Patient Safety",
+      description:
+        "Rate of transfusion-related allergic reactions during transport. Tracks blood or blood product transfusion-related allergic reactions from time transport team assumes care to handoff at receiving facility (GAMUT TFNRXN).",
+      dataDefinition:
+        "Numerator: Patient contacts with documented transfusion-related allergic reaction during transport. Denominator: All patient contacts that received blood or blood products during transport.",
+      unit: "percentage",
+      chartType: "bar",
+      periodType: "monthly",
+      isKpi: false,
+      target: null,
+      aggregationType: "average",
+      dataType: "proportion",
+      desiredDirection: "down",
+      source: "gamut",
+      numeratorLabel: "Transfusion Reactions",
+      denominatorLabel: "Total Transfusion Patients",
+      sortOrder: 68,
+      isActive: true,
+    },
+  });
+
+  // --- GAMUT: CPR Quality ---
+  await prisma.metricDefinition.create({
+    data: {
+      name: "CPR Quality Assessment Rate",
+      slug: "gamut-cpr-quality-assessment",
+      departmentId: deptQuality.id,
+      categoryId: catClinical.id,
+      categoryLegacy: "Clinical Quality",
+      description:
+        "Percentage of patients undergoing CPR with real-time assessment of chest compression adequacy, including use of technology that measures compression quality or automated compression devices (GAMUT CPR). Pediatric (CPRP) and adult (CPRA) breakdowns available.",
+      dataDefinition:
+        "Numerator: Patient contacts undergoing CPR with real-time compression adequacy assessment. Denominator: All patient contacts undergoing CPR.",
+      unit: "percentage",
+      chartType: "line",
+      periodType: "monthly",
+      isKpi: true,
+      target: 90,
+      aggregationType: "average",
+      dataType: "proportion",
+      desiredDirection: "up",
+      source: "gamut",
+      numeratorLabel: "Quality Assessed",
+      denominatorLabel: "Total CPR Patients",
+      sortOrder: 69,
+      isActive: true,
+    },
+  });
+
+  // --- GAMUT: Clinical Management (additional) ---
+  await prisma.metricDefinition.create({
+    data: {
+      name: "Aortic Dissection BP Management",
+      slug: "gamut-aortic-dissection-bp-management",
+      departmentId: deptQuality.id,
+      categoryId: catClinical.id,
+      categoryLegacy: "Clinical Quality",
+      description:
+        "Percentage of patients with known or suspected aortic dissection achieving target heart rate <60 bpm and SBP <120 mmHg, or with documented interventions aimed at achieving these parameters during transport (GAMUT BPAOR).",
+      dataDefinition:
+        "Numerator: Aortic dissection patients with HR <60 and SBP <120 or documented interventions targeting these. Denominator: All patient contacts with known or suspected aortic dissection.",
+      unit: "percentage",
+      chartType: "line",
+      periodType: "monthly",
+      isKpi: false,
+      target: 80,
+      aggregationType: "average",
+      dataType: "proportion",
+      desiredDirection: "up",
+      source: "gamut",
+      numeratorLabel: "BP Managed",
+      denominatorLabel: "Total Aortic Dissection Patients",
+      sortOrder: 100,
+      isActive: true,
+    },
+  });
+
+  await prisma.metricDefinition.create({
+    data: {
+      name: "Corticosteroids for Asthma",
+      slug: "gamut-corticosteroids-for-asthma",
+      departmentId: deptQuality.id,
+      categoryId: catClinical.id,
+      categoryLegacy: "Clinical Quality",
+      description:
+        "Percentage of patients with status asthmaticus or asthma exacerbation who received corticosteroids prior to arrival at the receiving hospital, including those given by the transport team or at the referring hospital (GAMUT STRD).",
+      dataDefinition:
+        "Numerator: Asthma patients who received corticosteroids prior to receiving hospital arrival. Denominator: All patient contacts with status asthmaticus or asthma exacerbation.",
+      unit: "percentage",
+      chartType: "line",
+      periodType: "monthly",
+      isKpi: true,
+      target: 90,
+      aggregationType: "average",
+      dataType: "proportion",
+      desiredDirection: "up",
+      source: "gamut",
+      numeratorLabel: "Steroids Given",
+      denominatorLabel: "Total Asthma Patients",
+      sortOrder: 101,
+      isActive: true,
+    },
+  });
+
+  await prisma.metricDefinition.create({
+    data: {
+      name: "Hemorrhagic Stroke BP Management",
+      slug: "gamut-hemorrhagic-stroke-bp-management",
+      departmentId: deptQuality.id,
+      categoryId: catClinical.id,
+      categoryLegacy: "Clinical Quality",
+      description:
+        "Percentage of known hemorrhagic stroke patients with goal SBP <160 (or 20% less than initial MAP for initial SBP >200) at transfer of care to the receiving hospital (GAMUT BPCVA).",
+      dataDefinition:
+        "Numerator: Hemorrhagic stroke patients with goal SBP <160 (or 20% MAP reduction for SBP >200) at receiving facility handoff. Denominator: All known hemorrhagic stroke patient contacts.",
+      unit: "percentage",
+      chartType: "line",
+      periodType: "monthly",
+      isKpi: true,
+      target: 80,
+      aggregationType: "average",
+      dataType: "proportion",
+      desiredDirection: "up",
+      source: "gamut",
+      numeratorLabel: "BP at Goal",
+      denominatorLabel: "Total Hemorrhagic Stroke Patients",
+      sortOrder: 102,
+      isActive: true,
+    },
+  });
+
+  await prisma.metricDefinition.create({
+    data: {
+      name: "Pain Assessment Documentation",
+      slug: "gamut-pain-assessment-documentation",
+      departmentId: deptQuality.id,
+      categoryId: catClinical.id,
+      categoryLegacy: "Clinical Quality",
+      description:
+        "Percentage of patients with documented pain assessments using age-appropriate pain scales (GAMUT PAIN).",
+      dataDefinition:
+        "Numerator: Patient contacts with documented pain assessment using age-appropriate pain scale. Denominator: All patient contacts.",
+      unit: "percentage",
+      chartType: "line",
+      periodType: "monthly",
+      isKpi: false,
+      target: 90,
+      aggregationType: "average",
+      dataType: "proportion",
+      desiredDirection: "up",
+      source: "gamut",
+      numeratorLabel: "Pain Assessed",
+      denominatorLabel: "Total Patient Contacts",
+      sortOrder: 103,
+      isActive: true,
+    },
+  });
+
+  await prisma.metricDefinition.create({
+    data: {
+      name: "Sepsis Antibiotic Timeliness",
+      slug: "gamut-sepsis-antibiotic-timeliness",
+      departmentId: deptQuality.id,
+      categoryId: catClinical.id,
+      categoryLegacy: "Clinical Quality",
+      description:
+        "Percentage of patients with suspected sepsis who received antibiotics no later than 1 hour after direct patient contact with the transport team, including antibiotics administered by the referring facility (GAMUT ABX).",
+      dataDefinition:
+        "Numerator: Sepsis patients who received antibiotics within 1 hour of transport team contact. Denominator: All patient contacts with suspected sepsis.",
+      unit: "percentage",
+      chartType: "line",
+      periodType: "monthly",
+      isKpi: true,
+      target: 90,
+      aggregationType: "average",
+      dataType: "proportion",
+      desiredDirection: "up",
+      source: "gamut",
+      numeratorLabel: "Antibiotics ≤1hr",
+      denominatorLabel: "Total Sepsis Patients",
+      sortOrder: 104,
+      isActive: true,
+    },
+  });
+
+  await prisma.metricDefinition.create({
+    data: {
+      name: "Hemorrhagic Shock Management",
+      slug: "gamut-hemorrhagic-shock-management",
+      departmentId: deptQuality.id,
+      categoryId: catClinical.id,
+      categoryLegacy: "Clinical Quality",
+      description:
+        "Percentage of hemorrhagic shock patients receiving compliant management: hemorrhage control if applicable, IV blood products if available, and IV fluid resuscitation meeting target perfusion/BP parameters with volume limits (GAMUT SHOCK).",
+      dataDefinition:
+        "Numerator: Hemorrhagic shock patients with 1) hemorrhage control if applicable, 2) IV blood products if available, 3) IV fluids meeting perfusion/BP goals (SBP≥70+2×age or ≥90 or MAP>65) with max 2L adults or 40mL/kg peds. Denominator: All hemorrhagic shock patients.",
+      unit: "percentage",
+      chartType: "line",
+      periodType: "monthly",
+      isKpi: true,
+      target: 80,
+      aggregationType: "average",
+      dataType: "proportion",
+      desiredDirection: "up",
+      source: "gamut",
+      numeratorLabel: "Compliant Management",
+      denominatorLabel: "Total Hemorrhagic Shock Patients",
+      sortOrder: 105,
+      isActive: true,
+    },
+  });
+
+  await prisma.metricDefinition.create({
+    data: {
+      name: "Temperature Documentation Rate",
+      slug: "gamut-temperature-documentation",
+      departmentId: deptQuality.id,
+      categoryId: catClinical.id,
+      categoryLegacy: "Clinical Quality",
+      description:
+        "Number of patient contacts for which temperature is documented with the first set of vital signs taken by the transport team (GAMUT TEMP). Reported as a count metric.",
+      dataDefinition:
+        "Numerator: Patient contacts with temperature documented in first vital signs by transport team.",
+      unit: "count",
+      chartType: "bar",
+      periodType: "monthly",
+      isKpi: false,
+      target: null,
+      aggregationType: "sum",
+      dataType: "continuous",
+      desiredDirection: "up",
+      source: "gamut",
+      sortOrder: 106,
+      isActive: true,
+    },
+  });
+
+  await prisma.metricDefinition.create({
+    data: {
+      name: "Neonatal Targeted Temperature Management",
+      slug: "gamut-neonatal-ttm",
+      departmentId: deptQuality.id,
+      categoryId: catClinical.id,
+      categoryLegacy: "Clinical Quality",
+      description:
+        "Percentage of neonates (<29 days) with moderate or severe HIE eligible for therapeutic hypothermia who have active targeted temperature management and admission core temperature 33-34°C (GAMUT TTMN).",
+      dataDefinition:
+        "Numerator: Neonates meeting HIE criteria with active TTM and admission core temp 33-34°C. Denominator: All neonatal patients meeting moderate/severe HIE criteria eligible for therapeutic hypothermia.",
+      unit: "percentage",
+      chartType: "line",
+      periodType: "monthly",
+      isKpi: true,
+      target: 85,
+      aggregationType: "average",
+      dataType: "proportion",
+      desiredDirection: "up",
+      source: "gamut",
+      numeratorLabel: "TTM at Goal Temp",
+      denominatorLabel: "Total HIE-Eligible Neonates",
+      sortOrder: 107,
+      isActive: true,
+    },
+  });
+
+  await prisma.metricDefinition.create({
+    data: {
+      name: "Adult Post-Cardiac Arrest TTM",
+      slug: "gamut-adult-post-arrest-ttm",
+      departmentId: deptQuality.id,
+      categoryId: catClinical.id,
+      categoryLegacy: "Clinical Quality",
+      description:
+        "Percentage of adult patients post out-of-hospital cardiac arrest and coma with active targeted temperature management resulting in admission core temperature 32-34°C (GAMUT TTMA).",
+      dataDefinition:
+        "Numerator: Adult post-OHCA coma patients with active TTM and admission core temp 32-34°C. Denominator: All adult patient contacts post out-of-hospital cardiac arrest.",
+      unit: "percentage",
+      chartType: "line",
+      periodType: "monthly",
+      isKpi: true,
+      target: 80,
+      aggregationType: "average",
+      dataType: "proportion",
+      desiredDirection: "up",
+      source: "gamut",
+      numeratorLabel: "TTM at Goal Temp",
+      denominatorLabel: "Total Post-Arrest Adults",
+      sortOrder: 108,
+      isActive: true,
+    },
+  });
+
+  // --- GAMUT: Efficiency ---
+  await prisma.metricDefinition.create({
+    data: {
+      name: "Mobilization Time",
+      slug: "gamut-mobilization-time",
+      departmentId: deptQuality.id,
+      categoryId: catClinical.id,
+      categoryLegacy: "Operational Efficiency",
+      description:
+        "Average mobilization time in minutes from start of referral phone call to transport team en route to referral facility. Excludes transports scheduled in advance and transports out of originating facility (GAMUT MOBTM).",
+      dataDefinition:
+        "Numerator: Sum of mobilization times in minutes for eligible transports. Denominator: Number of eligible transports (excluding pre-scheduled and originating facility transports).",
+      unit: "duration",
+      chartType: "line",
+      periodType: "monthly",
+      isKpi: true,
+      target: 10,
+      aggregationType: "average",
+      dataType: "continuous",
+      desiredDirection: "down",
+      source: "gamut",
+      numeratorLabel: "Total Mobilization Minutes",
+      denominatorLabel: "Total Eligible Transports",
+      sortOrder: 109,
+      isActive: true,
+    },
+  });
+
+  await prisma.metricDefinition.create({
+    data: {
+      name: "STEMI Bedside Time",
+      slug: "gamut-stemi-bedside-time",
+      departmentId: deptQuality.id,
+      categoryId: catClinical.id,
+      categoryLegacy: "Operational Efficiency",
+      description:
+        "Average bedside time in minutes for patient contacts with STEMI activations (GAMUT STEMIB).",
+      dataDefinition:
+        "Numerator: Sum of bedside times in minutes for STEMI activation patient contacts. Denominator: Number of patient contacts with STEMI activations.",
+      unit: "duration",
+      chartType: "line",
+      periodType: "monthly",
+      isKpi: false,
+      target: null,
+      aggregationType: "average",
+      dataType: "continuous",
+      desiredDirection: "down",
+      source: "gamut",
+      numeratorLabel: "Total STEMI Bedside Minutes",
+      denominatorLabel: "Total STEMI Patients",
+      sortOrder: 110,
+      isActive: true,
+    },
+  });
+
+  await prisma.metricDefinition.create({
+    data: {
+      name: "STEMI Scene Time",
+      slug: "gamut-stemi-scene-time",
+      departmentId: deptQuality.id,
+      categoryId: catClinical.id,
+      categoryLegacy: "Operational Efficiency",
+      description:
+        "Average scene time in minutes for patient contacts with STEMI activations (GAMUT STEMIS).",
+      dataDefinition:
+        "Numerator: Sum of scene times in minutes for STEMI activation patient contacts. Denominator: Number of patient contacts with STEMI activations.",
+      unit: "duration",
+      chartType: "line",
+      periodType: "monthly",
+      isKpi: false,
+      target: null,
+      aggregationType: "average",
+      dataType: "continuous",
+      desiredDirection: "down",
+      source: "gamut",
+      numeratorLabel: "Total STEMI Scene Minutes",
+      denominatorLabel: "Total STEMI Patients",
+      sortOrder: 111,
+      isActive: true,
+    },
+  });
+
+  await prisma.metricDefinition.create({
+    data: {
+      name: "Neonatal Bedside Time",
+      slug: "gamut-neonatal-bedside-time",
+      departmentId: deptQuality.id,
+      categoryId: catClinical.id,
+      categoryLegacy: "Operational Efficiency",
+      description:
+        "Average bedside time in minutes for neonatal patient contacts during the calendar month (GAMUT BEDN).",
+      dataDefinition:
+        "Numerator: Sum of bedside times in minutes for neonatal patient contacts. Denominator: Number of neonatal patient contacts.",
+      unit: "duration",
+      chartType: "line",
+      periodType: "monthly",
+      isKpi: false,
+      target: null,
+      aggregationType: "average",
+      dataType: "continuous",
+      desiredDirection: "down",
+      source: "gamut",
+      numeratorLabel: "Total Neonatal Bedside Minutes",
+      denominatorLabel: "Total Neonatal Contacts",
+      sortOrder: 112,
+      isActive: true,
+    },
+  });
+
+  await prisma.metricDefinition.create({
+    data: {
+      name: "Pediatric Bedside Time",
+      slug: "gamut-pediatric-bedside-time",
+      departmentId: deptQuality.id,
+      categoryId: catClinical.id,
+      categoryLegacy: "Operational Efficiency",
+      description:
+        "Average bedside time in minutes for all pediatric patient contacts during the calendar month (GAMUT BEDP).",
+      dataDefinition:
+        "Numerator: Sum of bedside times in minutes for pediatric patient contacts. Denominator: Number of pediatric patient contacts.",
+      unit: "duration",
+      chartType: "line",
+      periodType: "monthly",
+      isKpi: false,
+      target: null,
+      aggregationType: "average",
+      dataType: "continuous",
+      desiredDirection: "down",
+      source: "gamut",
+      numeratorLabel: "Total Pediatric Bedside Minutes",
+      denominatorLabel: "Total Pediatric Contacts",
+      sortOrder: 113,
+      isActive: true,
+    },
+  });
+
+  await prisma.metricDefinition.create({
+    data: {
+      name: "Adult Bedside Time",
+      slug: "gamut-adult-bedside-time",
+      departmentId: deptQuality.id,
+      categoryId: catClinical.id,
+      categoryLegacy: "Operational Efficiency",
+      description:
+        "Average bedside time in minutes for all adult patient contacts during the calendar month (GAMUT BEDA).",
+      dataDefinition:
+        "Numerator: Sum of bedside times in minutes for adult patient contacts. Denominator: Number of adult patient contacts.",
+      unit: "duration",
+      chartType: "line",
+      periodType: "monthly",
+      isKpi: false,
+      target: null,
+      aggregationType: "average",
+      dataType: "continuous",
+      desiredDirection: "down",
+      source: "gamut",
+      numeratorLabel: "Total Adult Bedside Minutes",
+      denominatorLabel: "Total Adult Contacts",
+      sortOrder: 114,
+      isActive: true,
+    },
+  });
+
+  // --- GAMUT: Safety Events (additional) ---
+  await prisma.metricDefinition.create({
+    data: {
+      name: "Serious Reportable Events",
+      slug: "gamut-serious-reportable-events",
+      departmentId: deptQuality.id,
+      categoryId: catPatientSafety.id,
+      categoryLegacy: "Patient Safety",
+      description:
+        "Number of Serious Reportable Events (SREs) during the calendar month (GAMUT SRE). Reported as a count metric.",
+      dataDefinition: "Numerator: Number of SREs during the calendar month.",
+      unit: "count",
+      chartType: "bar",
+      periodType: "monthly",
+      isKpi: true,
+      target: 0,
+      aggregationType: "sum",
+      dataType: "continuous",
+      desiredDirection: "down",
+      source: "gamut",
+      sortOrder: 115,
+      isActive: true,
+    },
+  });
+
+  await prisma.metricDefinition.create({
+    data: {
+      name: "Near-Miss / Precursor Events",
+      slug: "gamut-near-miss-events",
+      departmentId: deptQuality.id,
+      categoryId: catPatientSafety.id,
+      categoryLegacy: "Patient Safety",
+      description:
+        "Number of documented transport-related patient near-misses or precursor adverse events during the calendar month (GAMUT MISS). Reported as a count metric.",
+      dataDefinition:
+        "Numerator: Number of documented near-miss or precursor adverse events during the calendar month.",
+      unit: "count",
+      chartType: "bar",
+      periodType: "monthly",
+      isKpi: false,
+      target: null,
+      aggregationType: "sum",
+      dataType: "continuous",
+      desiredDirection: "down",
+      source: "gamut",
+      sortOrder: 116,
+      isActive: true,
+    },
+  });
+
+  await prisma.metricDefinition.create({
+    data: {
+      name: "Medication Administration Errors",
+      slug: "gamut-medication-errors",
+      departmentId: deptQuality.id,
+      categoryId: catPatientSafety.id,
+      categoryLegacy: "Patient Safety",
+      description:
+        "Number of documented medication administration errors (may be more than 1 per transport) during any patient contact during the calendar month (GAMUT RXERR). Reported as a count metric.",
+      dataDefinition:
+        "Numerator: Number of documented medication administration errors during the calendar month.",
+      unit: "count",
+      chartType: "bar",
+      periodType: "monthly",
+      isKpi: true,
+      target: 0,
+      aggregationType: "sum",
+      dataType: "continuous",
+      desiredDirection: "down",
+      source: "gamut",
+      sortOrder: 117,
+      isActive: true,
+    },
+  });
+
+  await prisma.metricDefinition.create({
+    data: {
+      name: "Adverse Drug Events",
+      slug: "gamut-adverse-drug-events",
+      departmentId: deptQuality.id,
+      categoryId: catPatientSafety.id,
+      categoryLegacy: "Patient Safety",
+      description:
+        "Number of patient contacts with documented unanticipated drug-related events during transport (GAMUT ADE). Reported as a count metric.",
+      dataDefinition:
+        "Numerator: Number of patient contacts with unanticipated drug-related events during the calendar month.",
+      unit: "count",
+      chartType: "bar",
+      periodType: "monthly",
+      isKpi: false,
+      target: null,
+      aggregationType: "sum",
+      dataType: "continuous",
+      desiredDirection: "down",
+      source: "gamut",
+      sortOrder: 118,
+      isActive: true,
+    },
+  });
+
+  await prisma.metricDefinition.create({
+    data: {
+      name: "Hypoxia Event Rate",
+      slug: "gamut-hypoxia-event-rate",
+      departmentId: deptQuality.id,
+      categoryId: catPatientSafety.id,
+      categoryLegacy: "Patient Safety",
+      description:
+        "Percentage of patient contacts where documented SpO2 drops below 90% during transport. Excludes patients with chronic low SpO2 or persistent SpO2 <90% throughout transport (GAMUT HYPOX).",
+      dataDefinition:
+        "Numerator: Patient contacts with SpO2 drop below 90% during transport (excluding chronic/persistent). Denominator: All patient contacts excluding those with chronic or persistent SpO2 <90%.",
+      unit: "percentage",
+      chartType: "bar",
+      periodType: "monthly",
+      isKpi: true,
+      target: 5,
+      aggregationType: "average",
+      dataType: "proportion",
+      desiredDirection: "down",
+      source: "gamut",
+      numeratorLabel: "Hypoxia Events",
+      denominatorLabel: "Eligible Patient Contacts",
+      sortOrder: 119,
+      isActive: true,
+    },
+  });
+
+  await prisma.metricDefinition.create({
+    data: {
+      name: "Vehicle Collision Events",
+      slug: "gamut-vehicle-collision-events",
+      departmentId: deptQuality.id,
+      categoryId: catPatientSafety.id,
+      categoryLegacy: "Patient Safety",
+      description:
+        "Number of incidents involving ground or water-based transport vehicles with official documentation of damage sustained while in motion during the calendar month (GAMUT CRASH). Reported as a count metric.",
+      dataDefinition:
+        "Numerator: Number of officially documented vehicle collisions/damage incidents during the calendar month.",
+      unit: "count",
+      chartType: "bar",
+      periodType: "monthly",
+      isKpi: true,
+      target: 0,
+      aggregationType: "sum",
+      dataType: "continuous",
+      desiredDirection: "down",
+      source: "gamut",
+      sortOrder: 120,
+      isActive: true,
+    },
+  });
+
+  // --- GAMUT: Medical Documentation ---
+  await prisma.metricDefinition.create({
+    data: {
+      name: "Chart Audit Completion Rate",
+      slug: "gamut-chart-audit-completion",
+      departmentId: deptQuality.id,
+      categoryId: catClinical.id,
+      categoryLegacy: "Clinical Quality",
+      description:
+        "Number of transport charts audited for completion and accuracy by at least 1 additional team member (peer, clinical supervisor, or medical director) during the calendar month (GAMUT CLNDOC). Reported as a count metric.",
+      dataDefinition:
+        "Numerator: Number of transport charts audited for completion and accuracy during the calendar month.",
+      unit: "count",
+      chartType: "bar",
+      periodType: "monthly",
+      isKpi: false,
+      target: null,
+      aggregationType: "sum",
+      dataType: "continuous",
+      desiredDirection: "up",
+      source: "gamut",
+      sortOrder: 121,
+      isActive: true,
+    },
+  });
+
+  // --- GAMUT: Maternal Transport ---
+  await prisma.metricDefinition.create({
+    data: {
+      name: "Obstetric Seizure Rate",
+      slug: "gamut-obstetric-seizure-rate",
+      departmentId: deptQuality.id,
+      categoryId: catClinical.id,
+      categoryLegacy: "Clinical Quality",
+      description:
+        "Percentage of pregnant patients experiencing seizure activity from the time the transport team assumes care until handoff at the receiving facility (GAMUT OBSZ).",
+      dataDefinition:
+        "Numerator: Pregnant patient contacts experiencing seizure during transport team care. Denominator: All pregnant patient contacts.",
+      unit: "percentage",
+      chartType: "bar",
+      periodType: "monthly",
+      isKpi: false,
+      target: null,
+      aggregationType: "average",
+      dataType: "proportion",
+      desiredDirection: "down",
+      source: "gamut",
+      numeratorLabel: "Seizure Events",
+      denominatorLabel: "Total Pregnant Patients",
+      sortOrder: 122,
+      isActive: true,
+    },
+  });
+
+  await prisma.metricDefinition.create({
+    data: {
+      name: "Obstetric Hypertension Treatment",
+      slug: "gamut-obstetric-hypertension-treatment",
+      departmentId: deptQuality.id,
+      categoryId: catClinical.id,
+      categoryLegacy: "Clinical Quality",
+      description:
+        "Percentage of pregnant patients with persistent severe hypertension (SBP >160 or DBP >110 for >15 minutes) during transport who are treated with an antihypertensive medication (GAMUT OBHTN).",
+      dataDefinition:
+        "Numerator: Hypertensive pregnant patients treated with antihypertensive during transport. Denominator: All pregnant patient contacts with persistent severe hypertension during transport.",
+      unit: "percentage",
+      chartType: "line",
+      periodType: "monthly",
+      isKpi: true,
+      target: 90,
+      aggregationType: "average",
+      dataType: "proportion",
+      desiredDirection: "up",
+      source: "gamut",
+      numeratorLabel: "Treated",
+      denominatorLabel: "Total Hypertensive Pregnant Patients",
+      sortOrder: 123,
+      isActive: true,
+    },
+  });
+
+  await prisma.metricDefinition.create({
+    data: {
+      name: "Delivery During Transport Rate",
+      slug: "gamut-delivery-during-transport",
+      departmentId: deptQuality.id,
+      categoryId: catClinical.id,
+      categoryLegacy: "Clinical Quality",
+      description:
+        "Percentage of pregnant patients (gestational age >20 weeks) who deliver during transport, from departure of referring facility to arrival at receiving facility (GAMUT OBDEL).",
+      dataDefinition:
+        "Numerator: Pregnant patient contacts with delivery during transport. Denominator: All pregnant patient contacts with gestational age >20 weeks.",
+      unit: "percentage",
+      chartType: "bar",
+      periodType: "monthly",
+      isKpi: false,
+      target: null,
+      aggregationType: "average",
+      dataType: "proportion",
+      desiredDirection: "down",
+      source: "gamut",
+      numeratorLabel: "Deliveries in Transport",
+      denominatorLabel: "Total Pregnant Patients >20wk",
+      sortOrder: 124,
+      isActive: true,
+    },
+  });
+
   // --- MN CAPM (Minnesota Clinical Advisory Performance Measures) ---
   await prisma.metricDefinition.create({
     data: {
@@ -1723,7 +2581,7 @@ async function main() {
     },
   });
 
-  console.log("  Created 43 standardized metric definitions (21 NEMSQA + 13 GAMUT + 9 MN CAPM).\n");
+  console.log("  Created 73 standardized metric definitions (21 NEMSQA + 43 GAMUT + 9 MN CAPM).\n");
 
   // =========================================================================
   // 7. Metric Associations (which metrics appear under which divisions/regions)
