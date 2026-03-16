@@ -1704,7 +1704,7 @@ async function main() {
   // 2. Look up category IDs
   const clinicalCatResult = await db.execute({
     sql: "SELECT id FROM Category WHERE slug = ?",
-    args: ["clinical-quality"],
+    args: ["clinical-outcomes"],
   });
   let clinicalCategoryId = null;
   let safetyCategoryId = null;
@@ -1728,7 +1728,14 @@ async function main() {
     console.log(`Patient Safety category ID: ${safetyCategoryId}`);
   }
 
-  // 3. Insert metrics, skipping duplicates
+  // 3. Detect which optional columns exist in production
+  const tableInfo = await db.execute("PRAGMA table_info(MetricDefinition)");
+  const columns = tableInfo.rows.map((r) => r.name);
+  const hasSource = columns.includes("source");
+  const hasCategoryLegacy = columns.includes("categoryLegacy");
+  console.log(`Schema: source=${hasSource}, categoryLegacy=${hasCategoryLegacy}`);
+
+  // 4. Insert metrics, skipping duplicates
   let inserted = 0;
   let skipped = 0;
 
@@ -1748,56 +1755,46 @@ async function main() {
     const now = new Date().toISOString();
     const id = crypto.randomUUID();
 
+    // Build column list and args dynamically based on what exists
+    const cols = [
+      "id", "name", "slug", "description", "dataDefinition",
+      "departmentId", "categoryId",
+      "unit", "chartType", "periodType",
+      "isKpi", "isActive", "target",
+      "aggregationType", "dataType", "desiredDirection",
+      "numeratorLabel", "denominatorLabel",
+      "rateMultiplier", "rateSuffix",
+      "sortOrder",
+      "createdAt", "updatedAt",
+    ];
+    const vals = [
+      id, m.name, m.slug, m.description, m.dataDefinition,
+      departmentId, categoryId,
+      m.unit, m.chartType, m.periodType,
+      m.isKpi ? 1 : 0, 1, m.target ?? null,
+      m.aggregationType, m.dataType, m.desiredDirection,
+      m.numeratorLabel ?? null, m.denominatorLabel ?? null,
+      m.rateMultiplier ?? null, m.rateSuffix ?? null,
+      m.sortOrder,
+      now, now,
+    ];
+
+    if (hasSource) {
+      cols.push("source");
+      vals.push(m.source);
+    }
+    if (hasCategoryLegacy) {
+      cols.push("categoryLegacy");
+      vals.push(m.categoryLegacy);
+    }
+
+    const placeholders = cols.map(() => "?").join(", ");
     await db.execute({
-      sql: `INSERT INTO MetricDefinition (
-        id, name, slug, description, dataDefinition,
-        departmentId, categoryId, categoryLegacy,
-        unit, chartType, periodType,
-        isKpi, isActive, target,
-        aggregationType, dataType, desiredDirection, source,
-        numeratorLabel, denominatorLabel,
-        rateMultiplier, rateSuffix,
-        sortOrder,
-        createdAt, updatedAt
-      ) VALUES (
-        ?, ?, ?, ?, ?,
-        ?, ?, ?,
-        ?, ?, ?,
-        ?, 1, ?,
-        ?, ?, ?, ?,
-        ?, ?,
-        ?, ?,
-        ?,
-        ?, ?
-      )`,
-      args: [
-        id,
-        m.name,
-        m.slug,
-        m.description,
-        m.dataDefinition,
-        departmentId,
-        categoryId,
-        m.categoryLegacy,
-        m.unit,
-        m.chartType,
-        m.periodType,
-        m.isKpi ? 1 : 0,
-        m.target ?? null,
-        m.aggregationType,
-        m.dataType,
-        m.desiredDirection,
-        m.source,
-        m.numeratorLabel ?? null,
-        m.denominatorLabel ?? null,
-        m.rateMultiplier ?? null,
-        m.rateSuffix ?? null,
-        m.sortOrder,
-        now,
-        now,
-      ],
+      sql: `INSERT INTO MetricDefinition (${cols.join(", ")}) VALUES (${placeholders})`,
+      args: vals,
     });
 
+    console.log(`  ADD: "${m.name}" [${m.source}]`);
     inserted++;
   }
 
