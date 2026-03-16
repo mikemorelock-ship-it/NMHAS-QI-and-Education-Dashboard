@@ -175,6 +175,7 @@ export type LookupData = {
     id: string;
     name: string;
     slug: string;
+    sortOrder: number;
   }>;
   regions: Array<{
     id: string;
@@ -228,7 +229,7 @@ export async function getTemplateLookupData(): Promise<TemplateLookupData> {
     }),
     prisma.division.findMany({
       where: { isActive: true },
-      select: { id: true, name: true, slug: true },
+      select: { id: true, name: true, slug: true, sortOrder: true },
       orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
     }),
     prisma.region.findMany({
@@ -272,8 +273,8 @@ export async function getLookupData(): Promise<LookupData> {
     }),
     prisma.division.findMany({
       where: { isActive: true },
-      select: { id: true, name: true, slug: true },
-      orderBy: { name: "asc" },
+      select: { id: true, name: true, slug: true, sortOrder: true },
+      orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
     }),
     prisma.region.findMany({
       where: { isActive: true },

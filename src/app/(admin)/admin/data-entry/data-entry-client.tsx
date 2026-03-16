@@ -84,6 +84,7 @@ interface DivisionOption {
   id: string;
   name: string;
   departmentId: string;
+  sortOrder: number;
 }
 
 interface RegionOption {
@@ -200,6 +201,7 @@ export function DataEntryClient({
     const assoc = associationsMap[prefill.metricId];
     if (!assoc) return [];
     const dMap = new Map(divisions.map((d) => [d.id, d.name]));
+    const dSortMap = new Map(divisions.map((d) => [d.id, d.sortOrder]));
     const rMap = new Map(regions.map((r) => [r.id, r]));
     const rows: SingleEntryRow[] = [];
     if (assoc.regionIds.length > 0) {
@@ -239,9 +241,10 @@ export function DataEntryClient({
       }
     }
     rows.sort((a, b) => {
-      const divCmp = a.divisionName.localeCompare(b.divisionName);
+      const divCmp =
+        (dSortMap.get(a.divisionId ?? "") ?? 0) - (dSortMap.get(b.divisionId ?? "") ?? 0);
       if (divCmp !== 0) return divCmp;
-      return a.regionName.localeCompare(b.regionName);
+      return a.regionName.localeCompare(b.regionName, undefined, { numeric: true });
     });
     return rows;
   });
@@ -330,6 +333,10 @@ export function DataEntryClient({
   // Derived data
   // -----------------------------------------------------------------------
   const divisionMap = useMemo(() => new Map(divisions.map((d) => [d.id, d.name])), [divisions]);
+  const divisionSortMap = useMemo(
+    () => new Map(divisions.map((d) => [d.id, d.sortOrder])),
+    [divisions]
+  );
   const regionMap = useMemo(() => new Map(regions.map((r) => [r.id, r])), [regions]);
 
   const getMetricDepartmentId = (metricId: string): string =>
@@ -390,16 +397,18 @@ export function DataEntryClient({
         }
       }
 
-      // Sort: by division name, then region name
+      // Sort: by division sortOrder, then region name (numeric-aware)
       rows.sort((a, b) => {
-        const divCmp = a.divisionName.localeCompare(b.divisionName);
+        const divCmp =
+          (divisionSortMap.get(a.divisionId ?? "") ?? 0) -
+          (divisionSortMap.get(b.divisionId ?? "") ?? 0);
         if (divCmp !== 0) return divCmp;
-        return a.regionName.localeCompare(b.regionName);
+        return a.regionName.localeCompare(b.regionName, undefined, { numeric: true });
       });
 
       return rows;
     },
-    [associationsMap, divisionMap, regionMap]
+    [associationsMap, divisionMap, divisionSortMap, regionMap]
   );
 
   // Filtered rows based on division/region filter
@@ -535,10 +544,14 @@ export function DataEntryClient({
           cmp = a.metricName.localeCompare(b.metricName);
           break;
         case "divisionName":
-          cmp = (a.divisionName ?? "").localeCompare(b.divisionName ?? "");
+          cmp = (a.divisionName ?? "").localeCompare(b.divisionName ?? "", undefined, {
+            numeric: true,
+          });
           break;
         case "regionName":
-          cmp = (a.regionName ?? "").localeCompare(b.regionName ?? "");
+          cmp = (a.regionName ?? "").localeCompare(b.regionName ?? "", undefined, {
+            numeric: true,
+          });
           break;
         case "periodStart":
           cmp = a.periodStart.localeCompare(b.periodStart);

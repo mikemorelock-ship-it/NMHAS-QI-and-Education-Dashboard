@@ -52,7 +52,7 @@ export default async function DataEntryPage({
       prisma.division.findMany({
         where: { isActive: true },
         orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
-        select: { id: true, name: true, departmentId: true },
+        select: { id: true, name: true, departmentId: true, sortOrder: true },
       }),
       prisma.region.findMany({
         where: { isActive: true },

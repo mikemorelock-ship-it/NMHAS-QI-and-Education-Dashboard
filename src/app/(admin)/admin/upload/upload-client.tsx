@@ -236,11 +236,20 @@ export function UploadClient({ lookup }: { lookup: TemplateLookupData }) {
   const [templateIncludeScope, setTemplateIncludeScope] = useState(true);
   const [templateMetricSearch, setTemplateMetricSearch] = useState("");
 
-  // Departments (regions) filtered by selected division
+  // Departments (regions) filtered by selected division, sorted by division sortOrder then name
   const templateDepts = useMemo(() => {
-    if (templateDivisionFilter === "__all__") return lookup.regions;
-    return lookup.regions.filter((r) => r.divisionId === templateDivisionFilter);
-  }, [lookup.regions, templateDivisionFilter]);
+    const filtered =
+      templateDivisionFilter === "__all__"
+        ? [...lookup.regions]
+        : lookup.regions.filter((r) => r.divisionId === templateDivisionFilter);
+    return filtered.sort((a, b) => {
+      const divA = lookup.divisions.find((d) => d.id === a.divisionId);
+      const divB = lookup.divisions.find((d) => d.id === b.divisionId);
+      const divCmp = (divA?.sortOrder ?? 0) - (divB?.sortOrder ?? 0);
+      if (divCmp !== 0) return divCmp;
+      return a.name.localeCompare(b.name, undefined, { numeric: true });
+    });
+  }, [lookup.regions, lookup.divisions, templateDivisionFilter]);
 
   // Division/department-filtered metrics for template
   // Uses metric associations to determine which metrics are linked to which divisions/departments
@@ -389,10 +398,16 @@ export function UploadClient({ lookup }: { lookup: TemplateLookupData }) {
           }
 
           if (filteredRegionIds.length > 0) {
-            // Sort region IDs by region name so they appear in natural order
+            // Sort region IDs by division sortOrder first, then region name (numeric-aware)
             const sortedRegionIds = [...filteredRegionIds].sort((a, b) => {
-              const nameA = lookup.regions.find((r) => r.id === a)?.name ?? "";
-              const nameB = lookup.regions.find((r) => r.id === b)?.name ?? "";
+              const regA = lookup.regions.find((r) => r.id === a);
+              const regB = lookup.regions.find((r) => r.id === b);
+              const divA = regA ? lookup.divisions.find((d) => d.id === regA.divisionId) : null;
+              const divB = regB ? lookup.divisions.find((d) => d.id === regB.divisionId) : null;
+              const divCmp = (divA?.sortOrder ?? 0) - (divB?.sortOrder ?? 0);
+              if (divCmp !== 0) return divCmp;
+              const nameA = regA?.name ?? "";
+              const nameB = regB?.name ?? "";
               return nameA.localeCompare(nameB, undefined, { numeric: true });
             });
             for (const regionId of sortedRegionIds) {
