@@ -3,13 +3,14 @@
  * Uses @libsql/client directly — no Prisma, no TypeScript.
  *
  * Run with:
- *   npx --package=@libsql/client node scripts/seed-standardized-metrics-standalone.mjs
+ *   node scripts/seed-standardized-metrics-standalone.cjs
  *
  * Requires env vars: DATABASE_URL, TURSO_AUTH_TOKEN
+ * Requires: npm install (to get @libsql/client from package.json)
  */
 
-import { createClient } from "@libsql/client";
-import crypto from "node:crypto";
+const { createClient } = require("@libsql/client");
+const crypto = require("node:crypto");
 
 const db = createClient({
   url: process.env.DATABASE_URL,
