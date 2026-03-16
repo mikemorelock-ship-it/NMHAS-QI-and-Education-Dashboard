@@ -13,8 +13,8 @@ const { createClient } = require("@libsql/client/web");
 const crypto = require("node:crypto");
 
 const db = createClient({
-  url: process.env.DATABASE_URL,
-  authToken: process.env.TURSO_AUTH_TOKEN,
+  url: process.env.DATABASE_URL || "libsql://nmhas-qi-and-education-dashboard-mikemorelock-ship-it.aws-us-east-2.turso.io",
+  authToken: process.env.TURSO_AUTH_TOKEN || "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJhIjoicnciLCJpYXQiOjE3NzM2MzQwNTQsImlkIjoiMjNkNDZhMTctYjA0OC00MmQwLTk5ZWUtYTliMmFiZWIzMjdiIiwicmlkIjoiNzZiMWU5N2MtMWUzMy00OTkzLWE3NTItMGM5YjM3MGYyZTFjIn0.zWew5MbJu7zEV0cCgqNiv_efJPEqBQidM5SvvhzmsuyEcKy32NWbr75918llepdLKNXXtofLk2EG-xsL8836DA",
 });
 
 // ---------------------------------------------------------------------------
