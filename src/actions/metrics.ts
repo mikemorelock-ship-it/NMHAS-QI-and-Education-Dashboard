@@ -214,7 +214,6 @@ export async function updateMetricDefinition(
   }
 
   const data = parsed.data;
-  const slug = slugify(data.name);
 
   try {
     // Fetch current state for change tracking
@@ -222,6 +221,11 @@ export async function updateMetricDefinition(
     if (!current) {
       return { success: false, error: "Metric definition not found." };
     }
+
+    // Only regenerate slug when the name actually changes; this preserves
+    // custom slugs (e.g. "gamut-first-pass-intubation-success") that differ
+    // from what slugify(name) would produce.
+    const slug = data.name === current.name ? current.slug : slugify(data.name);
 
     // Check for slug conflict with a different metric in same department
     if (slug !== current.slug || data.departmentId !== current.departmentId) {

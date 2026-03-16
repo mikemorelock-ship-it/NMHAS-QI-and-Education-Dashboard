@@ -752,11 +752,20 @@ export function MetricsClient({
                   router.refresh();
                 } else {
                   setFormError(result.error || "Failed to update metric.");
+                  // Scroll the error into view so users don't miss it
+                  requestAnimationFrame(() => {
+                    document
+                      .getElementById("edit-form-error")
+                      ?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+                  });
                 }
               }}
             >
               {formError && (
-                <div className="rounded-md bg-destructive/10 border border-destructive/30 p-3 mb-3">
+                <div
+                  id="edit-form-error"
+                  className="rounded-md bg-destructive/10 border border-destructive/30 p-3 mb-3"
+                >
                   <p className="text-sm text-destructive">{formError}</p>
                 </div>
               )}
