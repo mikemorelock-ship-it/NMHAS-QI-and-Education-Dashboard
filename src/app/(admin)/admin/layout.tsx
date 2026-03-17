@@ -22,10 +22,10 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     });
   }
 
-  // Count metrics that are due for updated data
-  const [activeMetrics, latestEntries] = await Promise.all([
+  // Count metrics that are due for updated data (only those opted-in via trackUpdateDue)
+  const [trackedMetrics, latestEntries] = await Promise.all([
     prisma.metricDefinition.findMany({
-      where: { isActive: true },
+      where: { isActive: true, trackUpdateDue: true },
       select: { id: true, periodType: true },
     }),
     prisma.metricEntry.groupBy({
@@ -41,7 +41,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     ])
   );
 
-  const metricsUpdateDueCount = activeMetrics.filter((m: { id: string; periodType: string }) =>
+  const metricsUpdateDueCount = trackedMetrics.filter((m: { id: string; periodType: string }) =>
     isMetricUpdateDue(m.periodType, latestPeriodMap.get(m.id) ?? null)
   ).length;
 
