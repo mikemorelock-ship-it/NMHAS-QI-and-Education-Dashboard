@@ -127,6 +127,7 @@ interface MetricRow {
   scoreMax: number | null;
   desiredDirection: string;
   source: string;
+  trackUpdateDue: boolean;
   sortOrder: number;
   description: string | null;
   dataDefinition: string | null;
@@ -993,6 +994,7 @@ function SortableMetricRow({
               </Badge>
             )}
             {metric.isActive &&
+              metric.trackUpdateDue &&
               isMetricUpdateDue(
                 metric.periodType,
                 metric.latestPeriodStart ? new Date(metric.latestPeriodStart) : null
@@ -1647,6 +1649,21 @@ function MetricFormFields({
         <Label htmlFor="isKpi" className="font-normal">
           Mark as Key Performance Indicator (KPI)
         </Label>
+      </div>
+      <div className="flex items-center gap-2">
+        <input
+          type="checkbox"
+          id="trackUpdateDue"
+          name="trackUpdateDue"
+          defaultChecked={defaultValues?.trackUpdateDue ?? false}
+          className="h-4 w-4 rounded border-input"
+        />
+        <Label htmlFor="trackUpdateDue" className="font-normal">
+          Track &quot;Update Due&quot; status on dashboards
+        </Label>
+        <span className="text-xs text-muted-foreground">
+          — shows a badge when data is overdue based on reporting frequency
+        </span>
       </div>
 
       {/* Associations Picker */}

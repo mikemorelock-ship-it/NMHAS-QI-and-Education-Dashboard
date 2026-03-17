@@ -9,6 +9,7 @@ import {
 } from "@/lib/aggregation";
 import { calculateSPC, type DataType, type SPCDataPoint } from "@/lib/spc";
 import { buildEntryWhereForSingleDivision } from "@/lib/division-query-utils";
+import { isMetricUpdateDue } from "@/lib/metric-update-status";
 
 export const dynamic = "force-dynamic";
 
@@ -178,6 +179,15 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
           spcData = calculateSPC(dt, spcPoints, spcOpts);
         }
 
+        let updateDue = false;
+        if (metric.trackUpdateDue) {
+          const latestPeriod =
+            filteredEntries.length > 0
+              ? filteredEntries[filteredEntries.length - 1].periodStart
+              : null;
+          updateDue = isMetricUpdateDue(metric.periodType, latestPeriod);
+        }
+
         return {
           metricId: metric.id,
           metricSlug: metric.slug,
@@ -198,6 +208,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
           rateSuffix: metric.rateSuffix ?? null,
           scoreMax: metric.scoreMax ?? null,
           spcData,
+          updateDue,
         };
       });
 
@@ -449,6 +460,15 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         spcData = calculateSPC(dt, spcPoints, spcOptions);
       }
 
+      let updateDue = false;
+      if (metric.trackUpdateDue) {
+        const latestPeriod =
+          aggregatedSeries.length > 0
+            ? aggregatedSeries[aggregatedSeries.length - 1].periodStart
+            : null;
+        updateDue = isMetricUpdateDue(metric.periodType, latestPeriod);
+      }
+
       return {
         metricId: metric.id,
         metricSlug: metric.slug,
@@ -469,6 +489,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         rateSuffix: metric.rateSuffix ?? null,
         scoreMax: metric.scoreMax ?? null,
         spcData,
+        updateDue,
       };
     });
 

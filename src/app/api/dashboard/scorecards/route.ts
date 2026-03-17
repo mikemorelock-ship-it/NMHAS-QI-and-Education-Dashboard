@@ -11,6 +11,7 @@ import {
   getDivisionsWithoutRegions,
   buildEntryWhereForDivisions,
 } from "@/lib/division-query-utils";
+import { isMetricUpdateDue } from "@/lib/metric-update-status";
 
 export const dynamic = "force-dynamic";
 
@@ -118,6 +119,8 @@ export async function GET(request: NextRequest) {
         rateMultiplier: true,
         rateSuffix: true,
         scoreMax: true,
+        trackUpdateDue: true,
+        periodType: true,
       },
     });
 
@@ -448,6 +451,14 @@ export async function GET(request: NextRequest) {
             : actualYtd >= rawTarget
           : null;
 
+      // Compute updateDue for tracked metrics by finding the latest month with data
+      let updateDue = false;
+      if (metric.trackUpdateDue) {
+        const latestMonthWithData = [...monthlyValues].reverse().find((mv) => mv.value !== null);
+        const latestPeriod = latestMonthWithData ? new Date(latestMonthWithData.periodStart) : null;
+        updateDue = isMetricUpdateDue(metric.periodType, latestPeriod);
+      }
+
       return {
         metricId: metric.id,
         metricName: metric.name,
@@ -463,6 +474,7 @@ export async function GET(request: NextRequest) {
         monthlyValues,
         meetsTarget,
         groupName: scorecardGroupMap?.get(metric.id) ?? null,
+        updateDue,
       };
     });
 

@@ -39,6 +39,7 @@ const MetricDefinitionSchema = z.object({
   scoreMax: z.coerce.number().positive().optional().nullable(),
   desiredDirection: z.enum(["up", "down"]).default("up"),
   source: z.enum(["internal", "nemsqa", "gamut", "mn-capm"]).default("internal"),
+  trackUpdateDue: z.boolean().default(false),
 });
 
 // ---------------------------------------------------------------------------
@@ -83,6 +84,7 @@ function parseMetricFormData(formData: FormData) {
     scoreMax: raw.scoreMax ? parseFloat(raw.scoreMax) : null,
     desiredDirection: raw.desiredDirection || "up",
     source: raw.source || "internal",
+    trackUpdateDue: raw.trackUpdateDue === "on" || raw.trackUpdateDue === "true",
   });
 }
 
@@ -169,6 +171,7 @@ export async function createMetricDefinition(
         scoreMax: data.scoreMax ?? null,
         desiredDirection: data.desiredDirection,
         source: data.source,
+        trackUpdateDue: data.trackUpdateDue,
       },
     });
 
@@ -299,6 +302,7 @@ export async function updateMetricDefinition(
         scoreMax: data.scoreMax ?? null,
         desiredDirection: data.desiredDirection,
         source: data.source,
+        trackUpdateDue: data.trackUpdateDue,
       },
     });
 
@@ -314,6 +318,7 @@ export async function updateMetricDefinition(
         chartType: current.chartType,
         periodType: current.periodType,
         source: current.source,
+        trackUpdateDue: current.trackUpdateDue,
       },
       {
         name: data.name,
@@ -326,6 +331,7 @@ export async function updateMetricDefinition(
         chartType: data.chartType,
         periodType: data.periodType,
         source: data.source,
+        trackUpdateDue: data.trackUpdateDue,
       }
     );
 

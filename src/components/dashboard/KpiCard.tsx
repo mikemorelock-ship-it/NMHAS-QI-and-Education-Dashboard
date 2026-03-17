@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { LineChart, Line, ResponsiveContainer } from "recharts";
-import { TrendingUp, TrendingDown, Minus, ArrowRight } from "lucide-react";
+import { TrendingUp, TrendingDown, Minus, ArrowRight, Clock } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { MiniControlChart } from "@/components/dashboard/MiniControlChart";
 import { formatMetricValue, targetToRaw, cn } from "@/lib/utils";
@@ -24,6 +24,7 @@ interface KpiCardProps {
   scoreMax?: number | null;
   viewMode?: "metrics" | "charts";
   spcData?: SPCChartData | null;
+  updateDue?: boolean;
 }
 
 export function KpiCard({
@@ -41,6 +42,7 @@ export function KpiCard({
   scoreMax,
   viewMode = "metrics",
   spcData,
+  updateDue,
 }: KpiCardProps) {
   const direction = trend > 0.5 ? "up" : trend < -0.5 ? "down" : "flat";
 
@@ -76,6 +78,12 @@ export function KpiCard({
           <div className="flex items-center justify-between gap-2">
             <p className="text-sm font-medium text-muted-foreground truncate leading-tight flex-1 min-w-0">
               {name}
+              {updateDue && (
+                <span className="inline-flex items-center gap-0.5 ml-1.5 text-[10px] font-medium px-1.5 py-0 rounded-full border border-[#fcb526] text-[#fcb526] align-middle">
+                  <Clock className="size-2.5" />
+                  Update Due
+                </span>
+              )}
               {href && (
                 <ArrowRight
                   className="inline-block size-3 ml-1 opacity-0 group-hover:opacity-100 transition-opacity text-[#00b0ad]"
@@ -133,6 +141,12 @@ export function KpiCard({
             <div className="flex-1 min-w-0">
               <p className="text-sm text-muted-foreground truncate leading-tight">
                 {name}
+                {updateDue && (
+                  <span className="inline-flex items-center gap-0.5 ml-1.5 text-[10px] font-medium px-1.5 py-0 rounded-full border border-[#fcb526] text-[#fcb526] align-middle">
+                    <Clock className="size-2.5" />
+                    Update Due
+                  </span>
+                )}
                 {href && (
                   <ArrowRight
                     className="inline-block size-3 ml-1 opacity-0 group-hover:opacity-100 transition-opacity text-[#00b0ad]"

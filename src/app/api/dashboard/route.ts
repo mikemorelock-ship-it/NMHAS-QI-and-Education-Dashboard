@@ -12,6 +12,7 @@ import {
   getDivisionsWithoutRegions,
   buildEntryWhereForDivisions,
 } from "@/lib/division-query-utils";
+import { isMetricUpdateDue } from "@/lib/metric-update-status";
 
 export const dynamic = "force-dynamic";
 
@@ -111,6 +112,8 @@ export async function GET(request: NextRequest) {
               spcSigmaLevel: true,
               baselineStart: true,
               baselineEnd: true,
+              trackUpdateDue: true,
+              periodType: true,
             },
           })
         : [];
@@ -333,6 +336,16 @@ export async function GET(request: NextRequest) {
         spcData = calculateSPC(dt, spcPoints, spcOptions);
       }
 
+      // Compute updateDue for tracked metrics
+      let updateDue = false;
+      if (metric.trackUpdateDue) {
+        const latestPeriod =
+          aggregatedSeries.length > 0
+            ? aggregatedSeries[aggregatedSeries.length - 1].periodStart
+            : null;
+        updateDue = isMetricUpdateDue(metric.periodType, latestPeriod);
+      }
+
       return {
         metricId: metric.id,
         metricSlug: metric.slug,
@@ -352,6 +365,7 @@ export async function GET(request: NextRequest) {
         rateSuffix: metric.rateSuffix ?? null,
         scoreMax: metric.scoreMax ?? null,
         spcData,
+        updateDue,
       };
     }
 
@@ -396,6 +410,8 @@ export async function GET(request: NextRequest) {
         spcSigmaLevel: true,
         baselineStart: true,
         baselineEnd: true,
+        trackUpdateDue: true,
+        periodType: true,
       },
     });
 
@@ -478,6 +494,13 @@ export async function GET(request: NextRequest) {
           spcData = calculateSPC(udt, spcPoints, spcOpts);
         }
 
+        // Compute updateDue for unassociated tracked metrics
+        let updateDue = false;
+        if (metric.trackUpdateDue) {
+          const latestPeriod = entries.length > 0 ? entries[entries.length - 1].periodStart : null;
+          updateDue = isMetricUpdateDue(metric.periodType, latestPeriod);
+        }
+
         return {
           metricId: metric.id,
           metricSlug: metric.slug,
@@ -497,6 +520,7 @@ export async function GET(request: NextRequest) {
           rateSuffix: metric.rateSuffix ?? null,
           scoreMax: metric.scoreMax ?? null,
           spcData,
+          updateDue,
         };
       });
 

@@ -101,6 +101,7 @@ model MetricDefinition {
   scoreMax           Float?                           // max value for "score" unit (e.g. 10, 100) — null = plain number
   desiredDirection   String   @default("up")          // "up" | "down" — which trend direction is good
   source             String   @default("internal")    // "internal" | "nemsqa" | "gamut" | "mn-capm"
+  trackUpdateDue     Boolean  @default(false)          // when true, shows "Update Due" badge on dashboards
   isActive        Boolean  @default(true)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt

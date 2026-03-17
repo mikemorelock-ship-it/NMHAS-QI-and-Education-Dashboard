@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { Loader2 } from "lucide-react";
+import { Loader2, CheckCircle2, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { DivisionSelector } from "@/components/dashboard/DivisionSelector";
 import { KpiCard } from "@/components/dashboard/KpiCard";
@@ -120,6 +120,9 @@ export default function PublicDashboardPage() {
     return allDivisionsKpis;
   }, [activeSlug, detailData, allDivisionsKpis]);
 
+  // Update status summary — count metrics that are due for updates
+  const updateDueKpis = displayKpis.filter((k) => k.updateDue);
+
   // Charts: only available in single-division view
   const displayMetrics: MetricChartData[] = detailData?.metrics ?? [];
 
@@ -166,6 +169,26 @@ export default function PublicDashboardPage() {
         </div>
       )}
 
+      {/* Update status banner */}
+      {!loading &&
+        displayKpis.length > 0 &&
+        (updateDueKpis.length > 0 ? (
+          <div className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-[#fcb526]/10 border border-[#fcb526]/30 text-sm">
+            <Clock className="size-4 text-[#fcb526] shrink-0" />
+            <span className="text-[#4b4f54]">
+              <span className="font-semibold text-[#fcb526]">
+                {updateDueKpis.length} metric{updateDueKpis.length !== 1 ? "s" : ""}
+              </span>{" "}
+              due for update: {updateDueKpis.map((k) => k.name).join(", ")}
+            </span>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-[#00b0ad]/10 border border-[#00b0ad]/30 text-sm">
+            <CheckCircle2 className="size-4 text-[#00b0ad] shrink-0" />
+            <span className="text-[#4b4f54] font-medium">All tracked metrics are up to date</span>
+          </div>
+        ))}
+
       {/* KPI Grid / Charts / List */}
       {loading ? (
         <KpiGridSkeleton />
@@ -196,6 +219,7 @@ export default function PublicDashboardPage() {
                 scoreMax={kpi.scoreMax}
                 viewMode={viewMode === "charts" ? "charts" : "metrics"}
                 spcData={kpi.spcData}
+                updateDue={kpi.updateDue}
                 href={
                   kpi.metricSlug
                     ? kpi.divisionSlug

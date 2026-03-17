@@ -60,6 +60,11 @@ export function MetricsList({ kpis, divisionSlug }: MetricsListProps) {
                   ) : (
                     kpi.name
                   )}
+                  {kpi.updateDue && (
+                    <span className="inline-flex items-center gap-0.5 ml-2 text-[10px] font-medium px-1.5 py-0 rounded-full border border-[#fcb526] text-[#fcb526] align-middle">
+                      Update Due
+                    </span>
+                  )}
                 </td>
                 <td className="px-4 py-3 text-right tabular-nums font-semibold">
                   {formatMetricValue(

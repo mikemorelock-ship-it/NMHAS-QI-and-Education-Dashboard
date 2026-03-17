@@ -83,6 +83,7 @@ export default async function MetricsPage() {
     scoreMax: m.scoreMax ?? null,
     desiredDirection: m.desiredDirection,
     source: m.source,
+    trackUpdateDue: m.trackUpdateDue,
     sortOrder: m.sortOrder,
     description: m.description,
     dataDefinition: m.dataDefinition,

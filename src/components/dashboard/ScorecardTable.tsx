@@ -113,6 +113,11 @@ export function ScorecardTable({ scorecard }: ScorecardTableProps) {
                       {/* Metric name */}
                       <td className="px-4 py-2.5 font-medium whitespace-nowrap sticky left-0 bg-card z-10">
                         {metric.metricName}
+                        {metric.updateDue && (
+                          <span className="inline-flex items-center gap-0.5 ml-2 text-[10px] font-medium px-1.5 py-0 rounded-full border border-[#fcb526] text-[#fcb526] align-middle">
+                            Update Due
+                          </span>
+                        )}
                       </td>
 
                       {/* Target */}

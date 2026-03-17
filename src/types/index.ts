@@ -17,6 +17,7 @@ export interface KpiData {
   rateSuffix?: string | null;
   scoreMax?: number | null;
   spcData?: SPCChartData | null;
+  updateDue?: boolean;
 }
 
 export interface DivisionOverview {
@@ -237,6 +238,7 @@ export interface ScorecardMetricRow {
   rateSuffix?: string | null;
   scoreMax?: number | null;
   groupName?: string | null; // admin-defined section header for visual grouping
+  updateDue?: boolean;
 }
 
 export interface ScorecardPresetData {
